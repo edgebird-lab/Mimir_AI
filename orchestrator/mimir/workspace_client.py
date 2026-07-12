@@ -21,17 +21,29 @@ class WorkspaceUnavailable(RuntimeError):
 
 class WorkspaceClient:
     def __init__(self, sock: str | None = None, token: str | None = None, timeout: float = 960.0):
+        # MIMIR_WORKSPACE_ADDR ("host:port") selects TCP loopback (optional WSL2 coding mode reached from
+        # the native Windows client); otherwise the Linux bind-mounted Unix socket. Unchanged on Linux.
+        self.addr = os.environ.get("MIMIR_WORKSPACE_ADDR", "")
         self.sock = sock or os.environ.get("MIMIR_WORKSPACE_SOCK_CLIENT", "/run/mimir/workspace.sock")
         self.token = token if token is not None else os.environ.get("MIMIR_WORKSPACE_TOKEN", "")
         self.timeout = timeout
 
     def _rpc(self, payload: dict) -> dict:
-        if not os.path.exists(self.sock):
-            raise WorkspaceUnavailable(f"workspace daemon socket not present ({self.sock})")
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.settimeout(self.timeout)
-        try:
+        if self.addr:
+            host, _, port = self.addr.rpartition(":")
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(self.timeout)
+                s.connect((host or "127.0.0.1", int(port)))
+            except (OSError, ValueError) as e:
+                raise WorkspaceUnavailable(f"workspace daemon not reachable at {self.addr} ({e})")
+        else:
+            if not os.path.exists(self.sock):
+                raise WorkspaceUnavailable(f"workspace daemon socket not present ({self.sock})")
+            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            s.settimeout(self.timeout)
             s.connect(self.sock)
+        try:
             s.sendall(json.dumps({"token": self.token, **payload}).encode() + b"\n")
             buf = b""
             while b"\n" not in buf:

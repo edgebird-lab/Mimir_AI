@@ -43,20 +43,32 @@ def _broker() -> Broker:
 
 
 def serve() -> None:
-    Path(SOCK).parent.mkdir(parents=True, exist_ok=True)
-    if os.path.exists(SOCK):
-        os.unlink(SOCK)
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    old = os.umask(0o177)
-    try:
-        s.bind(SOCK)
-    finally:
-        os.umask(old)
-    # Local IPC socket; the 24-byte token is the actual authenticator, so allow the mounted
-    # container uid to connect (perms are not the control here — the token is).
-    os.chmod(SOCK, 0o666)
+    # MIMIR_SANDBOX_ADDR ("host:port") binds a TCP-loopback listener instead of a Unix socket — this is
+    # how the optional WSL2 sandbox mode is reached from the native Windows client (WSL2 forwards
+    # localhost). The token remains the authenticator. Default (unset) = the Linux Unix socket, unchanged.
+    addr = os.environ.get("MIMIR_SANDBOX_ADDR", "")
+    if addr:
+        host, _, port = addr.rpartition(":")
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((host or "127.0.0.1", int(port)))
+        where = f"{host or '127.0.0.1'}:{port}"
+    else:
+        Path(SOCK).parent.mkdir(parents=True, exist_ok=True)
+        if os.path.exists(SOCK):
+            os.unlink(SOCK)
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        old = os.umask(0o177)
+        try:
+            s.bind(SOCK)
+        finally:
+            os.umask(old)
+        # Local IPC socket; the 24-byte token is the actual authenticator, so allow the mounted
+        # container uid to connect (perms are not the control here — the token is).
+        os.chmod(SOCK, 0o666)
+        where = SOCK
     s.listen(4)
-    print(f"Mimir sandbox daemon on {SOCK} (token len={len(TOKEN)})")
+    print(f"Mimir sandbox daemon on {where} (token len={len(TOKEN)})")
     broker = _broker()
     while True:
         conn, _ = s.accept()

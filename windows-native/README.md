@@ -20,9 +20,15 @@ the machine** — by running everything as normal Windows processes:
 Everything binds to **127.0.0.1 only**. Model management stays an *operator* control surface (loopback +
 token), never a model capability — the agent still cannot switch the model or stop the stack.
 
-> **What is NOT on Windows:** the Firecracker microVM sandbox and the hardened container trust-zones are
-> Linux-only (as the main README already states). Self-improvement and Zone-W coding are therefore off on
-> Windows. Chat, model management, goals/plan, and document RAG work.
+**What runs natively (no WSL):** chat, model management, goals/plan, **document RAG** (docproc runs
+natively — see below), and **web research / thesis** (webfetch runs natively; `academic_search` uses
+OpenAlex directly; general `web_search` is best-effort unless you point `MIMIR_SEARXNG_URL` at a SearXNG
+instance).
+
+**Self-improvement + Zone-W coding** run untrusted model-written code, which Mimir contains only with a
+Firecracker microVM (Linux + KVM). Rather than weaken that on Windows, they are available as an **optional
+WSL2 mode** that runs the *real* sandbox code — see **[WSL_SANDBOX.md](WSL_SANDBOX.md)**. Without it, those
+two features report "nicht verfügbar" and everything else works.
 
 ## Files
 

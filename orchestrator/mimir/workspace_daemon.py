@@ -215,19 +215,30 @@ def _readframe(conn, limit=16 * 1024 * 1024) -> bytes:
 
 
 def serve() -> None:
-    Path(SOCK).parent.mkdir(parents=True, exist_ok=True)
-    if os.path.exists(SOCK):
-        os.unlink(SOCK)
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    old = os.umask(0o177)
-    try:
-        s.bind(SOCK)
-    finally:
-        os.umask(old)
-    os.chmod(SOCK, 0o666)                            # local IPC; the token is the real authenticator
+    # MIMIR_WORKSPACE_ADDR ("host:port") binds TCP loopback for the optional WSL2 coding mode reached
+    # from the native Windows client; unset = the Linux Unix socket, unchanged. Token authenticates.
+    addr = os.environ.get("MIMIR_WORKSPACE_ADDR", "")
+    if addr:
+        host, _, port = addr.rpartition(":")
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((host or "127.0.0.1", int(port)))
+        where = f"{host or '127.0.0.1'}:{port}"
+    else:
+        Path(SOCK).parent.mkdir(parents=True, exist_ok=True)
+        if os.path.exists(SOCK):
+            os.unlink(SOCK)
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        old = os.umask(0o177)
+        try:
+            s.bind(SOCK)
+        finally:
+            os.umask(old)
+        os.chmod(SOCK, 0o666)                        # local IPC; the token is the real authenticator
+        where = SOCK
     s.listen(8)
     threading.Thread(target=_reaper, daemon=True).start()
-    print(f"Mimir workspace daemon on {SOCK} (token len={len(TOKEN)}, source={SOURCE_ROOT})", flush=True)
+    print(f"Mimir workspace daemon on {where} (token len={len(TOKEN)}, source={SOURCE_ROOT})", flush=True)
 
     def handle(conn):
         with conn:

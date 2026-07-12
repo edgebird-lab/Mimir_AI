@@ -183,11 +183,18 @@ def _run_skill_in_sandbox(args: dict[str, Any]) -> Any:
     no network/secrets/host and every outward effect the skill attempts is re-brokered with policy
     + HITL. Talks to the host sandbox daemon over its bind-mounted Unix socket.
     """
-    sock = os.environ.get("MIMIR_SANDBOX_SOCK_CLIENT", "/run/mimir/sandbox.sock")
     token = os.environ.get("MIMIR_SANDBOX_TOKEN", "")
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.settimeout(90)
-    s.connect(sock)
+    addr = os.environ.get("MIMIR_SANDBOX_ADDR", "")           # "host:port" → native TCP daemon (Windows)
+    if addr:
+        host, _, port = addr.rpartition(":")
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(130)
+        s.connect((host or "127.0.0.1", int(port)))
+    else:
+        sock = os.environ.get("MIMIR_SANDBOX_SOCK_CLIENT", "/run/mimir/sandbox.sock")
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.settimeout(90)
+        s.connect(sock)
     s.sendall(json.dumps({"token": token, "skill_code": str(unwrap(args["code"])),
                           "input": args.get("input")}).encode() + b"\n")
     buf = b""
