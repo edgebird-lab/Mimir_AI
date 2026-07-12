@@ -350,8 +350,28 @@ def stop(_req: dict) -> dict:
                     pass
     except Exception:  # noqa: BLE001
         pass
-    threading.Timer(1.5, lambda: os._exit(0)).start()   # let the RPC reply flush, then exit the supervisor
+    threading.Timer(1.5, _teardown_and_exit).start()     # let the RPC reply flush, then tear down + exit
     return {"ok": True, "note": "Mimir wird beendet — GPU-Speicher wird freigegeben.", "stopped": killed}
+
+
+def _teardown_and_exit() -> None:
+    """Also stop the optional WSL2 jail distro so its VM memory is released too (the whole point of
+    'Beenden' is that nothing keeps holding RAM). If no OTHER distro is left running, shut the WSL2 VM
+    down entirely — WSL does not return the VM's memory to Windows on a plain --terminate."""
+    distro = os.environ.get("MIMIR_WSL_DISTRO")
+    if distro and os.name == "nt":
+        try:
+            subprocess.run(["wsl.exe", "--terminate", distro], capture_output=True,
+                           creationflags=CREATE_NO_WINDOW, timeout=30)
+            r = subprocess.run(["wsl.exe", "-l", "--running", "-q"], capture_output=True,
+                               creationflags=CREATE_NO_WINDOW, timeout=15)
+            still = r.stdout.decode("utf-16-le", "ignore").replace("\x00", "").strip()
+            if not still:                                # our distro was the only one running
+                subprocess.run(["wsl.exe", "--shutdown"], capture_output=True,
+                               creationflags=CREATE_NO_WINDOW, timeout=30)
+        except Exception:  # noqa: BLE001 — never block shutdown on the WSL teardown
+            pass
+    os._exit(0)
 
 
 def start(_req: dict) -> dict:
