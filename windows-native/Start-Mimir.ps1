@@ -24,8 +24,9 @@ $pids = @{}
 
 # ---- optional: launch the WSL2 jail daemons (self-improvement + coding) if configured ----
 if ($env:MIMIR_SANDBOX_ADDR -and (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
-    Write-Say "starting WSL2 sandbox daemons (advanced features) ..."
-    Start-Process wsl.exe -ArgumentList @("-d","Ubuntu","-u","root","--","bash","-lc","~/Mimir/start-daemons.sh") -WindowStyle Hidden
+    $distro = if ($env:MIMIR_WSL_DISTRO) { $env:MIMIR_WSL_DISTRO } else { "Mimir" }
+    Write-Say "starting WSL2 sandbox daemons in distro '$distro' (advanced features) ..."
+    Start-Process wsl.exe -ArgumentList @("-d",$distro,"-u","root","--","bash","-lc","/root/Mimir/start-daemons.sh") -WindowStyle Hidden
 }
 
 # ---- 1. Redis (loopback, in-memory) ----------------------------------------

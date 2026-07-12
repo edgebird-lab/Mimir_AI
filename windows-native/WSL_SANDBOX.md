@@ -58,9 +58,20 @@ The native web UI/worker now route `run_skill_in_sandbox` and the Zone-W coding 
 jails automatically (the clients pick TCP when these are set). Without them, the two features simply
 report "nicht verfügbar" and everything else keeps working natively.
 
-## Status
+## Automatic setup (recommended)
 
-The TCP transport for both daemons/clients is implemented and Linux behaviour is unchanged (the Unix
-socket is still the default). Building the Firecracker guest images and confirming `/dev/kvm` works in
-WSL2 is environment-specific and must be validated on your machine; if `/dev/kvm` is missing, enable
-nested virtualization for WSL2 first.
+You do not need to run the steps above by hand. Tick **"Erweiterte Features"** in the installer, or run
+**Start menu -> "Mimir: Erweiterte Features einrichten"** (`Setup-WSLSandbox.ps1`). It creates a
+**dedicated, isolated WSL2 distro `Mimir`** via `wsl --import` (your existing distros and their data are
+**never** touched), enables systemd (so `/dev/kvm` + Docker come up), provisions the real sandbox, and
+writes `MIMIR_SANDBOX_ADDR` / `MIMIR_WORKSPACE_ADDR` into your `.env`. The daemons then start with
+"Mimir starten".
+
+## Status - VALIDATED
+
+This path has been validated end-to-end on WSL2 (Ubuntu 24.04, WSL 2.6, KVM via nested virtualization):
+a native Windows process reached the WSL sandbox daemon over `127.0.0.1:8100` (localhost forwarding), a
+Firecracker microVM booted, ran a skill, and returned the result. Firecracker `v1.16.1` + guest kernel
+`vmlinux-5.10.223` are used. Linux behaviour is unchanged (the Unix socket stays the default). If
+`/dev/kvm` is missing on your machine, enable WSL2 nested virtualization (Windows 11 + capable CPU) and
+`wsl --shutdown`, then re-run the setup.
