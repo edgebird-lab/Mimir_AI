@@ -44,6 +44,17 @@ if (-not $redisServer) {
     Write-Say "Redis installed ($RedisVer)"
 } else { Write-Say "Redis already present" }
 
+# ---- 2b. pandoc (docproc import/export: docx/html/epub/odt ...) ------------
+$pandocExe = Get-ChildItem -Path $MimirBinPandoc -Filter "pandoc.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $pandocExe) {
+    New-Item -ItemType Directory -Force -Path $MimirBinPandoc | Out-Null
+    $zip = Join-Path $env:TEMP "pandoc-win.zip"
+    Get-File "https://github.com/jgm/pandoc/releases/download/$PandocVer/pandoc-$PandocVer-windows-x86_64.zip" $zip
+    Expand-Archive -Force $zip $MimirBinPandoc
+    Remove-Item -Force $zip -ErrorAction SilentlyContinue
+    Write-Say "pandoc installed ($PandocVer)"
+} else { Write-Say "pandoc already present" }
+
 # ---- 3. tokens + .env ------------------------------------------------------
 Initialize-MimirEnvFile
 Write-Say ".env ready (secret tokens generated)"

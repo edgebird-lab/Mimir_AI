@@ -21,8 +21,9 @@ $ErrorActionPreference = "Stop"
 $script:MimirRoot     = Split-Path -Parent $PSScriptRoot
 $script:MimirWin      = $PSScriptRoot
 $script:MimirOrch     = Join-Path $MimirRoot "orchestrator"
-$script:MimirBinLlama = Join-Path $MimirRoot "bin\llama"
-$script:MimirBinRedis = Join-Path $MimirRoot "bin\redis"
+$script:MimirBinLlama  = Join-Path $MimirRoot "bin\llama"
+$script:MimirBinRedis  = Join-Path $MimirRoot "bin\redis"
+$script:MimirBinPandoc = Join-Path $MimirRoot "bin\pandoc"
 $script:MimirModels   = Join-Path $MimirRoot "models"
 $script:MimirData     = Join-Path $MimirRoot "data"
 $script:MimirState    = Join-Path $MimirData "state"
@@ -36,10 +37,13 @@ $script:MimirInferPort   = 8080
 $script:MimirEmbedPort   = 8090
 $script:MimirControlPort = 8099
 $script:MimirRedisPort   = 6379
+$script:MimirDocprocPort = 8091
+$script:MimirWebfetchPort= 8093
 
 # Pinned upstream artifacts (override via env for updates).
 $script:LlamaCppTag = if ($env:MIMIR_LLAMACPP_TAG) { $env:MIMIR_LLAMACPP_TAG } else { "b9977" }
 $script:RedisVer    = if ($env:MIMIR_REDIS_VER)    { $env:MIMIR_REDIS_VER }    else { "8.8.0" }
+$script:PandocVer   = if ($env:MIMIR_PANDOC_VER)   { $env:MIMIR_PANDOC_VER }   else { "3.5" }
 $script:EmbedRepo   = "nomic-ai/nomic-embed-text-v1.5-GGUF"
 $script:EmbedFile   = "nomic-embed-text-v1.5.Q5_K_M.gguf"
 
@@ -139,6 +143,22 @@ function Set-MimirProcessEnv {
     $env:MIMIR_WEB_BIND    = "127.0.0.1"             # loopback ONLY
     $env:MIMIR_WEB_PORT    = "$MimirWebPort"
     $env:MIMIR_WEB_ORIGINS = "http://127.0.0.1:$MimirWebPort,http://localhost:$MimirWebPort"
+
+    # Native document + web services (replace the Linux docproc/webfetch/searxng containers).
+    $env:MIMIR_DOCPROC_URL  = "http://127.0.0.1:$MimirDocprocPort"
+    $env:MIMIR_WEBFETCH_URL = "http://127.0.0.1:$MimirWebfetchPort"
+    $env:MIMIR_SEARXNG_URL  = "http://127.0.0.1:8095"          # not run on Windows; fallback below
+    $env:MIMIR_SEARCH_FALLBACK_WEBFETCH = "1"                  # route web_search via webfetch (DuckDuckGo)
+    $env:MIMIR_DOC_PORT     = "$MimirDocprocPort"
+    $env:MIMIR_WEBFETCH_PORT= "$MimirWebfetchPort"
+    $env:MIMIR_CSL_DIR      = (Join-Path $MimirRoot "csl")   # citation styles for thesis/notes export
+    # No egress proxy on the native build: services reach the internet directly (webfetch keeps its own
+    # SSRF + payment/bank denylist guards). Ensure no stale proxy var forces traffic through a dead proxy.
+    Remove-Item Env:HTTP_PROXY  -ErrorAction SilentlyContinue
+    Remove-Item Env:HTTPS_PROXY -ErrorAction SilentlyContinue
+
+    # Make bundled pandoc.exe (docproc import/export) discoverable to child processes.
+    if (Test-Path $MimirBinPandoc) { $env:PATH = "$MimirBinPandoc;$env:PATH" }
 }
 
 function Wait-MimirPort([int]$Port,[int]$TimeoutSec = 180) {

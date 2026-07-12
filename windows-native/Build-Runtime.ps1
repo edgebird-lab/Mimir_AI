@@ -41,6 +41,12 @@ Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile $getpip -UseBa
 & $py $getpip --no-warn-script-location
 & $py -m pip install --no-warn-script-location --no-cache-dir -r $req
 if ($LASTEXITCODE -ne 0) { throw "pip install of requirements failed" }
+# Extra native-Windows deps (docproc document parsers for RAG/import).
+$reqWin = Join-Path $PSScriptRoot "requirements-win.txt"
+if (Test-Path $reqWin) {
+    & $py -m pip install --no-warn-script-location --no-cache-dir -r $reqWin
+    if ($LASTEXITCODE -ne 0) { throw "pip install of requirements-win failed" }
+}
 
 # 4) smoke-test that the key imports resolve in the bundled runtime
 & $py -c "import starlette, uvicorn, httpx, redis, cryptography, yaml; print('runtime OK', __import__('sys').version.split()[0])"

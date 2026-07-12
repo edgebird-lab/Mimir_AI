@@ -93,9 +93,27 @@ def webfetch(url: str) -> dict:
     return r.json()
 
 
-def web_search(query: str, k: int = 8) -> list[dict]:
-    """Broad meta-search via the self-hosted SearXNG container (returns title/url/snippet)."""
+def _web_search_fallback(query: str, k: int) -> list[dict]:
+    """No-SearXNG path (native Windows): the isolated webfetch service also exposes a /search
+    (DuckDuckGo HTML). Same title/url/snippet shape, so callers don't care which backend answered."""
     import httpx
+    headers = {"Authorization": f"Bearer {WEBFETCH_TOKEN}"} if WEBFETCH_TOKEN else {}
+    r = httpx.post(f"{WEBFETCH_URL}/search", json={"query": query, "k": k}, headers=headers, timeout=40)
+    r.raise_for_status()
+    return r.json().get("results", [])[:max(1, min(int(k), 20))]
+
+
+def web_search(query: str, k: int = 8) -> list[dict]:
+    """Broad meta-search via the self-hosted SearXNG container (returns title/url/snippet).
+
+    On the native Windows build SearXNG is not run; MIMIR_SEARCH_FALLBACK_WEBFETCH=1 routes search to
+    the webfetch service instead. Linux behaviour is unchanged (the flag is unset there)."""
+    import httpx
+    if os.environ.get("MIMIR_SEARCH_FALLBACK_WEBFETCH") == "1":
+        try:
+            return _web_search_fallback(query, k)
+        except Exception:  # noqa: BLE001 — fall through to SearXNG if webfetch is unreachable
+            pass
     r = httpx.get(f"{SEARXNG_URL}/search", params={"q": query, "format": "json"},
                   timeout=40, headers={"User-Agent": "Mimir"})
     r.raise_for_status()

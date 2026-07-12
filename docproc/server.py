@@ -93,7 +93,7 @@ def _extract_pptx(p: Path) -> list[dict]:
 
 
 def _extract_text(p: Path) -> list[dict]:
-    raw = p.read_text(errors="replace")[:MAX_TEXT]
+    raw = p.read_text(encoding="utf-8-sig", errors="replace")[:MAX_TEXT]   # utf-8 + strip BOM (Windows-safe)
     return [{"n": i + 1, "text": b} for i, b in enumerate(_blocks(raw))]
 
 

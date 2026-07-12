@@ -45,6 +45,17 @@ $p = Start-MimirHidden $py @((Join-Path $MimirWin "mimir_win.py"), "serve") "sup
 $pids["supervisor"] = $p.Id
 if (-not (Wait-MimirPort $MimirControlPort 30)) { Write-Warn "control daemon slow to bind - continuing" }
 
+# ---- 2b. Document + web services (native docproc + webfetch) ---------------
+# docproc extracts uploaded PDFs/DOCX/PPTX for RAG (via pandoc + python parsers); webfetch does
+# SSRF-guarded web fetch AND search (DuckDuckGo) so web_search works without a SearXNG container.
+$runsvc = Join-Path $MimirWin "run_service.py"
+Write-Say "starting docproc (document extraction) ..."
+$p = Start-MimirHidden $py @($runsvc, (Join-Path $MimirRoot "docproc"), "server:app", "$MimirDocprocPort") "docproc"
+$pids["docproc"] = $p.Id
+Write-Say "starting webfetch (web fetch + search) ..."
+$p = Start-MimirHidden $py @($runsvc, (Join-Path $MimirRoot "webfetch"), "server:app", "$MimirWebfetchPort") "webfetch"
+$pids["webfetch"] = $p.Id
+
 # ---- 3. Worker (run executor) ----------------------------------------------
 # Launched via mimir_boot.py so the orchestrator package is importable under the embeddable Python
 # (which ignores PYTHONPATH); a normal Python/venv works the same way.

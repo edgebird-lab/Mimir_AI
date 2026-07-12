@@ -23,6 +23,17 @@ import tempfile
 MAX_TEXT = int(os.environ.get("MIMIR_DOC_MAX_TEXT", str(4 * 1024 * 1024)))
 PSEUDO_PAGE = 2000
 
+# Scratch dir for pandoc/weasyprint. In the Linux container this is the /tmp tmpfs; on the native
+# Windows build there is no /tmp, so fall back to the platform temp dir (cross-platform, same behaviour).
+_TMP = "/tmp" if os.path.isdir("/tmp") else tempfile.gettempdir()
+
+
+def _has_weasyprint() -> bool:
+    """PDF export uses pandoc's --pdf-engine=weasyprint; the Windows build ships without the GTK stack
+    weasyprint needs, so PDF is unavailable there while docx/html/odt/epub still work via pandoc."""
+    import shutil
+    return shutil.which("weasyprint") is not None
+
 # Reader map: extension -> pandoc source format. PDF/PPTX are NOT here (pandoc can't read them) —
 # they go through the dedicated python extractors below and are assembled into Markdown.
 PANDOC_READ = {
@@ -38,7 +49,7 @@ IMPORT_OK = set(PANDOC_READ) | NATIVE_READ
 # Export targets (md -> X). weasyprint renders pdf; everything else is pandoc-native (no LibreOffice).
 EXPORT_FORMATS = {"docx", "pdf", "html", "odt", "epub", "pptx", "rst", "gfm", "plain", "latex"}
 
-_TMPENV = {**os.environ, "TMPDIR": "/tmp", "HOME": "/tmp"}
+_TMPENV = {**os.environ, "TMPDIR": _TMP, "HOME": _TMP}
 
 
 def _reader_fmt(fmt: str) -> str:
@@ -107,7 +118,7 @@ def to_markdown(path: str, ext: str) -> dict:
         src = _reader_fmt(PANDOC_READ[ext])
         p = subprocess.run(
             ["pandoc", "-f", src, "-t", "gfm", "--wrap=none", path],
-            capture_output=True, timeout=180, cwd="/tmp", env=_TMPENV)
+            capture_output=True, timeout=180, cwd=_TMP, env=_TMPENV)
         if p.returncode != 0:
             raise RuntimeError("pandoc import: " + p.stderr.decode("utf-8", "replace")[:300])
         md = p.stdout.decode("utf-8", "replace")[:MAX_TEXT]
@@ -124,7 +135,10 @@ def from_markdown(content: str, to: str, bibliography=None, csl: str = "apa",
     if to not in EXPORT_FORMATS:
         raise ValueError(f"unsupported target {to}")
     content = content[:MAX_TEXT]
-    outp = tempfile.mktemp(suffix=f".{to}", dir="/tmp")
+    if to == "pdf" and not _has_weasyprint():
+        raise ValueError("pdf export not available on this platform (needs weasyprint/GTK) - "
+                         "export to docx/html/odt/epub instead")
+    outp = tempfile.mktemp(suffix=f".{to}", dir=_TMP)
     cmd = ["pandoc", "--metadata", "title=Dokument", "--metadata", "lang=de-DE",
            "-f", "markdown-raw_html-raw_tex+tex_math_dollars", "-t", to,
            "--toc", "--toc-depth=3", "-o", outp]
@@ -133,9 +147,9 @@ def from_markdown(content: str, to: str, bibliography=None, csl: str = "apa",
         if math_filter:
             cmd += ["--filter", math_filter]
     if bibliography:
-        csl_path = f"/app/csl/{os.path.basename(csl)}.csl"
+        csl_path = os.path.join(os.environ.get("MIMIR_CSL_DIR", "/app/csl"), f"{os.path.basename(csl)}.csl")
         if os.path.exists(csl_path):
-            bibp = tempfile.mktemp(suffix=".json", dir="/tmp")
+            bibp = tempfile.mktemp(suffix=".json", dir=_TMP)
             with open(bibp, "w") as bf:
                 json.dump(bibliography, bf)
             cmd += ["--citeproc", "--bibliography=" + bibp, "--csl=" + csl_path]
