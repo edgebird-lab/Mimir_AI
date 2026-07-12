@@ -1,0 +1,30 @@
+# Egress allowlist for http_get_allowlist + academic_search (one host per line, subdomains included).
+# The PROXY holds this list (hostname regex) and the EgressPolicy re-checks host + resolves-then-blocks
+# private/metadata IPs (SSRF). Payment/bank/crypto hosts in payment-denylist.txt are ALWAYS refused.
+# Broad web pages are fetched by the isolated `webfetch` container, NOT through this list.
+#
+# --- Curated academic APIs (credible, citeable sources for thesis research) ---
+openalex.org
+api.openalex.org
+crossref.org
+api.crossref.org
+doi.org
+datacite.org
+api.datacite.org
+arxiv.org
+export.arxiv.org
+semanticscholar.org
+api.semanticscholar.org
+ncbi.nlm.nih.gov
+eutils.ncbi.nlm.nih.gov
+europepmc.org
+ebi.ac.uk
+unpaywall.org
+api.unpaywall.org
+core.ac.uk
+api.core.ac.uk
+doaj.org
+# --- Reference knowledge ---
+wikipedia.org
+en.wikipedia.org
+de.wikipedia.org

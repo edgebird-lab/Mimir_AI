@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Mimir starten
+Name[de]=Mimir starten
+Comment=Startet den lokalen Mimir-KI-Stack und öffnet die Oberfläche
+Comment[de]=Startet den lokalen Mimir-KI-Stack und öffnet die Oberfläche
+Exec=/home/linx-rob/Mimir/scripts/mimir-start.sh
+Icon=/home/linx-rob/Mimir/assets/mimir-start.svg
+Terminal=false
+Categories=Development;Utility;
+Keywords=mimir;ki;ai;agent;start;
+StartupNotify=true

@@ -1,0 +1,8 @@
+# Recipient allowlist for email_send_allowlist (one address or @domain per line).
+# email_send is SEND-ONLY (no inbox read in the same channel) and every send still hits HITL.
+# This closes the "email-as-payment-rail" vector: an authorize-a-wire email to a new recipient is
+# blocked here and routed to human confirm. Empty file == no outbound email possible.
+#
+# e.g.:
+# you@example.com
+# @your-team-domain.example

@@ -1,0 +1,23 @@
+[Unit]
+Description=Mimir Zone S sandbox daemon (ephemeral skill microVMs for run_skill_in_sandbox / self-teach)
+Documentation=file:/home/linx-rob/Mimir/sandbox/README.md
+After=network.target
+
+[Service]
+Type=simple
+User=linx-rob
+Group=kvm
+WorkingDirectory=/home/linx-rob/Mimir/orchestrator
+EnvironmentFile=-/home/linx-rob/Mimir/.env
+Environment=MIMIR_SANDBOX_SOCK=/srv/mimir/run/sandbox.sock
+Environment=MIMIR_FC_DIR=/home/linx-rob/Mimir/sandbox/fc
+Environment=MIMIR_POLICY=/home/linx-rob/Mimir/config/policy.yaml
+Environment=MIMIR_AUDIT=/srv/mimir/audit.jsonl
+ExecStartPre=/bin/mkdir -p /srv/mimir/run
+ExecStart=/usr/bin/python3 -m mimir.sandbox_daemon
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

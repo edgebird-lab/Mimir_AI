@@ -1,0 +1,19 @@
+Mimir coding engine
+====================
+
+The file `editblock.py` in this package contains code adapted from Aider
+(https://github.com/aider-ai/aider), specifically the module-level, I/O-free functions of
+`aider/coders/editblock_coder.py` (SEARCH/REPLACE block parsing and fault-tolerant application).
+
+Aider is licensed under the Apache License, Version 2.0.
+Copyright (c) Aider AI and contributors.
+
+Modifications for Mimir:
+  * Removed all `aider.*` imports (utils, dump, base_coder, editblock_prompts); none were used by the
+    vendored functions.
+  * `do_replace()` no longer performs filesystem I/O (the original `Path.touch()` for new files was
+    removed) — it is now a pure string→string transform. File reads/writes happen only through Mimir's
+    broker primitives (project_read_scoped / project_write_out).
+  * Added `apply_edit()`, a pure convenience wrapper.
+
+A copy of the Apache-2.0 license is available at https://www.apache.org/licenses/LICENSE-2.0

@@ -1,0 +1,25 @@
+# AUTO-GENERATED from config/egress-allowlist.txt — do not edit by hand.
+# FilterDefaultDeny Yes => each line is an ALLOWED host. Empty == zero egress.
+(^|\.)openalex\.org$
+(^|\.)api\.openalex\.org$
+(^|\.)crossref\.org$
+(^|\.)api\.crossref\.org$
+(^|\.)doi\.org$
+(^|\.)datacite\.org$
+(^|\.)api\.datacite\.org$
+(^|\.)arxiv\.org$
+(^|\.)export\.arxiv\.org$
+(^|\.)semanticscholar\.org$
+(^|\.)api\.semanticscholar\.org$
+(^|\.)ncbi\.nlm\.nih\.gov$
+(^|\.)eutils\.ncbi\.nlm\.nih\.gov$
+(^|\.)europepmc\.org$
+(^|\.)ebi\.ac\.uk$
+(^|\.)unpaywall\.org$
+(^|\.)api\.unpaywall\.org$
+(^|\.)core\.ac\.uk$
+(^|\.)api\.core\.ac\.uk$
+(^|\.)doaj\.org$
+(^|\.)wikipedia\.org$
+(^|\.)en\.wikipedia\.org$
+(^|\.)de\.wikipedia\.org$

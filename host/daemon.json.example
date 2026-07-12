@@ -1,0 +1,10 @@
+{
+  "//": "userns-remap is DELIBERATELY OMITTED: empirically it breaks the AMD GPU passthrough on",
+  "//2": "this host (the render group 992 gets remapped to a subgid that no longer owns",
+  "//3": "/dev/dri/renderD128). Isolation is instead provided by non-root uid 10001 + cap_drop ALL",
+  "//4": "+ no-new-privileges + read-only rootfs + seccomp default + internal network.",
+  "no-new-privileges": true,
+  "live-restore": true,
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" }
+}

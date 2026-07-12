@@ -1,0 +1,307 @@
+# Mimir — trust-zone topology.
+#
+# NOTE: userns-remap is a DAEMON-level setting (host/daemon.json) — see host/README.md.
+# Zone S (skill sandbox) is a Firecracker microVM launched BY the orchestrator, NOT a compose
+# service (a normal container is not a security boundary for untrusted code). See sandbox/.
+#
+# Milestone A ships the `inference` service below. `orchestrator` is scaffolded and wired but
+# its image is built in Milestone B.
+
+name: mimir
+
+services:
+  # ---------------- Zone A: GPU inference (Vulkan, no /dev/kfd, no untrusted code) -----------
+  inference:
+    build:
+      context: .
+      dockerfile: inference/Dockerfile
+      args:
+        LLAMACPP_REF: ${LLAMACPP_REF:-master}   # pin to a released tag (>= b8146) before prod
+        BUILD_JOBS: ${BUILD_JOBS:-4}            # Vulkan shader compile is RAM-heavy; bound parallelism
+    image: mimir/inference:local
+    restart: unless-stopped
+    user: "10001:992"                            # non-root; GID 992 == host "render"
+    group_add: ["992"]
+    devices:
+      - "/dev/dri/renderD128:/dev/dri/renderD128"  # this GPU's render node
+      - "/dev/dri/card1:/dev/dri/card1"            # primary node on THIS host is card1; NO /dev/kfd
+    cap_drop: ["ALL"]
+    security_opt:
+      - "no-new-privileges:true"
+      - "apparmor=docker-default"                  # seccomp stays on the Docker default
+    read_only: true
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,size=512m"          # holds Mesa shader cache
+    volumes:
+      - "mimir_models:/models:ro"                 # weights read-only; nothing else mounted
+    environment:
+      MIMIR_MODEL: "/models/${MIMIR_MODEL_FILE:-Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf}"
+      MIMIR_CTX: "${MIMIR_CTX:-32768}"
+      MESA_SHADER_CACHE_DIR: "/tmp/mesa-cache"
+    pids_limit: 512
+    mem_limit: "12g"
+    memswap_limit: "12g"                           # == mem_limit disables swap
+    cpus: 8
+    networks: ["internal"]
+    # No host port: Zone A is reached only via the internal net (webui / orchestrator sidecars).
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo ok >&3"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+
+  # ---------------- Zone B: orchestrator / control-plane -------------------------------------
+  # Run a task on-demand:
+  #   sudo docker compose run --rm orchestrator --task "read hello.txt and summarize it"
+  # (The persistent Unix-socket gateway with Origin==Host + session tokens is the next hardening
+  #  step; until then the service is driven via `run`.)
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    image: mimir/orchestrator:local
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - "no-new-privileges:true"
+      - "apparmor=docker-default"
+    read_only: true
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,size=64m"
+    volumes:
+      - "./project:/project:ro"                    # scoped, secret-free project data (read-only)
+      - "./project/out:/project/out:rw"            # the ONE writable subdir (project_write_out target)
+      - "mimir_state:/state"                      # memory + audit log (single writable vol)
+      - "/srv/mimir/run:/run/mimir"              # host sandbox-daemon socket (Zone S bridge)
+    pids_limit: 256
+    mem_limit: "2g"
+    environment:
+      HTTP_PROXY: "http://proxy:8888"              # the ONLY way out; default-deny allowlist
+      HTTPS_PROXY: "http://proxy:8888"
+      NO_PROXY: "inference,embed,localhost,127.0.0.1"   # reach Zone A + embedder directly
+      MIMIR_EMBED_URL: "http://embed:8090"
+      MIMIR_DOCPROC_URL: "http://docproc:8091"
+      MIMIR_DOCPROC_TOKEN: "${MIMIR_DOCPROC_TOKEN:-}"
+      MIMIR_SANDBOX_SOCK_CLIENT: "/run/mimir/sandbox.sock"
+      MIMIR_SANDBOX_TOKEN: "${MIMIR_SANDBOX_TOKEN:-}"
+      MIMIR_WORKSPACE_SOCK_CLIENT: "/run/mimir/workspace.sock"
+      MIMIR_WORKSPACE_TOKEN: "${MIMIR_WORKSPACE_TOKEN:-}"
+    networks: ["internal"]                         # internal-only; egress happens via the proxy
+    depends_on: ["inference", "proxy"]
+    # secrets: [email_creds]  # secrets ONLY here, as files under /run/secrets, never as env
+
+  # ---------------- Embedding service (CPU, semantic memory) ---------------------------------
+  # Reuses the llama.cpp image; serves nomic-embed on CPU (-ngl 0, no GPU device attached).
+  embed:
+    image: mimir/inference:local
+    entrypoint: ["llama-server", "-m", "/models/${MIMIR_EMBED_MODEL_FILE:-nomic-embed-text-v1.5.Q5_K_M.gguf}",
+                 "--embedding", "--pooling", "mean", "-ngl", "0",
+                 "--host", "0.0.0.0", "--port", "8090", "--ctx-size", "2048"]
+    user: "10001:992"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    volumes: ["mimir_models:/models:ro"]
+    networks: ["internal"]
+    mem_limit: "3g"
+    pids_limit: 256
+
+  # ---------------- Zone B: local web UI (loopback-only front door) --------------------------
+  # Reuses the orchestrator image; different entrypoint. Reach it at http://127.0.0.1:8082
+  webui:
+    image: mimir/orchestrator:local
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    entrypoint: ["python", "-m", "mimir.webserver"]
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    volumes:
+      - "./project:/project:ro"
+      - "./project/out:/project/out:rw"            # the ONE writable subdir (project_write_out target)
+      - "./project/in:/project/in:rw"              # upload inbox (uploaded scripts land here)
+      - "mimir_state:/state"                      # shares memory.db + audit.jsonl + gateway.token
+      - "/srv/mimir/run:/run/mimir"              # sandbox-daemon socket (for run_skill_in_sandbox)
+    environment:
+      HTTP_PROXY: "http://proxy:8888"
+      HTTPS_PROXY: "http://proxy:8888"
+      NO_PROXY: "inference,embed,docproc,localhost,127.0.0.1"
+      MIMIR_INFERENCE_URL: "http://inference:8080"
+      MIMIR_EMBED_URL: "http://embed:8090"
+      MIMIR_DOCPROC_URL: "http://docproc:8091"
+      MIMIR_DOCPROC_TOKEN: "${MIMIR_DOCPROC_TOKEN:-}"
+      MIMIR_WEB_BIND: "0.0.0.0"                    # inside the container only
+      MIMIR_WEB_PORT: "8082"
+      MIMIR_WEB_ORIGINS: "http://127.0.0.1:8082,http://localhost:8082"
+      MIMIR_SANDBOX_SOCK_CLIENT: "/run/mimir/sandbox.sock"
+      MIMIR_SANDBOX_TOKEN: "${MIMIR_SANDBOX_TOKEN:-}"
+      MIMIR_WORKSPACE_SOCK_CLIENT: "/run/mimir/workspace.sock"
+      MIMIR_WORKSPACE_TOKEN: "${MIMIR_WORKSPACE_TOKEN:-}"
+      MIMIR_CONTROL_SOCK_CLIENT: "/run/mimir/control.sock"   # host control daemon (model switch/stop)
+      MIMIR_CONTROL_TOKEN: "${MIMIR_CONTROL_TOKEN:-}"
+    ports:
+      - "127.0.0.1:8082:8082"                      # <-- loopback publish ONLY
+    networks: ["internal", "webnet"]               # webnet carries only the loopback publish
+    mem_limit: "512m"
+    pids_limit: 256
+    depends_on: ["inference", "proxy"]
+
+  # ---------------- Egress proxy: default-deny allowlist, the single path off-box ------------
+  proxy:
+    build:
+      context: .
+      dockerfile: proxy/Dockerfile
+    image: mimir/proxy:local
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs:
+      - "/var/run:rw,noexec,nosuid,size=4m"          # tinyproxy pid/socket
+      - "/var/log/tinyproxy:rw,noexec,nosuid,size=8m"
+      - "/tmp:rw,noexec,nosuid,size=8m"              # tinyproxy filter compilation scratch
+    pids_limit: 128
+    mem_limit: "128m"
+    networks: ["internal", "egress"]               # bridges internal (clients) to egress (internet)
+
+  # ---------------- SearXNG: self-hosted broad meta-search (JSON API for the agent) -----------
+  # Aggregates many engines (no per-engine bot-blocking like scraping DDG directly). Own egress,
+  # NO secrets, internal-net reachable. The agent queries ?format=json via the web_search primitive.
+  searxng:
+    image: searxng/searxng:latest
+    volumes:
+      - "./searxng/settings.yml:/etc/searxng/settings.yml:ro"
+    environment:
+      SEARXNG_BASE_URL: "http://searxng:8080/"
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "SETGID", "SETUID"]         # the image's entrypoint drops to the searxng user
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    networks: ["internal", "egress"]               # internal = reachable by worker; egress = internet
+    mem_limit: "512m"
+    pids_limit: 256
+
+  # ---------------- webfetch: isolated broad-web fetch + search (research egress, no secrets) --
+  # Internet-facing (own egress) but holds NO secrets and NO host mounts, so broad web fetching stays
+  # off the orchestrator. GET-only, SSRF-guarded, payment/bank denylisted, token-gated on internal net.
+  webfetch:
+    build:
+      context: .
+      dockerfile: webfetch/Dockerfile
+    image: mimir/webfetch:local
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+    environment:
+      MIMIR_WEBFETCH_TOKEN: "${MIMIR_WEBFETCH_TOKEN:-}"
+    networks: ["internal", "egress"]              # internal = reachable by worker; egress = internet
+    mem_limit: "512m"
+    pids_limit: 128
+
+  # ---------------- Redis: job queue + live event bus + control channel (Agentenzentrale) ----
+  # Internal-net only (no host port, no egress). Holds transient run coordination — NO secrets.
+  # SQLite (/state) remains the durable source of truth; Redis is the fast queue + wakeup bus.
+  redis:
+    image: redis:7-alpine
+    # run redis-server DIRECTLY (bypass the image entrypoint that tries to setpriv→redis user, which
+    # cap_drop+no-new-privileges forbids). Non-root, read-only rootfs, in-memory (tmpfs) — Redis holds
+    # only transient coordination; SQLite (/state) is the durable source of truth, so no volume needed.
+    entrypoint: ["redis-server", "--save", "", "--appendonly", "no", "--dir", "/tmp",
+                 "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=96m"]
+    networks: ["internal"]
+    mem_limit: "448m"
+    pids_limit: 128
+
+  # ---------------- worker: background run executor (consumes the Redis job queue) ------------
+  # Reuses the orchestrator image; runs the agent/coordinator OUT of the request path so runs keep
+  # going when the browser leaves, and several run in parallel. Same Zone-B trust level as webui.
+  worker:
+    image: mimir/orchestrator:local
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    entrypoint: ["python", "-m", "mimir.worker"]
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    volumes:
+      - "./project:/project:ro"
+      - "./project/out:/project/out:rw"
+      - "./project/in:/project/in:rw"
+      - "mimir_state:/state"
+      - "/srv/mimir/run:/run/mimir"
+    environment:
+      HTTP_PROXY: "http://proxy:8888"
+      HTTPS_PROXY: "http://proxy:8888"
+      NO_PROXY: "inference,embed,docproc,redis,webfetch,searxng,localhost,127.0.0.1"
+      MIMIR_INFERENCE_URL: "http://inference:8080"
+      MIMIR_EMBED_URL: "http://embed:8090"
+      MIMIR_DOCPROC_URL: "http://docproc:8091"
+      MIMIR_DOCPROC_TOKEN: "${MIMIR_DOCPROC_TOKEN:-}"
+      MIMIR_WEBFETCH_URL: "http://webfetch:8093"
+      MIMIR_WEBFETCH_TOKEN: "${MIMIR_WEBFETCH_TOKEN:-}"
+      MIMIR_SEARXNG_URL: "http://searxng:8080"
+      MIMIR_CONTACT_EMAIL: "${MIMIR_CONTACT_EMAIL:-}"
+      MIMIR_REDIS_URL: "redis://redis:6379/0"
+      MIMIR_SANDBOX_SOCK_CLIENT: "/run/mimir/sandbox.sock"
+      MIMIR_SANDBOX_TOKEN: "${MIMIR_SANDBOX_TOKEN:-}"
+      MIMIR_WORKSPACE_SOCK_CLIENT: "/run/mimir/workspace.sock"
+      MIMIR_WORKSPACE_TOKEN: "${MIMIR_WORKSPACE_TOKEN:-}"
+      MIMIR_WORKER_CONCURRENCY: "${MIMIR_WORKER_CONCURRENCY:-3}"
+    networks: ["internal"]
+    depends_on: ["inference", "proxy", "redis"]
+    mem_limit: "2g"
+    pids_limit: 512
+
+  # ---------------- docproc: isolated document → text extractor (no net, no secrets) ---------
+  # PDF/DOCX/PPTX parsers have an RCE history → they run HERE, away from every secret. Internal-net
+  # only (no egress, unreachable from the host), non-root, read-only rootfs, /project/in read-only.
+  docproc:
+    build:
+      context: .
+      dockerfile: docproc/Dockerfile
+    image: mimir/docproc:local
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true", "apparmor=docker-default"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    volumes:
+      - "./project/in:/project/in:ro"              # user-uploaded scripts/PDFs (read-only to parsers)
+      - "./project/out:/project/out:ro"            # generated docs — read-only, for in-app preview (/import)
+    environment:
+      MIMIR_DOCPROC_TOKEN: "${MIMIR_DOCPROC_TOKEN:-}"
+    networks: ["internal"]                         # NO proxy env → zero egress
+    mem_limit: "1g"
+    pids_limit: 128
+
+volumes:
+  mimir_models:
+    name: mimir_models      # exact name (no project prefix); holds the verified GGUF
+  mimir_state:
+    name: mimir_state
+
+networks:
+  internal:
+    driver: bridge
+    internal: true          # no gateway, no route off-box
+  egress:
+    driver: bridge          # only the egress proxy + orchestrator attach here (Milestone B)
+  webnet:
+    driver: bridge          # only carries the webui's 127.0.0.1:8082 loopback publish
+
+# secrets:
+#   email_creds:
+#     file: ./secrets/email_creds   # host-only, OUTSIDE any mount; delivered to /run/secrets

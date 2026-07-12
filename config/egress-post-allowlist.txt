@@ -1,0 +1,7 @@
+# OUTWARD POST allowlist for webhook_post_allowlist / post_social (SEPARATE from the GET allowlist).
+# DEFAULT EMPTY = zero outward POST (the safest default). Add ONLY hosts Mimir may POST to — typically
+# the LOCAL n8n webhook host — one per line. Every POST is still PINNED_ASK (operator approves each),
+# dry-run-previewed, and payment/bank/crypto hosts are denied unconditionally.
+# Example (uncomment + adapt to your n8n):
+# localhost
+# n8n.local

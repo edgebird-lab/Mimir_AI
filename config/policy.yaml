@@ -1,0 +1,95 @@
+# Mimir policy — the deterministic control plane. Loaded by the orchestrator/broker.
+# This file is IMMUTABLE to the agent (Zone B enforces tools.deny: [gateway]).
+
+# --- Tool primitives the broker exposes to skill code (default-deny; anything not here is refused) ---
+# Deliberately NO payment/checkout/bank/crypto primitive. NO shell/exec/eval. NO generic http_post.
+primitives:
+  allow:
+    - project_list            # list folders/files under /project (scoped, denylisted hidden)
+    - project_read_scoped     # read files under the scoped, secret-free /project mount only
+    - probe_artifact          # read-only size + magic-byte type sniff of a produced artifact (acceptance)
+    - project_write_out       # write only into the single /project/out subdir
+    - email_send_allowlist    # send-only, to email-allowlist recipients, with HITL
+    - http_get_allowlist      # GET only, to egress-allowlist hosts, via the proxy
+    - read_memory             # read tainted memory records (never as authority)
+    - write_memory            # write memory (two-stage gate; provenance stamped)
+    - run_skill_in_sandbox    # self-improvement: run agent-written code in an ephemeral microVM
+    - run_named_skill         # run a pinned, hash-verified library skill in the sandbox
+    - corpus_search           # retrieve relevant chunks (with page refs) from the user's uploaded docs
+    - corpus_list             # list documents in the corpus
+    - corpus_add              # index an uploaded file (under /project/in) into the corpus
+    - academic_search         # search OpenAlex for credible, citeable academic sources (via proxy)
+    - web_search              # broad web meta-search via the isolated webfetch container
+    - web_fetch               # fetch one web page's readable text via the isolated webfetch container
+    - workspace_export_patch  # Zone W merge-back: reviewed git diff → out/ only (never auto-applied), HITL
+    - workspace_export_media  # Zone W media merge-back: rendered media → out/media (magic-checked), HITL
+    - webhook_post_allowlist  # outward JSON POST to an allowlisted host (local n8n); critical → always HITL
+    - post_social             # social-post facade via n8n webhook; critical → always HITL, dry-run-previewed
+    - stage_skill_candidate   # stage a jail-tested learned skill for operator review+sign (inert until signed)
+  deny_always:                # never registrable, documented for auditors
+    - "*payment*"
+    - "*checkout*"
+    - "*shell*"
+    - "*exec*"
+    - "*eval*"
+    - "http_post*"
+    - "browser_submit_form"
+    - gateway                 # the agent may never touch its own config/auth/bind
+    - "*sign*"                # skill promotion is a HUMAN host-only step — no primitive may sign a registry
+    - "*promote*"             # the agent STAGES a learned skill; only the operator promotes+signs it
+    - "*register_skill*"      # the skill registry is human-owned; no primitive registers/enables a skill
+
+# --- Human-in-the-loop: any side-effecting primitive requires explicit approval of RESOLVED params ---
+hitl:
+  require_approval_for:
+    - email_send_allowlist
+    - project_write_out
+    - workspace_export_patch  # code leaving the jail is reviewed before it lands anywhere
+  show_resolved_params: true  # display post-taint values (recipient, url, path) at approval time
+
+# --- Critical actions: ALWAYS human-in-the-loop, at EVERY autonomy level (deny-by-default by name) ---
+# A side-effecting primitive whose NAME matches any glob here is ask-pinned in the broker, so a new
+# outward/irreversible/infra primitive can never be silently auto-approved (even at full autonomy). This
+# is unioned with the immutable policy.HARD_CRITICAL in code — both must drop a glob to un-pin it.
+critical_actions:
+  always_ask:
+    "*post*": "postet/veröffentlicht nach außen"
+    "*publish*": "veröffentlicht nach außen"
+    "*deploy*": "deployt oder verändert laufende Software"
+    "*schedule*": "richtet eine wiederkehrende/geplante Aktion ein"
+    "*cron*": "richtet einen zeitgesteuerten Job ein"
+    "*push*": "pusht/überträgt nach außen"
+    "*install*": "installiert Software/Abhängigkeiten"
+    "*upload*": "lädt Daten nach außen hoch"
+    "*webhook*": "löst einen externen Webhook aus"
+    "*trigger*": "löst eine externe Ausführung aus"
+    "*send*": "sendet nach außen"
+    "*credential*": "verwendet/verändert Zugangsdaten"
+    "*secret*": "verwendet/verändert ein Secret"
+    "*delete*": "löscht Daten (potenziell unumkehrbar)"
+    "*overwrite*": "überschreibt Daten (potenziell unumkehrbar)"
+
+# --- Taint / provenance ---
+taint:
+  # values derived from untrusted content or memory may NOT become these params without HITL
+  protected_params: [recipient, amount, url, path, host]
+  untrusted_sources: [web, email, tool_output, skill_prose, memory]
+
+# --- Self-improvement / skill promotion ---
+skills:
+  autonomous_execution: true       # user choice: run self-written code freely (only inside Zone S)
+  promotion_review_gate: false     # OPTIONAL hardening: set true to require PROPOSAL.md -> inspect -> apply
+  sign_and_hash_pin: true          # promoted skills are signed + hash-pinned; verify-on-load
+  reject_frontmatter:              # OpenClaw-style dangerous frontmatter, refused on ingest
+    - requires.env
+    - primaryEnv
+    - "command-dispatch: tool"
+    - "always: true"
+  external_registry: deny          # never auto-pull ClawHub / awesome-* skills
+
+# --- Watcher (out-of-band anomaly alerts; never the primary control) ---
+watcher:
+  alert_on:
+    - money_keywords            # buy, pay, wire, invoice, gift card, crypto, ...
+    - new_egress_destination
+    - secret_read_then_send

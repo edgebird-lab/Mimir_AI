@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "analyze-csv": {
+      "version": "1.0.0",
+      "description": "Column-level statistics profile of a CSV (types, nulls, min/max/mean/median/stddev, top values).",
+      "sha256": "0a9a24eda9b6443fdfeaa8ae32e6eeab7510e35ae233b26cb59d6b88145b921a"
+    },
+    "code-write-and-test": {
+      "version": "1.0.0",
+      "description": "Run agent-written code + assert tests in the ephemeral microVM; return pass/fail.",
+      "sha256": "2959e1c9cb3b3a7f0ca9ec3da25bf727922aa5d9d7f9d945aff68d4deff731d6"
+    },
+    "extract-structured-data": {
+      "version": "1.0.0",
+      "description": "Regex-extract emails/dates/amounts/urls/key:values into JSON (tainted).",
+      "sha256": "fe25d591f7b55cce28a927b033856e820f5715f2abe9764ae7073c29e8fee923"
+    },
+    "fetch-and-extract-url": {
+      "version": "1.0.0",
+      "description": "GET an allowlisted URL and extract readable text/links/title (tainted output).",
+      "sha256": "3f79c705a3d870001b455423aa74cd75aa7a7d9ca526b7d9d11d67b9f49f613f"
+    },
+    "remember-fact": {
+      "version": "1.0.0",
+      "description": "Dedupe-check then persist a fact to memory (provenance assigned by the control plane).",
+      "sha256": "4b1152827099ad460139f8dc85a92297a0b3c5787d6efdcc6b68bfd3b607e7ff"
+    },
+    "roman-to-int": {
+      "version": "1.0.0",
+      "description": "Wandle eine roemische Zahl (String in skill_input) in ihren Integer-Wert um und weise ihn result zu.",
+      "sha256": "20d5d35890744a95a4c0a785dbd85f888e815b8272a1e04bf78f88bf043f4d75"
+    },
+    "summarize-project-file": {
+      "version": "1.0.0",
+      "description": "Structured/extractive digest of a scoped project file (headings, keywords, TODOs).",
+      "sha256": "48b484a60fff8ae753d195fd06d2cdf26b37fb198fe84bc3e0fe015b5c2fbb33"
+    }
+  }
+}

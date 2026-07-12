@@ -1,0 +1,9 @@
+# Zone B runtime deps (pin exact versions before prod). Kept minimal to shrink attack surface.
+PyYAML>=6.0
+httpx>=0.27          # client to Zone A inference + egress-checked http_get
+starlette>=0.37      # web UI (loopback-only, token-gated)
+uvicorn[standard]>=0.30
+cryptography>=42     # ed25519 verify-on-load for the signed skill registry
+redis>=5             # Agentenzentrale: job queue + live event bus + control/approval channels
+# Planned (not yet imported): sqlite-vec for vector memory, pydantic for typed primitive schemas.
+# NOTE: no shell/subprocess helpers, no generic HTTP-POST client exposed to skills.

@@ -1,0 +1,25 @@
+[Unit]
+Description=Mimir control daemon (operator model-switch / download / stop bridge)
+Documentation=file:/home/linx-rob/Mimir/README.md
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=linx-rob
+# `docker` group → reach the native engine socket without sudo; the daemon runs docker compose + hf.
+Group=docker
+SupplementaryGroups=render video
+WorkingDirectory=/home/linx-rob/Mimir/orchestrator
+# .env provides MIMIR_CONTROL_TOKEN (must match the containers' ${MIMIR_CONTROL_TOKEN}).
+EnvironmentFile=-/home/linx-rob/Mimir/.env
+Environment=MIMIR_DIR=/home/linx-rob/Mimir
+Environment=MIMIR_CONTROL_SOCK=/srv/mimir/run/control.sock
+Environment=MIMIR_DOCKER_HOST=unix:///var/run/docker.sock
+ExecStartPre=/bin/mkdir -p /srv/mimir/run
+ExecStart=/usr/bin/python3 -m mimir.control_daemon
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

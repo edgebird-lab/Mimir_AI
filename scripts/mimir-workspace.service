@@ -1,0 +1,27 @@
+[Unit]
+Description=Mimir Zone W workspace daemon (isolated coding microVMs)
+Documentation=file:/home/linx-rob/Mimir/sandbox/ZONE_W.md
+After=network.target
+
+[Service]
+Type=simple
+User=linx-rob
+Group=kvm
+WorkingDirectory=/home/linx-rob/Mimir/orchestrator
+# .env provides MIMIR_WORKSPACE_TOKEN (must match the containers' ${MIMIR_WORKSPACE_TOKEN}).
+EnvironmentFile=-/home/linx-rob/Mimir/.env
+Environment=MIMIR_WS_SOURCE_ROOT=/home/linx-rob/Mimir/project
+Environment=MIMIR_WS_STATE=/srv/mimir/ws
+Environment=MIMIR_WORKSPACE_SOCK=/srv/mimir/run/workspace.sock
+Environment=MIMIR_FC_DIR=/home/linx-rob/Mimir/sandbox/fc
+ExecStartPre=/bin/mkdir -p /srv/mimir/ws /srv/mimir/run
+ExecStart=/usr/bin/python3 -m mimir.workspace_daemon
+Restart=on-failure
+RestartSec=3
+# Defense in depth (the real guarantee is the Firecracker jail, but keep the daemon itself modest):
+NoNewPrivileges=true
+ProtectHome=read-only
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

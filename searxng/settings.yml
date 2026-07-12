@@ -1,0 +1,32 @@
+# Minimal SearXNG config for Mimir broad web search (JSON API for the agent, HTML for humans).
+use_default_settings: true
+
+server:
+  secret_key: "mimir-searxng-8Kd2mVq7Rn4Lp9Xs3Tb6Yc1Zg5Hj0A"
+  bind_address: "0.0.0.0"
+  port: 8080
+  limiter: false            # no bot-limiter (needs valkey); this instance is internal-only anyway
+  image_proxy: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  formats:
+    - html
+    - json                  # <-- required so the agent can query ?format=json
+
+ui:
+  static_use_hash: true
+
+# Keep a lean, reliable engine set (avoid the ones that frequently rate-limit or need keys).
+engines:
+  - name: wikipedia
+    disabled: false
+  - name: duckduckgo
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: startpage
+    disabled: false
+  - name: bing
+    disabled: false

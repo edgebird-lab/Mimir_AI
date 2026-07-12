@@ -1,0 +1,12 @@
+#!/bin/sh
+# Guest PID 1 for the Firecracker skill sandbox. Minimal, no network, ephemeral.
+mount -t proc none /proc 2>/dev/null
+mount -t sysfs none /sys 2>/dev/null
+mount -t devtmpfs none /dev 2>/dev/null
+mount -t tmpfs -o size=128m,noexec,nosuid tmpfs /scratch 2>/dev/null
+# NO network is configured on purpose (there is also no NIC attached to the VM).
+# rootfs is read-only: keep all writes on the tmpfs, don't write .pyc to /.
+export PYTHONDONTWRITEBYTECODE=1 TMPDIR=/scratch HOME=/scratch
+/usr/local/bin/python3 /skill_runner.py 2>/dev/console
+# power off when the skill run finishes (ephemeral VM)
+echo o > /proc/sysrq-trigger

@@ -1,0 +1,40 @@
+name: Build Windows installer (.exe)
+
+# Produces MimirInstaller.exe from install.ps1 via PS2EXE on a Windows runner.
+# The artifact is attached to the workflow run, and to the GitHub Release when
+# you push a tag like v1.0.0. The .exe is UNSIGNED (no code-signing certificate),
+# so Windows SmartScreen will warn users — this is documented in README/INSTALL.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PS2EXE
+        shell: powershell
+        run: Install-Module ps2exe -Scope CurrentUser -Force -AllowClobber
+
+      - name: Build MimirInstaller.exe
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File windows/build-exe.ps1
+
+      - name: Upload as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MimirInstaller
+          path: MimirInstaller.exe
+
+      - name: Attach to release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MimirInstaller.exe

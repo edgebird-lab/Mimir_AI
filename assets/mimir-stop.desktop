@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Mimir beenden
+Name[de]=Mimir beenden
+Comment=Beendet den lokalen Mimir-KI-Stack und gibt GPU-VRAM frei
+Comment[de]=Beendet den lokalen Mimir-KI-Stack und gibt GPU-VRAM frei
+Exec=/home/linx-rob/Mimir/scripts/mimir-stop.sh
+Icon=/home/linx-rob/Mimir/assets/mimir-stop.svg
+Terminal=false
+Categories=Development;Utility;
+Keywords=mimir;ki;ai;agent;stop;beenden;
+StartupNotify=true

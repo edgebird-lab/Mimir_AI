@@ -1,0 +1,20 @@
+# Hard egress denylist — ALWAYS refused at the proxy, overriding any allowlist entry.
+# Belt-and-suspenders behind capability-absence (there is no payment primitive to begin with).
+# One host/domain fragment per line; matched against resolved host.
+paypal.com
+stripe.com
+checkout.stripe.com
+api.stripe.com
+buy.stripe.com
+braintreegateway.com
+squareup.com
+adyen.com
+klarna.com
+wise.com
+revolut.com
+coinbase.com
+binance.com
+kraken.com
+blockchain.com
+venmo.com
+cash.app

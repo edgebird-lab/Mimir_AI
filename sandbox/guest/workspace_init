@@ -1,0 +1,18 @@
+#!/bin/sh
+# Guest PID 1 for the Firecracker CODING workspace (Zone W). Mounts the read-write /workspace clone
+# (second virtio disk) and a /scratch tmpfs, then runs the persistent workspace agent. No network is
+# configured (by default no NIC is attached). The rootfs (/dev/vda) is read-only; all writes go to
+# the /workspace data disk or /scratch. Freer than the Zone-S skill VM on purpose (this IS the
+# isolated coding zone) — the guarantee is the jail boundary, not restricting the shell inside it.
+mount -t proc none /proc 2>/dev/null
+mount -t sysfs none /sys 2>/dev/null
+mount -t devtmpfs none /dev 2>/dev/null
+mkdir -p /workspace /scratch
+mount -t tmpfs -o size=512m,nosuid tmpfs /scratch 2>/dev/null
+# Read-write workspace data disk (the filtered project clone), attached as the 2nd virtio-blk device.
+mount -o rw,noatime /dev/vdb /workspace 2>/dev/null || echo "workspace-init: no /workspace disk attached"
+export PYTHONDONTWRITEBYTECODE=1 TMPDIR=/scratch HOME=/scratch LANG=C.UTF-8 \
+       PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+/usr/bin/python3 /workspace_agent.py 2>/dev/console
+# power off when the agent exits (session ended)
+echo o > /proc/sysrq-trigger

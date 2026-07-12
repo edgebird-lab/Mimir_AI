@@ -1,0 +1,28 @@
+Mimir
+Copyright 2026 Olbricht Digital
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes or bundles third-party software:
+
+- Aider edit engine (Apache-2.0) — the I/O-free SEARCH/REPLACE parsing/apply
+  functions in orchestrator/mimir/coder/editblock.py are adapted from Aider
+  (https://github.com/aider-ai/aider). See orchestrator/mimir/coder/NOTICE for
+  the list of modifications. Copyright (c) Aider AI and contributors.
+
+- llama.cpp (MIT) — the inference server image is built from llama.cpp
+  (https://github.com/ggml-org/llama.cpp). Copyright (c) The ggml authors.
+
+- Firecracker (Apache-2.0) — the microVM sandbox uses Firecracker
+  (https://github.com/firecracker-microvm/firecracker). Copyright Amazon.com,
+  Inc. or its affiliates.
+
+- markdown-it (MIT), DOMPurify (Apache-2.0 / MPL-2.0), KaTeX (MIT) — bundled in
+  orchestrator/mimir/webui/vendor/ for the in-app document/markdown/math viewer.
+
+- SearXNG (AGPL-3.0) and the models served at runtime (e.g. Qwen, Llama) are NOT
+  distributed with this source; they are pulled as separate container images /
+  model files at install time and remain under their own licenses.
+
+Model weights are downloaded by the operator from their upstream sources and are
+governed by their respective model licenses, not this repository's license.
