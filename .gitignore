@@ -61,3 +61,9 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Built Windows installer (published via Releases, not committed)
+dist/
+installer/
+MimirInstaller.exe
+*.pdb

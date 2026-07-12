@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect x="10" y="10" width="236" height="236" rx="52" fill="#171a21"/>
+  <rect x="10" y="10" width="236" height="236" rx="52" fill="none" stroke="#2a2f3c" stroke-width="4"/>
+  <!-- Mimir feather (matches the UI logo 🪶) -->
+  <g transform="translate(70 46) rotate(10)" stroke="#7c9cff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 132 C 14 44, 78 6, 112 6 C 120 62, 82 122, 18 132 Z" fill="#243056"/>
+    <path d="M38 108 L 96 42 M42 122 L 78 84" fill="none"/>
+  </g>
+</svg>
