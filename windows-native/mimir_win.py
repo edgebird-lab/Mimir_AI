@@ -73,7 +73,12 @@ _MODEL_FILE_LINE = re.compile(r"^MIMIR_MODEL_FILE=.*$", re.MULTILINE)
 _DEV_LINE = re.compile(r"^\s*\w+\d+:\s*(.+?)\s*\((\d+)\s*MiB,\s*(\d+)\s*MiB free\)", re.MULTILINE)
 
 # Auto-pick keeps the FIRST model lightweight & fast even on big GPUs (the user upgrades in ⚙ Einstellungen).
-AUTOPICK_MAX_SIZE_GB = float(os.environ.get("MIMIR_AUTOPICK_MAX_SIZE_GB", "10"))
+# Cap chosen from real measurement, not just VRAM: on a shared-memory iGPU, actual peak RAM/VRAM use is
+# roughly 2x the GGUF file size (weights + KV cache at MIMIR_CTX + Vulkan compute buffers) — a 9 GB file
+# measured ~18 GB peak. 10 previously let a 9 GB file through, leaving as little as ~100-300 MB free RAM
+# on a 31 GB machine (with WSL2's reserved memory or anything else running, that risks the whole system
+# stalling). 5 keeps the default at the 7-8B tier (~5 GB file -> ~9-10 GB peak), with real headroom.
+AUTOPICK_MAX_SIZE_GB = float(os.environ.get("MIMIR_AUTOPICK_MAX_SIZE_GB", "5"))
 
 # ---- config (all overridable; the launcher sets these) ---------------------------------------------------
 HOME = Path(os.environ.get("MIMIR_HOME", Path(__file__).resolve().parent.parent)).resolve()
@@ -214,7 +219,22 @@ def _wait_health(port: int, timeout: float = 180) -> bool:
     return False
 
 
+def _port_open(port: int, timeout: float = 1.5) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
 def _start_inference() -> None:
+    # Idempotency guard: if a model-loading llama-server (ours or an orphaned one from a previous
+    # supervisor instance, e.g. a restart with no grace period) is ALREADY bound to this port, do NOT
+    # spawn a second one — loading a multi-GB GGUF happens BEFORE the port bind, so two overlapping
+    # loads can transiently double VRAM/RAM usage and, on shared-memory iGPUs, freeze the whole machine.
+    if _port_open(INFER_PORT):
+        print(f"[supervisor] inference: something is already listening on {INFER_PORT}; not starting a second one", flush=True)
+        return
     model = MODELS_DIR / _active_model()
     if not model.exists():
         print(f"[supervisor] inference: model not found ({model}); skip until one is downloaded", flush=True)
@@ -231,6 +251,9 @@ def _start_inference() -> None:
 
 
 def _start_embed() -> None:
+    if _port_open(EMBED_PORT):
+        print(f"[supervisor] embed: something is already listening on {EMBED_PORT}; not starting a second one", flush=True)
+        return
     ef = os.environ.get("MIMIR_EMBED_MODEL_FILE", "nomic-embed-text-v1.5.Q5_K_M.gguf")
     model = MODELS_DIR / ef
     if not model.exists():
@@ -330,11 +353,31 @@ def download_status(_req: dict) -> dict:
         return dict(_dl)
 
 
+def _kill_orphan_llama_servers() -> None:
+    """Belt-and-suspenders: kill ANY llama-server.exe whose command line references this install's
+    models dir, not just the ones tracked in this supervisor's own _procs. Covers an orphaned instance
+    left running by a PREVIOUS supervisor process (e.g. a restart with no grace period) that this
+    supervisor never spawned and therefore doesn't know about — exactly the case that let a stale
+    model-loading process keep holding VRAM/RAM after 'Beenden' was clicked."""
+    if os.name != "nt":
+        return
+    try:
+        needle = str(MODELS_DIR).replace("'", "''")
+        ps = ("Get-CimInstance Win32_Process -Filter \"Name='llama-server.exe'\" | "
+              f"Where-Object {{ $_.CommandLine -like '*{needle}*' }} | "
+              "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }")
+        subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True,
+                       creationflags=CREATE_NO_WINDOW, timeout=20)
+    except Exception:  # noqa: BLE001 — best-effort; the tracked-PID kills above are the primary path
+        pass
+
+
 def stop(_req: dict) -> dict:
     """Operator 'Beenden': free the GPU (kill the llama-servers) AND tear down the rest of the native stack
     (webui/worker/redis) recorded in the pid file — the Windows equivalent of `docker compose stop`."""
     _stop_proc("inference")
     _stop_proc("embed")
+    _kill_orphan_llama_servers()
     killed = []
     try:
         if PID_FILE.exists():
@@ -409,15 +452,27 @@ def serve() -> None:
     (HOME / "run").mkdir(parents=True, exist_ok=True)
     host, _, port = CONTROL_ADDR.rpartition(":")
     host, port = host or "127.0.0.1", int(port)
-    # Start the model servers first so the UI is usable immediately; health is polled lazily by the app.
-    _start_inference()
-    _start_embed()
 
+    # Single-instance guard FIRST, before anything touches the GPU: binding this port is exclusive
+    # (Windows' SO_REUSEADDR does not allow two listeners on the same address:port, unlike POSIX), so a
+    # second supervisor invocation (e.g. a double-clicked desktop icon, or a restart with no grace period
+    # before the prior process fully exits) fails HERE and exits — instead of proceeding to load a second
+    # full copy of the model into VRAM/RAM, which can exhaust shared graphics memory on an iGPU and freeze
+    # the whole machine. Loading the model happens before _start_inference's own server can bind ITS port,
+    # so that per-service check alone (kept below as defense-in-depth) is not an early-enough guard.
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((host, port))
+    try:
+        s.bind((host, port))
+    except OSError:
+        print(f"Mimir control daemon: {host}:{port} is already in use — another instance is already "
+              f"running. Not starting a second one.", flush=True)
+        return
     s.listen(8)
     print(f"Mimir control daemon on {host}:{port} (token len={len(TOKEN)}, home={HOME})", flush=True)
+
+    # Start the model servers now that we know we are the only instance; health is polled lazily by the app.
+    _start_inference()
+    _start_embed()
 
     def handle(conn):
         with conn:
