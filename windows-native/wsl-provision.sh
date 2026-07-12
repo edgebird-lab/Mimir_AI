@@ -5,8 +5,12 @@
 #
 #  Run BY Setup-WSLSandbox.ps1 (not by hand). VALIDATED end-to-end on WSL2 (Ubuntu 24.04, KVM via
 #  nested virt): installs deps + Docker, fetches Firecracker + a guest kernel, builds the guest rootfs,
-#  and writes a start script that runs the two jail daemons over TCP loopback so the native Windows
-#  client reaches them via localhost. Env in: MIMIR_SRC, MIMIR_SANDBOX_TOKEN, MIMIR_WORKSPACE_TOKEN.
+#  and installs the two jail daemons as SYSTEMD SERVICES (not a Windows-side "keep a process alive"
+#  hack — a plain nohup'd background process gets reaped when the launching WSL session/cgroup tears
+#  down, which happens as soon as no wsl.exe client is attached). systemd (already enabled via
+#  wsl.conf) is itself PID 1 and keeps the distro's own init running regardless of any client
+#  connection, so services enabled here start on distro boot and simply keep running.
+#  Env in: MIMIR_SRC, MIMIR_SANDBOX_TOKEN, MIMIR_WORKSPACE_TOKEN, MIMIR_WS_SOURCE_ROOT.
 # ============================================================================
 set -e
 export HOME=/root DEBIAN_FRONTEND=noninteractive
@@ -50,20 +54,63 @@ if [ -f "$SRC/searxng/settings.yml" ]; then
     || warn "SearXNG start failed (web_search falls back to best-effort)"
 fi
 
-# Start script: both jail daemons on TCP loopback (reachable from Windows via localhost).
-cat > "$SRC/start-daemons.sh" <<EOF
-#!/usr/bin/env bash
-export HOME=/root PYTHONPATH="$SRC/orchestrator"
-export MIMIR_POLICY="$SRC/config/policy.yaml" MIMIR_AUDIT="/root/mimir-audit.jsonl" MIMIR_FC_DIR="$FCDIR"
-export MIMIR_SANDBOX_TOKEN="${MIMIR_SANDBOX_TOKEN:-}" MIMIR_WORKSPACE_TOKEN="${MIMIR_WORKSPACE_TOKEN:-}"
-# Zone-W clones from here (the Windows project dir, visible in WSL under /mnt/c). Fallback: a scratch dir.
-export MIMIR_WS_SOURCE_ROOT="${MIMIR_WS_SOURCE_ROOT:-/root/Mimir/project}"
-mkdir -p "\$MIMIR_WS_SOURCE_ROOT" 2>/dev/null || true
-pgrep -f mimir.sandbox_daemon   >/dev/null || MIMIR_SANDBOX_ADDR=127.0.0.1:8100   nohup python3 -m mimir.sandbox_daemon   >/tmp/mimir-sandbox.log 2>&1 &
-pgrep -f mimir.workspace_daemon >/dev/null || MIMIR_WORKSPACE_ADDR=127.0.0.1:8101 nohup python3 -m mimir.workspace_daemon >/tmp/mimir-workspace.log 2>&1 &
-echo "mimir jail daemons on 127.0.0.1:8100 (sandbox) + :8101 (workspace)"
+say "installing jail daemons as systemd services (survive independently of any wsl.exe client) ..."
+# Secrets/paths go in a separate env file (not baked into the unit) so a re-provision just rewrites this.
+cat > "$SRC/wsl.env" <<EOF
+MIMIR_SANDBOX_TOKEN=${MIMIR_SANDBOX_TOKEN:-}
+MIMIR_WORKSPACE_TOKEN=${MIMIR_WORKSPACE_TOKEN:-}
+MIMIR_WS_SOURCE_ROOT=${MIMIR_WS_SOURCE_ROOT:-/root/Mimir/project}
 EOF
-chmod +x "$SRC/start-daemons.sh"
+mkdir -p "${MIMIR_WS_SOURCE_ROOT:-/root/Mimir/project}" 2>/dev/null || true
+
+cat > /etc/systemd/system/mimir-sandbox.service <<EOF
+[Unit]
+Description=Mimir Zone-S skill sandbox daemon
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$SRC
+Environment=HOME=/root
+Environment=PYTHONPATH=$SRC/orchestrator
+Environment=MIMIR_POLICY=$SRC/config/policy.yaml
+Environment=MIMIR_AUDIT=/root/mimir-audit.jsonl
+Environment=MIMIR_FC_DIR=$FCDIR
+Environment=MIMIR_SANDBOX_ADDR=127.0.0.1:8100
+EnvironmentFile=-$SRC/wsl.env
+ExecStart=/usr/bin/python3 -m mimir.sandbox_daemon
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat > /etc/systemd/system/mimir-workspace.service <<EOF
+[Unit]
+Description=Mimir Zone-W coding workspace daemon
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$SRC
+Environment=HOME=/root
+Environment=PYTHONPATH=$SRC/orchestrator
+Environment=MIMIR_POLICY=$SRC/config/policy.yaml
+Environment=MIMIR_AUDIT=/root/mimir-audit.jsonl
+Environment=MIMIR_FC_DIR=$FCDIR
+Environment=MIMIR_WORKSPACE_ADDR=127.0.0.1:8101
+EnvironmentFile=-$SRC/wsl.env
+ExecStart=/usr/bin/python3 -m mimir.workspace_daemon
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now mimir-sandbox mimir-workspace
 
 if [ -e /dev/kvm ]; then
   say "OK: /dev/kvm present - Firecracker can boot."

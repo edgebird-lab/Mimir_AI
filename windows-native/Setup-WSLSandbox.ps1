@@ -37,6 +37,38 @@ if (-not $wslOk) {
     return
 }
 
+# ---- 1b. disable WSL2's idle timeouts (else it stops the distro/VM ~15-60s after the last wsl.exe
+#          connection closes, killing the jail daemons even though systemd/PID1 keeps running) --------
+# Two SEPARATE timeouts: instanceIdleTimeout ([general], default 15s) stops the DISTRO instance;
+# vmIdleTimeout ([wsl2], default 60s) then stops the whole VM once no instance is left. Both need -1.
+# Merged into the user's existing %USERPROFILE%\.wslconfig (other settings/sections are preserved).
+$wslConfigPath = Join-Path $env:USERPROFILE ".wslconfig"
+$wslConfigText = if (Test-Path $wslConfigPath) { Get-Content $wslConfigPath -Raw -Encoding utf8 } else { "" }
+if ($null -eq $wslConfigText) { $wslConfigText = "" }
+$wslConfigChanged = $false
+if ($wslConfigText -notmatch "(?m)^instanceIdleTimeout\s*=") {
+    if ($wslConfigText -match "(?m)^\[general\]") {
+        $wslConfigText = $wslConfigText -replace "(?m)^(\[general\])", "`$1`ninstanceIdleTimeout=-1"
+    } else {
+        $wslConfigText = "[general]`ninstanceIdleTimeout=-1`n`n" + $wslConfigText
+    }
+    $wslConfigChanged = $true
+}
+if ($wslConfigText -notmatch "(?m)^vmIdleTimeout\s*=") {
+    if ($wslConfigText -match "(?m)^\[wsl2\]") {
+        $wslConfigText = $wslConfigText -replace "(?m)^(\[wsl2\])", "`$1`nvmIdleTimeout=-1"
+    } else {
+        $wslConfigText = $wslConfigText.TrimEnd() + "`n`n[wsl2]`nvmIdleTimeout=-1`n"
+    }
+    $wslConfigChanged = $true
+}
+if ($wslConfigChanged) {
+    Set-Content -Path $wslConfigPath -Value $wslConfigText -Encoding utf8 -NoNewline
+    Write-Say "updated $wslConfigPath (disabled WSL idle timeouts) - restarting WSL to apply ..."
+    wsl.exe --shutdown
+    Start-Sleep -Seconds 2
+} else { Write-Say "WSL idle timeouts already disabled" }
+
 # ---- 2. create the dedicated 'Mimir' distro (isolated; your data is never touched) -----------------
 $have = (wsl.exe -l -q 2>$null) -contains $Distro
 if (-not $have) {

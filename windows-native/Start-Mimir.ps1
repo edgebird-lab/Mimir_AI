@@ -22,17 +22,16 @@ if (-not $llamaServer -or -not $redisExe -or -not $chatModel) {
 $py = Get-MimirPython
 $pids = @{}
 
-# ---- optional: launch the WSL2 jail daemons (self-improvement + coding) if configured ----
+# ---- optional: ensure the WSL2 jail daemons (self-improvement + coding) are up if configured -------
+# They run as SYSTEMD SERVICES inside the distro (installed by Setup-WSLSandbox.ps1's provisioning),
+# enabled to start on distro boot and kept alive by systemd (PID 1) itself — NOT by any Windows-side
+# "keep a process open" hack, which WSL tears down the moment the launching wsl.exe client disconnects.
+# 'wsl -d <distro> -- systemctl start' both boots the distro if needed and is a harmless no-op if the
+# services are already running (Restart=always keeps them up on their own after this).
 if ($env:MIMIR_SANDBOX_ADDR -and (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
     $distro = if ($env:MIMIR_WSL_DISTRO) { $env:MIMIR_WSL_DISTRO } else { "Mimir" }
-    Write-Say "starting WSL2 sandbox daemons in distro '$distro' (advanced features) ..."
-    # 'tail -f /dev/null' keeps this hidden wsl process (and thus the distro + the nohup'd daemons) alive;
-    # WSL otherwise tears the distro down as soon as the launching command returns. Stop-Mimir /
-    # the Beenden button run 'wsl --terminate', which ends this keepalive and the daemons with it.
-    # NOTE: pass the whole command line as ONE string — Start-Process space-joins an array WITHOUT
-    # quoting, which would split the bash -lc script and silently start nothing.
-    $wslCmd = "bash /root/Mimir/start-daemons.sh; exec tail -f /dev/null"
-    Start-Process wsl.exe -ArgumentList "-d $distro -u root -- bash -lc `"$wslCmd`"" -WindowStyle Hidden
+    Write-Say "ensuring WSL2 sandbox daemons are running in distro '$distro' (advanced features) ..."
+    wsl.exe -d $distro -u root -- systemctl start mimir-sandbox mimir-workspace 2>$null
 }
 
 # ---- 1. Redis (loopback, in-memory) ----------------------------------------

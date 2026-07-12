@@ -71,7 +71,16 @@ writes `MIMIR_SANDBOX_ADDR` / `MIMIR_WORKSPACE_ADDR` into your `.env`. The daemo
 
 This path has been validated end-to-end on WSL2 (Ubuntu 24.04, WSL 2.6, KVM via nested virtualization):
 a native Windows process reached the WSL sandbox daemon over `127.0.0.1:8100` (localhost forwarding), a
-Firecracker microVM booted, ran a skill, and returned the result. Firecracker `v1.16.1` + guest kernel
+Firecracker microVM booted, ran a skill, and returned the result — and the same for Zone-W coding over
+`127.0.0.1:8101` via the real running web UI's Coding tab API. Firecracker `v1.16.1` + guest kernel
 `vmlinux-5.10.223` are used. Linux behaviour is unchanged (the Unix socket stays the default). If
 `/dev/kvm` is missing on your machine, enable WSL2 nested virtualization (Windows 11 + capable CPU) and
 `wsl --shutdown`, then re-run the setup.
+
+The jail daemons run as **systemd services** inside the distro (`mimir-sandbox`, `mimir-workspace`;
+`systemctl status` to check), `Restart=always` — not a Windows-side "keep a process open" hack, which
+would die the moment nothing stays connected. Setup also disables WSL2's two idle timeouts
+(`instanceIdleTimeout` in `[general]`, default 15s; `vmIdleTimeout` in `[wsl2]`, default 60s) in your
+`%USERPROFILE%\.wslconfig` — without that, WSL stops the whole distro/VM shortly after the last `wsl.exe`
+connection closes, even though systemd (PID 1) is still running services inside it. Your other settings
+in `.wslconfig` are preserved; only these two keys are added if missing.
