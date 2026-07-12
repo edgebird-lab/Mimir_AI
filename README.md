@@ -103,12 +103,19 @@ of the jail — **always** require human approval, even at the highest autonomy 
   30–35B models; smaller models run comfortably on 8–12 GB. CPU-only works, but it is slow.
 - **~50 GB of disk** for model weights and **~30 GB of RAM** recommended.
 
-### Windows: experimental
+### Windows: native, GPU on any vendor
 
-The Docker stack (chat, RAG, thesis) can run under **Docker Desktop + WSL2**. However, the
-**Firecracker microVM sandbox** — which powers self-improvement and Zone W coding — is
-**Linux-only and unavailable on Windows**. GPU passthrough on Windows is also limited. If you
-want the full, hardened experience, use Linux.
+Windows runs Mimir **natively — no Docker, no WSL required.** Chat, model management, document-RAG and
+web research work out of the box, with GPU acceleration on **AMD, NVIDIA and Intel** via a native
+**llama.cpp Vulkan** build (no CUDA/ROCm install). The one-click `MimirInstaller.exe` detects your
+GPU/VRAM and downloads a fitting model.
+
+**Self-improvement and Zone-W coding** run untrusted, model-written code, which Mimir contains only with
+a **Firecracker microVM (Linux + KVM)**. On Windows they are an **optional** feature: tick the box in the
+installer and Mimir sets up a **dedicated, isolated WSL2 distro** (your existing distros/data are never
+touched) that runs the *real* Firecracker sandbox and a self-hosted SearXNG. This path is validated
+end-to-end. See [windows-native/README.md](windows-native/README.md) and
+[windows-native/WSL_SANDBOX.md](windows-native/WSL_SANDBOX.md).
 
 ---
 

@@ -39,7 +39,16 @@ say "fetching guest kernel ..."
 
 say "building guest rootfs images (Docker) ..."
 ( cd "$SRC" && DOCKER="/usr/bin/docker" bash ./sandbox/build-rootfs.sh )
-( cd "$SRC" && DOCKER="/usr/bin/docker" bash ./sandbox/build-workspace-rootfs.sh ) 2>/dev/null || warn "workspace rootfs build failed (Zone-W coding optional)"
+( cd "$SRC" && DOCKER="/usr/bin/docker" bash ./sandbox/build-workspace-rootfs.sh ) || warn "workspace rootfs build failed (Zone-W coding optional)"
+
+# SearXNG: robust meta-search for web_search (the DuckDuckGo scrape is best-effort/blocked). Loopback-only.
+if [ -f "$SRC/searxng/settings.yml" ]; then
+  say "starting SearXNG (robust web search) ..."
+  /usr/bin/docker rm -f searxng >/dev/null 2>&1 || true
+  /usr/bin/docker run -d --name searxng --restart unless-stopped -p 127.0.0.1:8888:8080 \
+    -v "$SRC/searxng/settings.yml:/etc/searxng/settings.yml:ro" searxng/searxng >/dev/null 2>&1 \
+    || warn "SearXNG start failed (web_search falls back to best-effort)"
+fi
 
 # Start script: both jail daemons on TCP loopback (reachable from Windows via localhost).
 cat > "$SRC/start-daemons.sh" <<EOF

@@ -59,7 +59,7 @@ $envmap = Import-MimirEnv
 $sbtok = $envmap["MIMIR_SANDBOX_TOKEN"]; $wstok = $envmap["MIMIR_WORKSPACE_TOKEN"]
 $srcWsl = "/mnt/" + ($MimirRoot.Substring(0,1).ToLower()) + ($MimirRoot.Substring(2) -replace '\\','/')
 Write-Say "copying Mimir source into the distro (/root/Mimir) ..."
-$copy = "export HOME=/root; mkdir -p /root/Mimir; for d in orchestrator config sandbox csl webfetch docproc; do rm -rf /root/Mimir/`$d; cp -r '$srcWsl'/`$d /root/Mimir/ 2>/dev/null; done; sed -i 's/\r`$//' /root/Mimir/sandbox/*.sh /root/Mimir/sandbox/guest/* /root/Mimir/windows-native/wsl-provision.sh 2>/dev/null; echo copied"
+$copy = "export HOME=/root; mkdir -p /root/Mimir; for d in orchestrator config sandbox csl webfetch docproc searxng; do rm -rf /root/Mimir/`$d; cp -r '$srcWsl'/`$d /root/Mimir/ 2>/dev/null; done; sed -i 's/\r`$//' /root/Mimir/sandbox/*.sh /root/Mimir/sandbox/guest/* /root/Mimir/searxng/settings.yml 2>/dev/null; echo copied"
 wsl.exe -d $Distro -u root -- bash -lc "$copy"
 
 # ---- 4. provision the sandbox inside the distro ---------------------------------------------------
@@ -70,7 +70,8 @@ wsl.exe -d $Distro -u root -- bash -lc "$prov"
 
 # ---- 5. turn it on in the Windows .env ------------------------------------------------------------
 $text = Get-Content $MimirEnvFile -Raw -Encoding utf8
-foreach ($kv in @("MIMIR_SANDBOX_ADDR=127.0.0.1:8100","MIMIR_WORKSPACE_ADDR=127.0.0.1:8101","MIMIR_WSL_DISTRO=$Distro")) {
+foreach ($kv in @("MIMIR_SANDBOX_ADDR=127.0.0.1:8100","MIMIR_WORKSPACE_ADDR=127.0.0.1:8101","MIMIR_WSL_DISTRO=$Distro",
+                  "MIMIR_SEARXNG_URL=http://127.0.0.1:8888","MIMIR_SEARCH_FALLBACK_WEBFETCH=0")) {
     $k = $kv.Split("=")[0]
     if ($text -notmatch "(?m)^$k=") { $text = $text.TrimEnd() + "`n$kv`n" }
 }

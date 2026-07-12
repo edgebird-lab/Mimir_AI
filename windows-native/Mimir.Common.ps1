@@ -147,8 +147,9 @@ function Set-MimirProcessEnv {
     # Native document + web services (replace the Linux docproc/webfetch/searxng containers).
     $env:MIMIR_DOCPROC_URL  = "http://127.0.0.1:$MimirDocprocPort"
     $env:MIMIR_WEBFETCH_URL = "http://127.0.0.1:$MimirWebfetchPort"
-    $env:MIMIR_SEARXNG_URL  = "http://127.0.0.1:8095"          # not run on Windows; fallback below
-    $env:MIMIR_SEARCH_FALLBACK_WEBFETCH = "1"                  # route web_search via webfetch (DuckDuckGo)
+    # Defaults only if the .env did not set them (the optional WSL2 mode writes a real SearXNG URL there).
+    if (-not $env:MIMIR_SEARXNG_URL) { $env:MIMIR_SEARXNG_URL = "http://127.0.0.1:8095" }   # placeholder (nothing there)
+    if (-not $env:MIMIR_SEARCH_FALLBACK_WEBFETCH) { $env:MIMIR_SEARCH_FALLBACK_WEBFETCH = "1" }  # native: webfetch/DDG
     $env:MIMIR_DOC_PORT     = "$MimirDocprocPort"
     $env:MIMIR_WEBFETCH_PORT= "$MimirWebfetchPort"
     $env:MIMIR_CSL_DIR      = (Join-Path $MimirRoot "csl")   # citation styles for thesis/notes export
