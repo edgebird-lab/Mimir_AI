@@ -23,18 +23,17 @@ $RedisVer = if ($env:MIMIR_REDIS_VER) { $env:MIMIR_REDIS_VER } else { "8.8.0" }
 function Say($m){ Write-Host "> $m" -ForegroundColor Cyan }
 
 # ---- 1. Inno Setup compiler (iscc) -----------------------------------------
+$isccPaths = @(
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"     # winget user-scope install
+)
 $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
-if (-not $iscc) {
-    foreach ($p in @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe")) {
-        if (Test-Path $p) { $iscc = $p; break }
-    }
-}
+if (-not $iscc) { $iscc = $isccPaths | Where-Object { Test-Path $_ } | Select-Object -First 1 }
 if (-not $iscc) {
     Say "Inno Setup not found - installing via winget (JRSoftware.InnoSetup) ..."
     winget install -e --id JRSoftware.InnoSetup --accept-package-agreements --accept-source-agreements --silent | Out-Null
-    foreach ($p in @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe")) {
-        if (Test-Path $p) { $iscc = $p; break }
-    }
+    $iscc = $isccPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 if (-not $iscc) { throw "Inno Setup (ISCC.exe) still not found after install. Install it and re-run." }
 Say "using ISCC: $iscc"

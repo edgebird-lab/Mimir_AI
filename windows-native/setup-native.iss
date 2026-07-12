@@ -25,7 +25,9 @@ AppSupportURL={#MyAppURL}/issues
 DefaultDirName={localappdata}\Mimir
 DefaultGroupName=Mimir
 DisableProgramGroupPage=yes
-SourceDir=.
+; This .iss lives in windows-native/, so SourceDir=.. is the staging/repo root (where LICENSE, assets\,
+; runtime\, bin\ and the app source live). Inno resolves LicenseFile/SetupIconFile/[Files] against it.
+SourceDir=..
 OutputDir=installer
 OutputBaseFilename=MimirInstaller
 SetupIconFile=assets\mimir.ico
