@@ -26,7 +26,13 @@ $pids = @{}
 if ($env:MIMIR_SANDBOX_ADDR -and (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
     $distro = if ($env:MIMIR_WSL_DISTRO) { $env:MIMIR_WSL_DISTRO } else { "Mimir" }
     Write-Say "starting WSL2 sandbox daemons in distro '$distro' (advanced features) ..."
-    Start-Process wsl.exe -ArgumentList @("-d",$distro,"-u","root","--","bash","-lc","/root/Mimir/start-daemons.sh") -WindowStyle Hidden
+    # 'tail -f /dev/null' keeps this hidden wsl process (and thus the distro + the nohup'd daemons) alive;
+    # WSL otherwise tears the distro down as soon as the launching command returns. Stop-Mimir /
+    # the Beenden button run 'wsl --terminate', which ends this keepalive and the daemons with it.
+    # NOTE: pass the whole command line as ONE string — Start-Process space-joins an array WITHOUT
+    # quoting, which would split the bash -lc script and silently start nothing.
+    $wslCmd = "bash /root/Mimir/start-daemons.sh; exec tail -f /dev/null"
+    Start-Process wsl.exe -ArgumentList "-d $distro -u root -- bash -lc `"$wslCmd`"" -WindowStyle Hidden
 }
 
 # ---- 1. Redis (loopback, in-memory) ----------------------------------------

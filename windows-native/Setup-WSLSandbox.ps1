@@ -59,13 +59,17 @@ $envmap = Import-MimirEnv
 $sbtok = $envmap["MIMIR_SANDBOX_TOKEN"]; $wstok = $envmap["MIMIR_WORKSPACE_TOKEN"]
 $srcWsl = "/mnt/" + ($MimirRoot.Substring(0,1).ToLower()) + ($MimirRoot.Substring(2) -replace '\\','/')
 Write-Say "copying Mimir source into the distro (/root/Mimir) ..."
-$copy = "export HOME=/root; mkdir -p /root/Mimir; for d in orchestrator config sandbox csl webfetch docproc searxng; do rm -rf /root/Mimir/`$d; cp -r '$srcWsl'/`$d /root/Mimir/ 2>/dev/null; done; sed -i 's/\r`$//' /root/Mimir/sandbox/*.sh /root/Mimir/sandbox/guest/* /root/Mimir/searxng/settings.yml 2>/dev/null; echo copied"
+# sandbox is MERGED (not wiped) so the already-built Firecracker artifacts under sandbox/fc/ survive a
+# re-run (avoids re-downloading the kernel + rebuilding the rootfs images every time).
+$copy = "export HOME=/root; mkdir -p /root/Mimir; for d in orchestrator config csl webfetch docproc searxng; do rm -rf /root/Mimir/`$d; cp -r '$srcWsl'/`$d /root/Mimir/ 2>/dev/null; done; cp -r '$srcWsl'/sandbox /root/Mimir/ 2>/dev/null; sed -i 's/\r`$//' /root/Mimir/sandbox/*.sh /root/Mimir/sandbox/guest/* /root/Mimir/searxng/settings.yml 2>/dev/null; echo copied"
 wsl.exe -d $Distro -u root -- bash -lc "$copy"
 
 # ---- 4. provision the sandbox inside the distro ---------------------------------------------------
 Write-Say "provisioning Firecracker sandbox (Docker + rootfs build; first run takes a few minutes) ..."
 $provWsl = "/mnt/" + ($MimirWin.Substring(0,1).ToLower()) + ($MimirWin.Substring(2) -replace '\\','/') + "/wsl-provision.sh"
-$prov = "export MIMIR_SRC=/root/Mimir MIMIR_SANDBOX_TOKEN='$sbtok' MIMIR_WORKSPACE_TOKEN='$wstok'; tr -d '\r' < '$provWsl' > /tmp/mimir-prov.sh; bash /tmp/mimir-prov.sh"
+# Zone-W clones the user's project (data\project), reachable from WSL under /mnt/c.
+$projWsl = "/mnt/" + ($MimirProject.Substring(0,1).ToLower()) + ($MimirProject.Substring(2) -replace '\\','/')
+$prov = "export MIMIR_SRC=/root/Mimir MIMIR_SANDBOX_TOKEN='$sbtok' MIMIR_WORKSPACE_TOKEN='$wstok' MIMIR_WS_SOURCE_ROOT='$projWsl'; tr -d '\r' < '$provWsl' > /tmp/mimir-prov.sh; bash /tmp/mimir-prov.sh"
 wsl.exe -d $Distro -u root -- bash -lc "$prov"
 
 # ---- 5. turn it on in the Windows .env ------------------------------------------------------------
