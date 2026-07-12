@@ -53,6 +53,7 @@ class Workspace:
             ("tasks", "acceptance", "TEXT DEFAULT ''"), ("tasks", "verify", "TEXT DEFAULT ''"),
             ("tasks", "attempts", "INTEGER DEFAULT 0"), ("tasks", "sig", "TEXT DEFAULT ''"),
             ("tasks", "lessons", "TEXT DEFAULT ''"), ("tasks", "checkpoint_id", "INTEGER DEFAULT 0"),
+            ("tasks", "approach", "TEXT DEFAULT ''"),
             ("goals", "checkpoint", "TEXT DEFAULT ''"), ("goals", "replans", "INTEGER DEFAULT 0"),
             ("conversations", "summary_tainted", "INTEGER DEFAULT 0"),
         ]
@@ -187,6 +188,26 @@ class Workspace:
     def set_goal_status(self, gid: int, status: str) -> None:
         self.db.execute("UPDATE goals SET status=? WHERE id=?", (status, gid))
         self.db.commit()
+
+    def append_goal_detail(self, gid: int, addition: str) -> None:
+        g = self.get_goal(gid)
+        if not g:
+            return
+        sep = "\n\n" if g.get("detail") else ""
+        self.db.execute("UPDATE goals SET detail=? WHERE id=?",
+                        ((g.get("detail", "") + sep + addition)[:4000], gid))
+        self.db.commit()
+
+    def delete_goal(self, gid: int) -> bool:
+        """Local control-plane state only (no money/egress/host access — see module docstring), so this
+        is a plain delete, not a broker primitive. Cascades: a goal's tasks and checkpoints go with it."""
+        if not self.get_goal(gid):
+            return False
+        self.db.execute("DELETE FROM tasks WHERE goal_id=?", (gid,))
+        self.db.execute("DELETE FROM checkpoints WHERE goal_id=?", (gid,))
+        self.db.execute("DELETE FROM goals WHERE id=?", (gid,))
+        self.db.commit()
+        return True
 
     # ---- tasks ----
     def add_task(self, goal_id: int | None, title: str, ordinal: int | None = None) -> dict[str, Any]:

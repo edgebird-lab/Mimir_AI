@@ -100,6 +100,10 @@ def _events_for(kind: str, params: dict, run: dict, coord: Coordinator, ws: Work
         return coord.plan_events(int(params.get("goal_id", 0)), should_cancel)
     if kind == "autopilot":
         return coord.autopilot_events(int(params.get("goal_id", 0)), should_cancel)
+    if kind == "extend":
+        return coord.extend_events(int(params.get("goal_id", 0)), str(params.get("instruction", "")), should_cancel)
+    if kind == "suggest":
+        return coord.suggest_events(int(params.get("goal_id", 0)), should_cancel)
     if kind == "debug":
         return coord.debug_loop(str(params.get("spec", "")), should_cancel)
     if kind == "code":

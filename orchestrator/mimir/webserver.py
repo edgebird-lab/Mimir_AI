@@ -304,6 +304,40 @@ async def api_goal(request: Request):
     return JSONResponse(ws.create_goal(str(b.get("title", ""))[:400], str(b.get("detail", ""))[:4000]))
 
 
+async def api_goal_delete(request: Request):
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    return JSONResponse({"ok": ws.delete_goal(int(b.get("id", 0)))})
+
+
+async def api_goal_extend(request: Request):
+    """Add a follow-up instruction to an existing goal (enqueues an 'extend' run — same plan/HITL/audit
+    path as everything else, just appends tasks instead of replacing them)."""
+    return await _start(request, "extend", ["goal_id", "instruction"], "instruction")
+
+
+async def api_goal_suggest(request: Request):
+    """Re-check the goal's machine-verifiable tasks, then ask for concrete next-step suggestions —
+    proposals only; nothing is added until the operator accepts one via /api/goal/add-task."""
+    return await _start(request, "suggest", ["goal_id"], "goal_id")
+
+
+async def api_goal_add_task(request: Request):
+    """Add a single task directly (no LLM call) — used to accept one suggestion from /api/goal/suggest."""
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    goal_id = int(b.get("goal_id", 0))
+    title = str(b.get("title", ""))[:600]
+    if not title or not ws.get_goal(goal_id):
+        return JSONResponse({"error": "invalid goal_id or empty title"}, 400)
+    task = ws.add_task(goal_id, title)
+    if b.get("approach"):
+        ws.set_task_field(task["id"], approach=str(b.get("approach", ""))[:2000])
+    return JSONResponse(task)
+
+
 async def api_task(request: Request):
     if (g := _guard(request)):
         return g
@@ -641,6 +675,10 @@ app = Starlette(routes=[
     Route("/api/autonomy", api_autonomy, methods=["GET", "POST"]),
     Route("/api/goals", api_goals, methods=["GET"]),
     Route("/api/goal", api_goal, methods=["POST"]),
+    Route("/api/goal/delete", api_goal_delete, methods=["POST"]),
+    Route("/api/goal/extend", api_goal_extend, methods=["POST"]),
+    Route("/api/goal/suggest", api_goal_suggest, methods=["POST"]),
+    Route("/api/goal/add-task", api_goal_add_task, methods=["POST"]),
     Route("/api/task", api_task, methods=["POST"]),
     Route("/api/conversations", api_conversations, methods=["GET", "POST"]),
     Route("/api/conversation", api_conversation, methods=["GET"]),

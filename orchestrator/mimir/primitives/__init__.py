@@ -361,8 +361,16 @@ def default_registry() -> dict[str, Primitive]:
         Primitive("project_list", _project_list, protected=frozenset({"path"}), taint_exempt=True),
         Primitive("project_read_scoped", _project_read, protected=frozenset({"path"}), taint_exempt=True),
         Primitive("probe_artifact", _probe_artifact, protected=frozenset({"path"}), taint_exempt=True),
+        # taint_exempt: like the read-only project_* primitives above, the write is structurally
+        # confined to /project/out (traversal-proof — _project_write_out raises on any escape), so an
+        # untrusted-derived path can only pick WHICH file under that one safe, reversible jail dir gets
+        # written — not redirect the sink elsewhere. Without this, ANY prior read in the session (which
+        # taints it) forced HITL on every subsequent write regardless of autonomy level, permanently
+        # defeating REVERSIBLE_AUTO below (a coding/goal session reads its own files almost immediately).
+        # side_effecting=True still applies the normal level-gated HITL (level 0 always asks; the taint
+        # floor was the ADDITIONAL, unconditional block this removes).
         Primitive("project_write_out", _project_write_out, side_effecting=True,
-                  protected=frozenset({"path"})),
+                  protected=frozenset({"path"}), taint_exempt=True),
         Primitive("http_get_allowlist", _http_get, protected=frozenset({"url"})),
         Primitive("email_send_allowlist", _email_send, side_effecting=True,
                   protected=frozenset({"recipient", "subject", "body"})),

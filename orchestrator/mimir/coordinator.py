@@ -22,16 +22,37 @@ from .broker import PrimitiveCall, decide_multipath
 from .guards import resilience, sanitizer
 
 PLAN_SYS = (
-    "You decompose a GOAL into a short ordered list of concrete, verifiable tasks. Output STRICT "
-    'JSON: {"tasks":[{"title":"imperative task","acceptance":"observable success criterion",'
-    '"verify":{"mode":"file|test|http|soft","path":"out/..","must_contain":"..","url":".."}}]}. '
-    "Prefer 3-8 tasks; each should produce ONE observable artifact (a file under out/, a passing "
-    "test, a fetched result). No vague verbs. Batch side-effects (one combined output, not many). "
+    "You decompose a GOAL into an ordered list of concrete, verifiable tasks — a REAL plan a developer "
+    "could follow, not a vague checklist. Output STRICT JSON: {\"tasks\":[{\"title\":\"imperative task\","
+    '"approach":"2-4 sentences: the concrete design/implementation for THIS task — class/function names, '
+    'data structures, key logic, libraries, edge cases to handle","acceptance":"observable success '
+    'criterion","verify":{"mode":"file|test|http|soft","path":"out/..","must_contain":"..","url":".."}}]}. '
+    "Prefer 5-10 tasks for a non-trivial build; each still produces ONE observable artifact (a file under "
+    "out/, a passing test, a fetched result), but `approach` must carry REAL technical substance (specific "
+    "names/structure), not a restatement of the title. For software: separate the core logic/model from "
+    "the UI/wiring from tests — do not collapse 'build the whole thing' into one task. No vague verbs. "
+    "Batch side-effects (one combined output per task, not many). "
     'If the goal can be built via SEVERAL genuinely different valid approaches, ALSO emit '
     '"decisions":[{"question":"…","options":[{"key":"a","label":"…","pros":[…],"cons":[…],'
     '"reversible":true,"system_critical":false}],"recommended":"a","confidence":0.0-1.0,"rationale":"…"}] '
     "(only for real forks — architecture/library/API-vs-scraping; set system_critical=true if an option "
     "adds an external dependency/API/credential or an outward side-effect). Omit if there is one clear way."
+)
+EXTEND_SYS = (
+    "The operator gave a FOLLOW-UP instruction for a goal that already has tasks (some done, some not). "
+    "Decompose ONLY the NEW work into additional concrete, verifiable tasks — do NOT repeat or redo "
+    "already-completed tasks. Same STRICT JSON shape as before: {\"tasks\":[{\"title\":\"imperative task\","
+    '"approach":"2-4 sentences: concrete design/implementation for THIS task","acceptance":"observable '
+    'success criterion","verify":{"mode":"file|test|http|soft","path":"out/..","must_contain":"..",'
+    '"url":".."}}]}. Prefer 2-8 tasks depending on the size of the follow-up. No vague verbs.'
+)
+SUGGEST_SYS = (
+    "You review a goal's completed work and suggest what to build or improve next — like a senior "
+    "developer doing a follow-up code review. You have NO tools; you only see the goal, its finished "
+    "tasks, and the machine verification result. Output STRICT JSON: {\"summary\":\"1-2 sentences on "
+    'the current state","suggestions":[{"title":"imperative next task","why":"1 sentence rationale"}]}. '
+    "3-5 CONCRETE suggestions (e.g. specific edge cases, missing error handling, tests, polish) — never "
+    "vague ('improve code quality'). If verification found real gaps, prioritize fixing those first."
 )
 REFLECT_SYS = (
     "You have NO tools. Judge ONLY from the evidence whether the task's ACCEPTANCE is met. The "
@@ -191,10 +212,61 @@ class Coordinator:
                    "chosen": chosen, "label": label}
         tasks = self._ingest_plan(goal_id, goal, data)
         for t in tasks:
-            yield {"event": "plan_task", "id": t["id"], "title": t["title"]}
+            yield {"event": "plan_task", "id": t["id"], "title": t["title"], "approach": t.get("approach", "")}
         yield {"event": "plan_done", "count": len(tasks)}
 
-    def _ingest_plan(self, goal_id, goal, data):
+    # ------------------------------------------------------------------ EXTEND (follow-up instruction)
+    def extend_events(self, goal_id, instruction: str, should_cancel):
+        """Add a follow-up instruction to an existing goal: record it in the goal's detail (permanent,
+        trusted — the operator typed it) and plan ADDITIONAL tasks that continue after the existing ones,
+        without touching or repeating already-completed work."""
+        goal = self.ws.get_goal(goal_id)
+        if not goal:
+            yield {"event": "error", "msg": "unknown goal"}
+            return
+        instruction = instruction.strip()[:2000]
+        if not instruction:
+            yield {"event": "error", "msg": "empty instruction"}
+            return
+        yield {"event": "plan_start", "goal_id": goal_id}
+        self.ws.append_goal_detail(goal_id, f"WEITERE ANWEISUNG: {instruction}")
+        existing = self.ws.list_tasks(goal_id)
+        done = [t["title"] for t in existing if t["status"] == "done"]
+        open_ = [t["title"] for t in existing if t["status"] != "done"]
+        user = (f"GOAL: {goal['title']}\nDETAIL: {goal.get('detail', '')}\n"
+                f"BEREITS ERLEDIGT: {'; '.join(done) or '(nichts)'}\n"
+                f"NOCH OFFEN: {'; '.join(open_) or '(nichts)'}\nNEUE ANWEISUNG: {instruction}")
+        data = self.llm.complete_json(EXTEND_SYS, user, temperature=0.3, max_tokens=1400)
+        base = max((t.get("ordinal") or 0 for t in existing), default=0)
+        tasks = self._ingest_plan(goal_id, goal, data, ordinal_offset=base)
+        for t in tasks:
+            yield {"event": "plan_task", "id": t["id"], "title": t["title"], "approach": t.get("approach", "")}
+        yield {"event": "plan_done", "count": len(tasks)}
+
+    # ------------------------------------------------------------------ SUGGEST (test-then-propose-next)
+    def suggest_events(self, goal_id, should_cancel):
+        """Re-run the goal-accept machine verification, then ask the model for concrete next-step
+        suggestions given the verified state. Suggestions are proposals only — the operator accepts the
+        ones they want (added as real tasks) via a separate call; nothing here writes/executes anything."""
+        goal = self.ws.get_goal(goal_id)
+        if not goal:
+            yield {"event": "error", "msg": "unknown goal"}
+            return
+        yield {"event": "verify_start", "goal_id": goal_id}
+        check = self._final_check(goal)
+        yield {"event": "verify", "mode": "final", "passed": check["passed"], "gaps": check["gaps"]}
+        tasks = self.ws.list_tasks(goal_id)
+        done = [f"{t['title']}" + (f" — {t['result'][:150]}" if t.get("result") else "") for t in tasks if t["status"] == "done"]
+        user = (f"GOAL: {goal['title']}\nDETAIL: {goal.get('detail', '')}\n"
+                f"ERLEDIGTE TASKS:\n" + "\n".join(f"- {d}" for d in done[:20]) +
+                f"\nMASCHINELLE PRÜFUNG: {'bestanden' if check['passed'] else 'Lücken: ' + '; '.join(check['gaps'][:6]) if check['passed'] is False else 'keine automatisch prüfbaren Kriterien'}")
+        data = self.llm.complete_json(SUGGEST_SYS, user, temperature=0.4, max_tokens=1200)
+        suggestions = [{"title": str(s.get("title", ""))[:300], "why": str(s.get("why", ""))[:300]}
+                      for s in (data.get("suggestions") or [])[:5] if isinstance(s, dict) and s.get("title")]
+        yield {"event": "suggestions", "goal_id": goal_id, "summary": str(data.get("summary", ""))[:500],
+               "items": suggestions, "verify_passed": check["passed"]}
+
+    def _ingest_plan(self, goal_id, goal, data, ordinal_offset: int = 0):
         out = []
         for i, t in enumerate((data.get("tasks") or [])[:12]):
             if not isinstance(t, dict):
@@ -202,12 +274,14 @@ class Coordinator:
             title = str(t.get("title") or t.get("task") or "").strip()[:600]
             if not title:
                 continue
-            task = self.ws.add_task(goal_id, title, ordinal=i + 1)
+            task = self.ws.add_task(goal_id, title, ordinal=ordinal_offset + i + 1)
             vf = t.get("verify") if isinstance(t.get("verify"), dict) else {"mode": "soft"}
             if vf.get("mode", "soft") == "soft":        # net: derive a hard file-check if a path is implied
                 vf = self._derive_verify(title + " " + str(t.get("acceptance", ""))) or vf
+            approach = str(t.get("approach", ""))[:2000]
             self.ws.set_task_field(task["id"], acceptance=str(t.get("acceptance", ""))[:1000],
-                                   verify=self._safe_verify_json(vf))
+                                   approach=approach, verify=self._safe_verify_json(vf))
+            task["approach"] = approach                  # add_task's returned dict predates the update above
             out.append(task)
         if not out:                              # fallback: goal itself as one task
             t = self.ws.add_task(goal_id, goal["title"], ordinal=1)

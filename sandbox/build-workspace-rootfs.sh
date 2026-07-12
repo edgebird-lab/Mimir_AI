@@ -8,7 +8,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/fc/workspace-rootfs.ext4"
 STAGE="$(mktemp -d)"
 DOCKER="${DOCKER:-docker}"      # invoke this script under sudo so DOCKER=docker hits the native engine
-SIZE="${SIZE:-3072M}"
+SIZE="${SIZE:-4096M}"    # headroom for the JDK (openjdk-17-jdk-headless) alongside the rest of the toolchain
 
 cleanup() { rm -rf "$STAGE" 2>/dev/null || true; }
 trap cleanup EXIT

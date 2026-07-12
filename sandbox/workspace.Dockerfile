@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential ripgrep ca-certificates \
       ffmpeg nodejs npm curl jq less procps \
       imagemagick fonts-dejavu-core \
+      openjdk-17-jdk-headless \
       coreutils findutils grep sed gawk patch diffutils \
     && rm -rf /var/lib/apt/lists/* \
     && git config --system init.defaultBranch main \
