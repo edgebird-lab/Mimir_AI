@@ -22,6 +22,12 @@ if (-not $llamaServer -or -not $redisExe -or -not $chatModel) {
 $py = Get-MimirPython
 $pids = @{}
 
+# ---- optional: launch the WSL2 jail daemons (self-improvement + coding) if configured ----
+if ($env:MIMIR_SANDBOX_ADDR -and (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+    Write-Say "starting WSL2 sandbox daemons (advanced features) ..."
+    Start-Process wsl.exe -ArgumentList @("-d","Ubuntu","-u","root","--","bash","-lc","~/Mimir/start-daemons.sh") -WindowStyle Hidden
+}
+
 # ---- 1. Redis (loopback, in-memory) ----------------------------------------
 # Config via a file (not CLI flags): passing an empty arg like `--save ""` through Start-Process fails,
 # and a conf keeps Redis writing nothing to disk (transient queue only; SQLite in state/ is the truth).
