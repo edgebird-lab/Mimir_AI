@@ -18,17 +18,34 @@ class ControlUnavailable(RuntimeError):
 
 class ControlClient:
     def __init__(self, sock: str | None = None, token: str | None = None, timeout: float = 200.0):
+        # MIMIR_CONTROL_ADDR ("host:port") selects the TCP-loopback transport used by the native
+        # Windows control daemon; otherwise fall back to the Linux bind-mounted Unix socket. Same
+        # one-line token-authenticated JSON RPC either way.
+        self.addr = os.environ.get("MIMIR_CONTROL_ADDR", "")
         self.sock = sock or os.environ.get("MIMIR_CONTROL_SOCK_CLIENT", "/run/mimir/control.sock")
         self.token = token if token is not None else os.environ.get("MIMIR_CONTROL_TOKEN", "")
         self.timeout = timeout
 
-    def rpc(self, op: str, **args) -> dict:
-        if not os.path.exists(self.sock):
+    def _connect(self) -> socket.socket:
+        if self.addr:                                       # TCP loopback (Windows/native)
+            host, _, port = self.addr.rpartition(":")
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(self.timeout)
+                s.connect((host or "127.0.0.1", int(port)))
+                return s
+            except (OSError, ValueError) as e:
+                raise ControlUnavailable(f"control daemon not reachable at {self.addr} ({e})")
+        if not os.path.exists(self.sock):                   # Unix socket (Linux)
             raise ControlUnavailable(f"control daemon socket not present ({self.sock})")
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.settimeout(self.timeout)
+        s.connect(self.sock)
+        return s
+
+    def rpc(self, op: str, **args) -> dict:
+        s = self._connect()
         try:
-            s.connect(self.sock)
             s.sendall(json.dumps({**args, "token": self.token, "op": op}).encode() + b"\n")
             buf = b""
             while b"\n" not in buf:

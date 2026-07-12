@@ -67,3 +67,10 @@ dist/
 installer/
 MimirInstaller.exe
 *.pdb
+
+# ---- Native Windows runtime (downloaded/built per-machine; never source) ----
+# Populated by windows-native\Setup-Mimir.ps1 / Build-Installer.ps1 - not committed.
+/runtime/
+/bin/
+/data/
+/run/

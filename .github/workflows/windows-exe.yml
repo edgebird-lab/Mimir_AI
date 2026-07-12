@@ -1,11 +1,10 @@
 name: Build Windows installer (.exe)
 
-# Builds MimirInstaller.exe with Inno Setup inside the amake/innosetup Docker
-# image (Inno Setup under Wine — no Windows runner needed) and attaches it to the
-# GitHub Release when you push a tag like v1.0.0. The installer is built from
-# `git archive HEAD`, so it contains only tracked files (never secrets/models).
-# It is UNSIGNED (no code-signing certificate), so Windows SmartScreen will warn
-# users — this is documented in README/INSTALL.
+# Builds the NATIVE Windows MimirInstaller.exe (no Docker, no WSL) on a Windows runner:
+# a self-contained Python runtime + llama.cpp Vulkan + Redis are staged and compiled with Inno Setup.
+# It is built from tracked files only (git archive), so it never contains secrets, models, or user data.
+# The installer is UNSIGNED (no code-signing certificate), so Windows SmartScreen will warn users -
+# documented in README/INSTALL. Attaches the .exe to the GitHub Release when you push a tag like v1.0.0.
 
 on:
   push:
@@ -17,12 +16,16 @@ permissions:
 
 jobs:
   build-exe:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build MimirInstaller.exe (Inno Setup via Docker)
-        run: bash windows/build-setup-exe.sh
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build MimirInstaller.exe (native)
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File windows-native\Build-Installer.ps1
 
       - name: Upload as build artifact
         uses: actions/upload-artifact@v4

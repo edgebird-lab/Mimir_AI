@@ -46,12 +46,17 @@ guide are in English.
 - **Disk and RAM:** roughly **50 GB of free disk** for model weights and **~30 GB of RAM**
   recommended.
 
-### Windows (experimental)
+### Windows (native — no Docker, no WSL)
 
-- **Docker Desktop** with the **WSL2** backend enabled.
-- Note the limitations: the **Firecracker microVM sandbox** (self-improvement and Zone W
-  coding) is **Linux-only** and will be **unavailable on Windows**, and GPU passthrough is
-  limited. The Docker stack (chat, RAG, thesis) still works.
+The Windows build runs **natively**: no Docker and no WSL. Requirements:
+
+- **Windows 10/11 (x64)** with a GPU driver that supports **Vulkan** (all modern AMD, NVIDIA and
+  Intel drivers do — this is what lets one build use the GPU on any vendor). CPU-only also works.
+- **~10-20 GB free disk** for the model and runtime; **16 GB+ RAM** recommended.
+- Everything else (a Python runtime, llama.cpp Vulkan, Redis, and a model sized to your VRAM) is
+  installed for you.
+- Limitation: the **Firecracker microVM sandbox** (self-improvement and Zone W coding) is
+  **Linux-only** and unavailable on Windows. Chat, model management, goals/plan and document RAG work.
 
 ---
 
@@ -90,15 +95,19 @@ The installer performs the full setup for you:
 
 ---
 
-## 3b. Install on Windows (`install.ps1` / `MimirInstaller.exe`)
+## 3b. Install on Windows (`MimirInstaller.exe` — native)
 
-You have two options:
+Download and run **`MimirInstaller.exe`** from the Releases page. It installs per-user to
+`%LOCALAPPDATA%\Mimir` (no admin needed) and, on first launch:
 
-- Run **`install.ps1`**: right-click the file → **Run with PowerShell**.
-- Or download and run **`MimirInstaller.exe`** from the Releases page.
+1. Detects your **GPU and VRAM** (AMD / NVIDIA / Intel, via Vulkan) and **RAM**.
+2. Downloads **llama.cpp (Vulkan)**, **Redis**, and a **chat model sized to your machine** (a smaller,
+   fast model by default — you can pick a larger one later in ⚙ Einstellungen → Modell).
+3. Starts the stack on native processes and opens **<http://127.0.0.1:8082>**.
 
-The Windows installer checks for **Docker Desktop + WSL2**, generates the `.env` file, builds
-the images, and starts the stack.
+No Docker and no WSL are involved. Manage it with the **Mimir starten / Mimir beenden** shortcuts, or the
+**Beenden** button in the UI. To run from source without the installer, or to build the installer
+yourself, see [windows-native/README.md](../windows-native/README.md).
 
 > **Antivirus / SmartScreen note.** The Windows installer and the `.exe` are **not
 > code-signed** (code-signing certificates cost money). Windows Defender SmartScreen will

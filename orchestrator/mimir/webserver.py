@@ -37,12 +37,21 @@ IN_DIR = Path(os.environ.get("MIMIR_IN_DIR", "/project/in"))
 UPLOAD_OK = {".pdf", ".docx", ".pptx", ".txt", ".md", ".markdown"}
 
 TOKEN = secrets.token_urlsafe(32)
-Path("/state/gateway.token").write_text(TOKEN)
-os.chmod("/state/gateway.token", 0o600)
+# The token file is consumed by the Unix-socket gateway (Linux only). The loopback web UI itself
+# authenticates with the in-memory TOKEN, so on Windows/native this write is best-effort and its
+# path is configurable. Keeps Linux behaviour identical (default path + 0o600) — see windows-native/.
+_tokfile = Path(os.environ.get("MIMIR_GATEWAY_TOKEN_FILE", "/state/gateway.token"))
+try:
+    _tokfile.parent.mkdir(parents=True, exist_ok=True)
+    _tokfile.write_text(TOKEN)
+    if os.name == "posix":
+        os.chmod(_tokfile, 0o600)
+except OSError:
+    pass
 ORIGINS = {o for o in os.environ.get("MIMIR_WEB_ORIGINS", "http://127.0.0.1:8082,http://localhost:8082").split(",") if o}
 BIND = os.environ.get("MIMIR_WEB_BIND", "0.0.0.0")
 PORT = int(os.environ.get("MIMIR_WEB_PORT", "8082"))
-INDEX = (Path(__file__).parent / "webui" / "index.html").read_text()
+INDEX = (Path(__file__).parent / "webui" / "index.html").read_text(encoding="utf-8")
 
 
 def _vendor_bundle() -> str:

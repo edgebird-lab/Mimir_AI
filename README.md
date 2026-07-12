@@ -125,10 +125,17 @@ cd Mimir_AI
 Then launch Mimir from the desktop icons **"Mimir starten"** / **"Mimir beenden"**, or open
 <http://127.0.0.1:8082> in your browser.
 
-### Windows (experimental)
+### Windows (native — no Docker, no WSL)
 
-Run `install.ps1` (right-click → **Run with PowerShell**) or the `MimirInstaller.exe` from
-the Releases page.
+Download and run **`MimirInstaller.exe`** from the Releases page. It installs per-user (no admin),
+detects your GPU and VRAM, downloads a fitting model, and starts Mimir at
+<http://127.0.0.1:8082>. Inference runs on a native **llama.cpp Vulkan** build, so the GPU is used on
+**AMD, NVIDIA and Intel** alike — **no Docker, no WSL, no CUDA/ROCm install**. See
+[windows-native/README.md](windows-native/README.md) for the architecture and how to build the installer.
+
+The Firecracker microVM sandbox (self-improvement, Zone-W coding) remains **Linux-only**; chat, model
+management, goals/plan and document RAG work on Windows. The older Docker-based `install.ps1` (under
+`windows/`) is kept only for users who deliberately want the WSL2/Docker path.
 
 > **Antivirus / SmartScreen note.** The Windows installer and the `.exe` are **not
 > code-signed** (code-signing certificates cost money). Windows Defender SmartScreen will
