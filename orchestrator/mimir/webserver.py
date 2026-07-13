@@ -456,6 +456,31 @@ wsc = WorkspaceClient()
 _WS_VERBS = {"list", "read", "exec", "write", "git", "ping"}   # NOT shutdown/close (lifecycle is explicit)
 
 
+async def api_ws_projects(request: Request):
+    """List existing project folders for the Coding tab's picker (so choosing what to open is a
+    dropdown, not free-text guessing of a path relative to some folder the user may not know about)."""
+    if not _authed(request):
+        return PlainTextResponse("unauthorized", 401)
+    try:
+        r = await asyncio.to_thread(wsc.list_projects)
+    except WorkspaceUnavailable as e:
+        return JSONResponse({"error": f"Zone W nicht verfügbar: {e}"}, 503)
+    return JSONResponse(r)
+
+
+async def api_ws_new_project(request: Request):
+    """Create a new EMPTY project folder to open a workspace in — the 'start something from scratch'
+    path that previously did not exist (opening required an already-existing folder)."""
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    try:
+        r = await asyncio.to_thread(wsc.new_project, str(b.get("name", "")))
+    except WorkspaceUnavailable as e:
+        return JSONResponse({"error": f"Zone W nicht verfügbar: {e}"}, 503)
+    return JSONResponse(r)
+
+
 async def api_ws_open(request: Request):
     """Open a live coding workspace (boots an isolated Zone W VM from a secret-filtered project clone).
     Returns session_id + toolchain + clone report. The UI drives it via /api/ws/call and closes it."""
@@ -655,6 +680,8 @@ app = Starlette(routes=[
     Route("/api/debug", api_debug, methods=["POST"]),
     Route("/api/code", api_code, methods=["POST"]),
     Route("/api/learn", api_learn, methods=["POST"]),
+    Route("/api/ws/projects", api_ws_projects, methods=["GET"]),
+    Route("/api/ws/new-project", api_ws_new_project, methods=["POST"]),
     Route("/api/ws/open", api_ws_open, methods=["POST"]),
     Route("/api/ws/call", api_ws_call, methods=["POST"]),
     Route("/api/ws/export", api_ws_export, methods=["POST"]),

@@ -67,6 +67,13 @@ class WorkspaceClient:
     def close(self, session_id: str, keep_disk: bool = False) -> dict:
         return self._rpc({"op": "close", "session_id": session_id, "keep_disk": keep_disk})
 
+    # -- project picker (so 'which folder' is a list, not free-text guessing) --------------------
+    def list_projects(self) -> dict:
+        return self._rpc({"op": "list_projects"})
+
+    def new_project(self, name: str) -> dict:
+        return self._rpc({"op": "new_project", "name": name})
+
     # -- workspace verbs (results are UNTRUSTED) -------------------------------------------------
     def call(self, session_id: str, verb: str, **args) -> dict:
         # force op/session_id/verb AFTER **args so a stray op/verb in args can't override the operation

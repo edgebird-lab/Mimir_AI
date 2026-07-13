@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import secrets
 import socket
 import threading
@@ -174,6 +175,50 @@ def _close(req: dict, keep_disk: bool | None = None) -> dict:
     return {"ok": True}
 
 
+# On the native Windows build, MIMIR_WS_SOURCE_ROOT is the SAME directory Zone-B uses for the document
+# upload inbox / generated-output folders (both live under data\project) — those are not coding
+# projects and would confuse the picker, so they are excluded here.
+_NOT_A_PROJECT = {"in", "out", "lost+found"}
+
+
+def _list_projects(_req: dict) -> dict:
+    """List existing project folders under SOURCE_ROOT (top-level dirs only) — the Coding tab's picker,
+    so 'which folder do I open' is a dropdown of what's actually there instead of free-text guessing.
+    Read-only, no VM involved."""
+    if not SOURCE_ROOT.is_dir():
+        return {"projects": []}
+    out = []
+    for p in sorted(SOURCE_ROOT.iterdir()):
+        if not p.is_dir() or p.name.startswith(".") or p.name in _NOT_A_PROJECT:
+            continue
+        try:
+            n = sum(1 for f in p.rglob("*") if f.is_file())
+        except OSError:
+            n = 0
+        out.append({"name": p.name, "files": n})
+    return {"projects": out}
+
+
+_PROJECT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+def _new_project(req: dict) -> dict:
+    """Create a new EMPTY project folder under SOURCE_ROOT so 'start something from scratch' has
+    somewhere to live — _open()/_resolve_source() requires the source to already exist as a directory,
+    and there was previously no way to create one at all. Name-validated (no traversal/specials);
+    refuses to clobber an existing folder."""
+    name = str(req.get("name", "")).strip()
+    if not _PROJECT_NAME.match(name):
+        return {"error": "ungueltiger Projektname (Buchstaben/Zahlen/._- , max. 64 Zeichen)"}
+    p = (SOURCE_ROOT / name).resolve()
+    if SOURCE_ROOT != p and SOURCE_ROOT not in p.parents:
+        return {"error": "Name verlaesst das Projektverzeichnis"}
+    if p.exists():
+        return {"error": f"'{name}' existiert bereits"}
+    p.mkdir(parents=True)
+    return {"ok": True, "name": name}
+
+
 def _reaper() -> None:
     """Close sessions idle longer than IDLE_TTL so an abandoned tab can't pin a VM and wedge MAX_SESSIONS."""
     while True:
@@ -190,7 +235,8 @@ def _reaper() -> None:
 
 
 _OPS = {"open": _open, "call": _call, "export": _export, "export_file": _export_file,
-        "snapshot": _snapshot, "restore": _restore, "close": _close}
+        "snapshot": _snapshot, "restore": _restore, "close": _close,
+        "list_projects": _list_projects, "new_project": _new_project}
 
 
 def _dispatch(req: dict) -> dict:

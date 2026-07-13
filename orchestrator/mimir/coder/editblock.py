@@ -280,11 +280,39 @@ def find_original_update_blocks(content, fence=DEFAULT_FENCE, valid_fnames=None)
                         raise ValueError(missing_filename_err.format(fence=fence))
                 current_filename = filename
 
+                # Weaker models frequently never emit a "=======" divider at all: they write
+                # <<<<<<< SEARCH, one blob of (what they intend as the new) content — sometimes
+                # nothing, sometimes real code — then jump straight to >>>>>>> REPLACE. Detected by
+                # hitting the REPLACE marker before any divider: treat everything collected so far as
+                # the new content (empty search = whole-file create/replace) instead of failing the
+                # whole block — and burning a retry round — over one missing marker line.
                 original_text = []
                 i += 1
+                hit_replace_first = False
                 while i < len(lines) and not divider_pattern.match(lines[i].strip()):
+                    if updated_pattern.match(lines[i].strip()):
+                        hit_replace_first = True
+                        break
                     original_text.append(lines[i])
                     i += 1
+                if hit_replace_first:
+                    # The intended new content can end up on EITHER side of the misplaced marker —
+                    # before it, after it, or a stub before + the real content after — depending on
+                    # exactly how the model mangled the template. Prefer whatever comes AFTER "REPLACE"
+                    # (closer to its literal meaning, and what the observed stub-before/real-after case
+                    # needs), falling back to what came before it if nothing follows.
+                    trailing = []
+                    i += 1
+                    while i < len(lines) and not (
+                        lines[i].strip().startswith(fence[1]) or head_pattern.match(lines[i].strip())
+                    ):
+                        trailing.append(lines[i])
+                        i += 1
+                    content = trailing if trailing else original_text
+                    yield filename, "", "".join(content)
+                    if i < len(lines) and lines[i].strip().startswith(fence[1]):
+                        i += 1
+                    continue
                 if i >= len(lines) or not divider_pattern.match(lines[i].strip()):
                     raise ValueError(f"Expected `{DIVIDER_ERR}`")
 

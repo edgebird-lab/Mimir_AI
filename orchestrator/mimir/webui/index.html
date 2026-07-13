@@ -196,8 +196,12 @@
   /* ===== Coding (Zone W) ===== */
   #view-coding{background:var(--bg)}
   .csess,.cauto{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
-  .csess input,.cauto input{background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:6px 9px;font:inherit}
-  .csess #wsSource{width:340px}.cauto #wsTask{flex:1;min-width:220px}.cauto #wsTest{width:230px}
+  .csess input,.cauto input,.csess select{background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:6px 9px;font:inherit}
+  .csess select#wsProjectSelect{min-width:200px}
+  .cauto{align-items:flex-start}
+  .cauto textarea#wsTask{flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:8px 10px;font:inherit;resize:vertical;min-height:38px}
+  .cauto #wsTest{width:230px}
+  .cautobtns{display:flex;flex-direction:column;gap:6px}
   .csess button,.cauto button,.cbar button{background:var(--accent);color:#0a1330;border:0;border-radius:7px;padding:6px 11px;font-weight:700;cursor:pointer;font-size:12.5px}
   .csess button.sec,.cbar button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line);font-weight:600}
   .csess button.danger{background:var(--bad);color:#2a0808}
@@ -380,16 +384,42 @@
       <div class="view" id="view-coding">
         <div class="csess">
           <span class="ztag" title="Isolierte Firecracker-VM: kein Host, keine Secrets, kein Netz — Freiheit im Jail, geprüfter Diff verlässt ihn">🛡 Zone W · isolierte Coding-VM</span>
-          <input id="wsSource" placeholder="Projekt-Unterordner (unter ~/Mimir/project), z. B. sample-coding" value="sample-coding">
-          <button id="wsOpen">▶ Workspace öffnen</button>
+          <select id="wsProjectSelect" title="Projekt wählen"><option value="">① Projekt wählen…</option></select>
+          <button id="wsNewProjectBtn" class="sec" title="Neues, leeres Projekt anlegen">+ Neues Projekt</button>
+          <button id="wsOpen" disabled>▶ Öffnen</button>
           <span id="wsStatus" class="wsstat">geschlossen</span>
           <button id="wsMerge" class="sec" disabled title="Geprüften Diff nach out/ übernehmen (mit Freigabe)">⇪ Merge-back</button>
           <button id="wsClose" class="danger" disabled>■ Schließen</button>
         </div>
+        <div class="csess" id="wsNewProjectBar" style="display:none">
+          <input id="wsNewProjectName" placeholder="Name des neuen Projekts, z. B. taschenrechner" style="width:280px">
+          <button id="wsNewProjectCreate">Anlegen</button>
+          <button id="wsNewProjectCancel" class="sec">Abbrechen</button>
+        </div>
+        <div id="wsOnboard" class="onboard">
+          <h2>🧑‍💻 Coding — Mimir programmiert für dich, isoliert in einer eigenen VM</h2>
+          <p>Hier arbeitet Mimir selbstständig an echtem Code — mit Shell, Git, Build- und Testwerkzeugen,
+             komplett abgeschottet vom Rest deines Rechners:</p>
+          <ol>
+            <li><b>① Projekt wählen</b> — ein bestehendes aus der Liste, oder <b>+ Neues Projekt</b> für ein leeres.</li>
+            <li><b>② Beschreiben, was gebaut werden soll</b> — unten im großen Feld, z. B. „Baue einen
+                Taschenrechner mit Java Swing (Grundrechenarten)."</li>
+            <li><b>③ 🤖 Los</b> — Mimir öffnet die VM (falls nötig) und arbeitet autonom: bearbeitet Dateien,
+                führt Tests aus. Du siehst rechts unten live, was passiert.</li>
+            <li><b>⇪ Merge-back</b> übernimmt das Ergebnis erst nach deiner Prüfung/Freigabe in den
+                „📚 Bibliothek"-Export-Ordner. Links siehst du jederzeit die Dateien im Workspace.</li>
+          </ol>
+        </div>
         <div class="cauto">
-          <input id="wsTask" placeholder="Auto-Fix-Aufgabe: was soll der Coder tun? (läuft autonom im Jail)">
+          <textarea id="wsTask" rows="2" placeholder="Was soll Mimir bauen oder ändern? Z. B. „Baue einen Taschenrechner mit Java Swing (Grundrechenarten: +, -, ×, ÷)."></textarea>
+          <div class="cautobtns">
+            <button id="wsAuto" class="think" disabled title="Öffnet bei Bedarf automatisch die VM und arbeitet autonom (Edit→Test→Fix-Schleife)">🤖 Los</button>
+            <button id="wsAdvToggle" class="sec" type="button" title="Test-Befehl anpassen">⚙</button>
+          </div>
+        </div>
+        <div class="csess" id="wsAdvBar" style="display:none">
           <input id="wsTest" placeholder="Test-Befehl, z. B. python3 -m unittest -q" value="python3 -m unittest -q">
-          <button id="wsAuto" class="think" title="Autonome Edit→Test→Fix-Schleife in der isolierten VM">🤖 Auto-Fix</button>
+          <span class="hint" style="font-size:11.5px;color:var(--dim)">läuft nach jeder Änderungsrunde, um den Erfolg zu prüfen — leer lassen, wenn es keine Tests gibt</span>
         </div>
         <div class="cwrap">
           <div class="cfiles">
@@ -878,7 +908,8 @@ async function loadTree(){$('tree').innerHTML='<div class="hint">lädt…</div>'
 const openTabs={};
 function activate(id){[...tabsEl.children].forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
   [...viewsEl.children].forEach(v=>v.classList.toggle('active',v.id==='view-'+id));
-  if(id==='goals')loadGoals(); if(id==='runs')loadRuns(); if(id==='library')loadCorpus(); if(id==='settings')loadSettings();}
+  if(id==='goals')loadGoals(); if(id==='runs')loadRuns(); if(id==='library')loadCorpus(); if(id==='settings')loadSettings();
+  if(id==='coding')wsLoadProjects();}
 tabsEl.addEventListener('click',e=>{const tab=e.target.closest('.tab');if(tab&&!e.target.classList.contains('x'))activate(tab.dataset.tab);});
 
 /* ===== Einstellungen: Modell wechseln / herunterladen / System beenden ===== */
@@ -1033,13 +1064,45 @@ function wsDiffRender(diff){const t=$('wsTerm');const box=el('div','diff');
   (diff||'').split('\n').forEach(ln=>{const c=ln.startsWith('+')&&!ln.startsWith('+++')?'add':ln.startsWith('-')&&!ln.startsWith('---')?'del':'';
     const d=el('div',c);d.textContent=ln;box.append(d);});
   t.append(box);t.scrollTop=t.scrollHeight;}
+// project picker: replaces free-text "type a folder path" with a list of what's actually there + a
+// "create new (empty) project" flow, so opening a workspace never requires guessing a path by hand.
+async function wsLoadProjects(){
+  const sel=$('wsProjectSelect');const keep=sel.value;
+  const d=await jget('/api/ws/projects');
+  sel.innerHTML='';sel.append(new Option('① Projekt wählen…',''));
+  if(d.error){$('wsOnboard').querySelector('p').insertAdjacentHTML('afterend','<p class="err">'+esc(d.error)+'</p>');return;}
+  (d.projects||[]).forEach(p=>sel.append(new Option(p.name+' ('+p.files+' Datei(en))',p.name)));
+  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
+  wsOnProjectChange();
+}
+function wsOnProjectChange(){
+  const has=!!$('wsProjectSelect').value;
+  $('wsOpen').disabled=has?!!wsSid:true;
+  $('wsAuto').disabled=!has;
+  if(has)$('wsOnboard').style.display='none';
+}
+$('wsProjectSelect').onchange=wsOnProjectChange;
+$('wsNewProjectBtn').onclick=()=>{$('wsNewProjectBar').style.display='flex';$('wsNewProjectName').focus();};
+$('wsNewProjectCancel').onclick=()=>{$('wsNewProjectBar').style.display='none';$('wsNewProjectName').value='';};
+async function wsCreateProject(){
+  const name=$('wsNewProjectName').value.trim();if(!name)return;
+  const d=await jpost('/api/ws/new-project',{name});
+  if(d.error){alert(d.error);return;}
+  $('wsNewProjectBar').style.display='none';$('wsNewProjectName').value='';
+  await wsLoadProjects();$('wsProjectSelect').value=name;wsOnProjectChange();
+}
+$('wsNewProjectCreate').onclick=wsCreateProject;
+$('wsNewProjectName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();wsCreateProject();}});
+
 function wsSetOpen(on,info){wsSid=on?info.session_id:null;
   $('wsStatus').textContent=on?('offen · '+wsSid.slice(-6)):'geschlossen';$('wsStatus').classList.toggle('on',on);
   ['wsClose','wsMerge','wsSave','wsRun','wsDiffBtn'].forEach(id=>$(id).disabled=!on);
-  $('wsOpen').disabled=on;$('wsSource').disabled=on;}
+  $('wsProjectSelect').disabled=on;$('wsNewProjectBtn').disabled=on;
+  wsOnProjectChange();}
 async function wsOpenSession(){
-  const src=$('wsSource').value.trim();$('wsOpen').disabled=true;$('wsStatus').textContent='öffne VM…';
-  const d=await jpost('/api/ws/open',{source:src||null});
+  const src=$('wsProjectSelect').value;if(!src)return;
+  $('wsOpen').disabled=true;$('wsStatus').textContent='öffne VM…';$('wsOnboard').style.display='none';
+  const d=await jpost('/api/ws/open',{source:src});
   if(d.error){$('wsStatus').textContent='';wsTerm('rcx','✗ '+d.error);$('wsOpen').disabled=false;return;}
   wsSetOpen(true,d);
   const rep=d.clone_report||{};
@@ -1083,12 +1146,14 @@ async function wsCloseSession(){if(!wsSid)return;const sid=wsSid;await jpost('/a
   $('wsEditor').value='';$('wsFile').textContent='— keine Datei —';wsCurFile=null;wsTerm('sys','■ Workspace '+sid.slice(-6)+' geschlossen (VM entfernt).');}
 async function wsAutoFix(){
   const task=$('wsTask').value.trim();if(!task){$('wsTask').focus();return;}
-  const src=$('wsSource').value.trim();const test=$('wsTest').value.trim();
-  // run IN the open workspace if there is one (stays open + mergeable); else an ephemeral session
+  const src=$('wsProjectSelect').value;if(!src&&!wsSid){alert('Bitte zuerst ein Projekt wählen (oder + Neues Projekt).');return;}
+  const test=$('wsTest').value.trim();
+  $('wsOnboard').style.display='none';
+  // run IN the open workspace if there is one (stays open + mergeable); else Mimir opens one itself
   const body=wsSid?{mode:'workspace',session_id:wsSid,task,test_cmd:test}
                   :{mode:'workspace',source:src||null,task,test_cmd:test};
-  wsTerm('sys','🤖 Auto-Fix startet (isolierte VM, autonome Edit→Test→Fix-Schleife)'
-    +(wsSid?' im offenen Workspace':'')+'…');
+  wsTerm('sys','🤖 Los — Mimir arbeitet autonom (isolierte VM, Edit→Test→Fix-Schleife)'
+    +(wsSid?' im offenen Workspace':' — öffnet die VM…')+'…');
   const r=await jpost('/api/code',body);
   if(!r.run_id){wsTerm('rcx','✗ Start fehlgeschlagen');return;}
   await streamRun(r.run_id,(ev,d)=>{
@@ -1107,6 +1172,7 @@ async function wsAutoFix(){
 $('wsOpen').onclick=wsOpenSession;$('wsClose').onclick=wsCloseSession;$('wsSave').onclick=wsSaveFile;
 $('wsMerge').onclick=wsMergeBack;$('wsDiffBtn').onclick=wsShowDiff;$('wsRefresh').onclick=wsLoadTree;
 $('wsAuto').onclick=wsAutoFix;$('wsTermClear').onclick=()=>{$('wsTerm').innerHTML='';};
+$('wsAdvToggle').onclick=()=>{const b=$('wsAdvBar');b.style.display=b.style.display==='none'?'flex':'none';};
 $('wsRun').onclick=()=>{const c=$('wsCmd').value.trim();if(c){$('wsCmd').value='';wsRunCmd(c);}};
 $('wsCmd').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('wsRun').click();}});
 $('wsEditor').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();wsSaveFile();}});

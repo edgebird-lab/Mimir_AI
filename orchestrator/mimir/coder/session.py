@@ -132,8 +132,10 @@ class WorkspaceCodingSession:
 
                 results, new_map = self.coder.parse_and_apply(resp, ctx)
                 changed = 0
+                any_block = False           # a valid SEARCH/REPLACE block was found, even if unrelated to shell
                 for r in results:
                     if r["ok"]:
+                        any_block = True
                         w = self.wc.write(sid, r["path"], new_map[r["path"]])
                         if w.get("ok"):
                             changed += 1
@@ -141,9 +143,21 @@ class WorkspaceCodingSession:
                         else:
                             yield {"event": "edit_failed", "path": r["path"], "error": w.get("error", "write failed")}
                     elif r.get("shell"):
+                        any_block = True
                         yield {"event": "notice", "text": r["error"]}
                     else:
                         yield {"event": "edit_failed", "path": r.get("path"), "error": r["error"]}
+
+                if not any_block:
+                    # The response had NO parseable SEARCH/REPLACE block at all (prose-wrapped, truncated,
+                    # or otherwise malformed) — a real, common failure mode for smaller/weaker models. Give
+                    # one focused, format-only correction and retry rather than silently giving up after a
+                    # single bad generation (this used to fall through to the test command, which then
+                    # failed for an unrelated reason and looked like the WHOLE task was hopeless).
+                    last_directive = ("KORREKTUR: Deine letzte Antwort enthielt KEINEN gültig formatierten "
+                                      "SEARCH/REPLACE-Block (siehe Beispiel oben). Antworte NUR mit den "
+                                      "Blöcken im exakten Format — kein einleitender oder abschließender Text.")
+                    continue
 
                 if not test_cmd:
                     passed = None
@@ -163,8 +177,10 @@ class WorkspaceCodingSession:
                     passed = True
                     break
                 passed = False
-                # pytest exit 5 = "no tests collected" → the test file is missing; push a concrete order
-                if ex.get("rc") == 5 or "no tests ran" in raw.lower():
+                # "no tests collected" (pytest rc 5, or the wording for other runners/rc's) → the test
+                # file is missing, not a real failure — always worth another round regardless of `changed`.
+                no_tests_found = ex.get("rc") == 5 or "no tests ran" in raw.lower() or "no tests collected" in raw.lower()
+                if no_tests_found:
                     last_directive = ("KORREKTUR: Der Testbefehl hat KEINE Tests gefunden — es fehlt eine "
                                       "Testdatei. Lege JETZT eine Datei `test_*.py` mit echten "
                                       "`def test_...():`-Funktionen (mit assert) an, die die geforderten "
@@ -172,7 +188,7 @@ class WorkspaceCodingSession:
                 else:
                     last_directive = ("KORREKTUR: Die Tests sind fehlgeschlagen. Behebe die Ursache laut "
                                       "der Testausgabe unten und ändere NUR das Nötige.")
-                if changed == 0 and ex.get("rc") != 5:
+                if changed == 0 and not no_tests_found:
                     break                       # model made no edits and a real failure persists → stop
 
             # surface the session diff for review (read-only preview; export is the gated primitive)

@@ -35,7 +35,12 @@ class PlannerReply:
 
 
 class MimirLLM:
-    def __init__(self, base_url: str = "http://inference:8080", timeout: float = 120.0):
+    # 300s: covers the largest one-shot JSON call (PLAN_SYS, max_tokens=1800) even on slow hardware.
+    # Measured on a CPU-bound Vulkan/iGPU box at ~8.7 tok/s, 1800 tokens takes ~207s — 120s made every
+    # plan/extend call retry-loop forever (retry() masks the timeout as a transient blip and re-sends the
+    # same too-slow request). Only affects complete_json-style batch calls; stream_chat has no timeout
+    # (it streams token-by-token and the caller can cancel), so interactive chat responsiveness is unchanged.
+    def __init__(self, base_url: str = "http://inference:8080", timeout: float = 300.0):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
