@@ -47,6 +47,31 @@ of the jail — **always** require human approval, even at the highest autonomy 
 
 ---
 
+## Research & academic writing
+
+Mimir can research a topic and write it up, or draft an entire Bachelor/Master thesis — with
+**real, verifiable citations**, not invented ones.
+
+- **🔎 Recherchieren (Research):** give it a topic and it queries **OpenAlex** (scientific
+  literature) and the web, then writes a grounded summary with inline citation markers `[1]`,
+  `[2]`, … and a matching bibliography built at the end.
+- **📖 Thesis schreiben (Thesis writing):** the same pipeline scaled up — it searches sources,
+  drafts an outline, writes chapter by chapter (choose an approximate length up to ~44 pages),
+  and produces a full bibliography in your choice of citation style: **APA, Harvard, IEEE,
+  Chicago (author-date), or DIN 1505-2**.
+
+The key design choice: the bibliography is **never left to the model to hallucinate**. Every
+entry is assembled from structured metadata (author, year, title, venue, DOI) returned by the
+search APIs themselves, and the citation markers the model writes are checked against that same
+source list. Documents export to Markdown, DOCX, PDF, HTML, ODT, EPUB, and PPTX. Both tools live
+in the **📚 Bibliothek** tab, right next to your uploaded documents (which they can also draw on).
+
+![Research and academic writing](docs/img/07-research.png)
+*Research tool output — a grounded summary with inline citation markers and a real bibliography
+sourced from OpenAlex, not invented by the model.*
+
+---
+
 ## Features
 
 - **Chat** with a local model: streaming output and visible reasoning for thinking models.
@@ -57,9 +82,11 @@ of the jail — **always** require human approval, even at the highest autonomy 
   and test tooling, running an edit → test → fix loop. Changes leave the jail only as a
   reviewed git diff that you approve.
 - **Document library (RAG):** upload PDFs, DOCX, and PPTX and ask questions grounded in your
-  own documents, with page citations. Mimir can also generate grounded study notes, practice
-  exams, and long academic drafts (up to thesis length) with real citations from OpenAlex and
-  web search — exportable to Markdown, DOCX, and PDF.
+  own documents, with page citations. Mimir can also generate grounded study notes and practice
+  exams from them.
+- **Research & thesis writing:** research a topic or draft a full academic thesis with a real,
+  non-hallucinated bibliography from OpenAlex and web search — see
+  [Research & academic writing](#research--academic-writing) above.
 - **Self-improvement:** when Mimir hits a capability gap, it can write a new reusable skill,
   **test** it inside the jail against a held-out oracle, and stage it. A human must review and
   cryptographically **sign (ed25519)** the skill before it becomes reusable. The agent can
@@ -90,6 +117,10 @@ isolated coding VM (shell, git, build, test); changes leave only as a reviewed g
 
 ![Runs board](docs/img/06-runs.png)
 *Runs board — reconnect to background work and approve pending actions.*
+
+![Research and academic writing](docs/img/07-research.png)
+*Research & thesis writing — grounded output with real citations from OpenAlex, not invented
+by the model.*
 
 ---
 
