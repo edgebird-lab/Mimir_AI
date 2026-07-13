@@ -299,12 +299,17 @@
               <button id="btnPlan" class="sec" disabled>📋 Planen</button>
               <button id="btnAuto" disabled>▶ Autopilot</button>
               <button id="btnStop" class="danger" disabled>■ Stop</button>
+              <button id="btnLastRun" class="sec" style="display:none" title="Vollständigen Verlauf des letzten Laufs in den Runs öffnen">📜 Letzter Lauf</button>
               <span class="sp" id="goalName" style="margin-left:auto;color:var(--dim);font-size:12px"></span>
             </div>
             <div class="act" id="extendBar" style="display:none;gap:6px">
               <input id="extendText" placeholder="Weitere Anweisung an dieses Ziel…" style="flex:1;min-width:0">
               <button id="btnExtend" class="sec">➕ Weiter anweisen</button>
               <button id="btnSuggest" class="sec">✅ Testen &amp; Vorschläge</button>
+            </div>
+            <div class="act" id="liveNoteBar" style="display:none;gap:6px">
+              <input id="liveNoteText" placeholder="💬 Läuft gerade — sag Mimir jetzt etwas dazu (wird vor dem nächsten Schritt gelesen)…" style="flex:1;min-width:0">
+              <button id="btnLiveNote" class="sec">➤ Senden</button>
             </div>
             <div id="suggestBox"></div>
             <div id="tasks"><div class="hint" style="margin-top:12px">👈 Wähle links ein Ziel — oder lege unten links eins an.</div></div>
@@ -668,7 +673,7 @@ function attachRunStream(runId,tabId){
     else if(ev==='final'){if(d.text)ui.ans.append('\n'+d.text);}
     else if(ev==='ws_diff'){if((d.files||[]).length)opEv(log,'📑',fmtEv(ev,d),'cp');}
     else if(ev==='decision'){opEv(log,'🔀',fmtEv('decision',d),'nh');refreshApprovals();}
-    else if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged'].includes(ev))
+    else if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged','operator_note'].includes(ev))
       opEv(log,ICON[ev]||'•',fmtEv(ev,d),ev==='quality'?'cp':'');
     log.scrollTop=log.scrollHeight;
   });
@@ -724,7 +729,16 @@ async function loadGoals(){
 }
 function selectGoal(g){selGoal=g.id;$('goalName').textContent=g.title;$('onboard').style.display='none';
   $('btnPlan').disabled=false;$('btnAuto').disabled=false;$('extendBar').style.display='flex';
-  $('suggestBox').innerHTML='';loadGoals();renderTasks(g);}
+  $('suggestBox').innerHTML='';loadGoals();renderTasks(g);loadLastRunFor(g.id);}
+let lastRunForGoal=null;
+async function loadLastRunFor(goalId){
+  lastRunForGoal=null;$('btnLastRun').style.display='none';
+  try{const d=await jget('/api/runs');
+    const r=(d.runs||[]).find(x=>x.goal_id===goalId);   // /api/runs is newest-first
+    if(r){lastRunForGoal=r;$('btnLastRun').style.display='';}
+  }catch(e){}
+}
+$('btnLastRun').onclick=()=>{if(lastRunForGoal)openRunView(lastRunForGoal);};
 function renderTasks(g){const box=$('tasks');box.innerHTML='';
   if(!(g.tasks||[]).length){box.append(el('div','hint','Noch keine Tasks — „Planen" zerlegt das Ziel.'));return;}
   g.tasks.forEach(t=>{const wrap=el('div','tk-wrap');const r=el('div','tk');
@@ -750,9 +764,11 @@ function renderSuggestions(d){
   card.style.cssText='margin:8px 12px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;font-size:12.5px';
   box.append(card);box.scrollIntoView({block:'nearest'});
 }
+function argStr(args){const a=args||{};const parts=Object.keys(a).map(k=>k+'='+String(a[k]).slice(0,60));
+  return parts.length?(' ('+esc(parts.join(', '))+')'):'';}
 function opEv(box,ic,html,cls){const e=el('div','ev'+(cls?' '+cls:''));e.append(el('span','ic',ic));const tx=el('div','tx');tx.innerHTML=html;e.append(tx);box.append(e);box.scrollTop=box.scrollHeight;}
 async function refreshSelected(){try{const d=await jget('/api/goals');const g=(d.goals||[]).find(x=>x.id===selGoal);if(g)renderTasks(g);}catch(e){}}
-const ICON={run_start:'🚀',step:'⋯',tool_result:'•',verify:'✓',checkpoint:'🧭',task_start:'⋯',task_done:'✅',plan_task:'•',plan_done:'✅',autopilot_done:'🏁',needs_human:'🙋',debug_run:'▶',debug_fail:'✗',debug_done:'🏁',continue:'↩',status:'•',approval:'⚠',thesis_start:'📖',outline:'📑',research_start:'🔎',exam_start:'📝',notes_start:'📄',ws_open:'🛡',ws_list:'📁',round:'🔁',edit:'✎',edit_failed:'✗',snapshot:'📸',ws_exec:'▶',coder_start:'🧑‍💻',coder_done:'✅',merge_start:'⇪',merge_done:'⇪',ws_diff:'📑',decision:'🔀',decision_made:'🔀',decision_resolved:'✓',capability_gap:'🧩',learn_spawn:'🎓',learn_skip:'•',learn_result:'🎓',teach_start:'🎓',teach_round:'🔁',teach_test:'🧪',teach_done:'🏁',skill_staged:'📦'};
+const ICON={run_start:'🚀',step:'⋯',tool_result:'•',verify:'✓',checkpoint:'🧭',task_start:'⋯',task_done:'✅',plan_task:'•',plan_done:'✅',autopilot_done:'🏁',needs_human:'🙋',debug_run:'▶',debug_fail:'✗',debug_done:'🏁',continue:'↩',status:'•',approval:'⚠',thesis_start:'📖',outline:'📑',research_start:'🔎',exam_start:'📝',notes_start:'📄',ws_open:'🛡',ws_list:'📁',round:'🔁',edit:'✎',edit_failed:'✗',snapshot:'📸',ws_exec:'▶',coder_start:'🧑‍💻',coder_done:'✅',merge_start:'⇪',merge_done:'⇪',ws_diff:'📑',decision:'🔀',decision_made:'🔀',decision_resolved:'✓',capability_gap:'🧩',learn_spawn:'🎓',learn_skip:'•',learn_result:'🎓',teach_start:'🎓',teach_round:'🔁',teach_test:'🧪',teach_done:'🏁',skill_staged:'📦',operator_note:'🧑'};
 function fmtEv(ev,d){
   if(ev==='plan_task')return 'Task: '+esc(d.title);
   if(ev==='plan_done')return 'Plan fertig: <b>'+d.count+'</b> Tasks';
@@ -766,7 +782,11 @@ function fmtEv(ev,d){
   if(ev==='debug_run')return 'Runde '+d.round+' — Code + Tests…';
   if(ev==='debug_fail')return 'Runde '+d.round+' fehlgeschlagen: '+esc((d.error||'').slice(0,160));
   if(ev==='debug_done')return d.passed?('bestanden nach '+d.rounds+' Runde(n)'):('nicht bestanden ('+d.reason+')');
-  if(ev==='tool_result')return esc(d.tool)+(d.ok?' ✓':' ✗ '+esc(d.reason||''));
+  if(ev==='step'){
+    if(d.state&&d.state!=='start')return '⚠ '+esc(d.tool)+': '+esc(d.state);
+    return '▶ '+esc(d.tool)+argStr(d.args)+' …';
+  }
+  if(ev==='tool_result')return esc(d.tool)+argStr(d.args)+(d.ok?' ✓':' ✗ '+esc(d.reason||''));
   if(ev==='status')return 'Status: '+esc(d.status);
   if(ev==='run_start')return '<b>Run gestartet</b> ('+esc(d.kind)+')';
   if(ev==='thesis_start')return '<b>📖 Thesis</b> zu „'+esc(d.topic)+'" — suche Quellen…';
@@ -784,6 +804,7 @@ function fmtEv(ev,d){
   if(ev==='teach_done')return d.passed?'Skill gelernt ✅':('nicht gelernt'+(d.reason?' ('+d.reason+')':''));
   if(ev==='skill_staged')return '📦 <b>Skill gestaged:</b> '+esc(d.staged||'')+' — Freigabe/Signatur nötig zur Wiederverwendung';
   if(ev==='learn_result')return esc(d.text||'');
+  if(ev==='operator_note')return '<b>🧑 Deine Anweisung:</b> '+esc(d.text||'');
   if(ev==='ws_open')return '<b>🛡 Zone W offen</b> — Toolchain '+esc((d.toolchain||[]).join(', '))+' · '+esc(String(d.included||0))+' Datei(en)'+((d.secret_refused||[]).length?(' · ⚠ '+d.secret_refused.length+' Secret-Datei(en) abgelehnt'):'');
   if(ev==='round')return 'Runde '+d.n+'/'+d.of;
   if(ev==='edit')return 'bearbeitet <code>'+esc(d.path)+'</code>'+(d.diff?('<pre class="diffbox">'+esc(d.diff)+'</pre>'):'');
@@ -797,7 +818,8 @@ function fmtEv(ev,d){
   return esc(ev);
 }
 function goalBusy(on){$('btnPlan').disabled=on||selGoal==null;$('btnAuto').disabled=on||selGoal==null;$('btnStop').disabled=!on;$('btnDebug').disabled=on;
-  $('btnExtend').disabled=on||selGoal==null;$('btnSuggest').disabled=on||selGoal==null;}
+  $('btnExtend').disabled=on||selGoal==null;$('btnSuggest').disabled=on||selGoal==null;
+  $('liveNoteBar').style.display=on?'flex':'none';if(!on)$('liveNoteText').value='';}
 let goalRun=null;
 // Live token/reasoning view: so you can watch Mimir think + write code as it happens, instead of only
 // seeing coarse milestones. A live row is created on the first token of a burst and grows in place;
@@ -824,11 +846,12 @@ async function startGoalRun(kind,body){goalBusy(true);$('oplog').innerHTML='';li
     else if(ev==='decision'){liveReset();opEv($('oplog'),'🔀',fmtEv('decision',d),'nh');refreshApprovals();}
     else if(ev==='suggestions'){liveReset();renderSuggestions(d);}
     else if(ev==='error'){liveReset();opEv($('oplog'),'✗','Fehler: '+esc(d.msg||''),'nh');}
-    else if(['plan_task','plan_done','task_start','verify','verify_start','checkpoint','task_done','task_blocked','needs_human','autopilot_done','debug_run','debug_fail','debug_done','run_start','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_round','teach_test','teach_done','skill_staged','goal_accept','edit','edit_failed','coder_start','coder_done','ws_open','ws_exec','round'].includes(ev)){
+    else if(ev==='tool_result'&&d.tool==='project_write_out'&&d.ok){/* superseded by the richer 'edit' event (diff) */}
+    else if(['plan_task','plan_done','task_start','verify','verify_start','checkpoint','task_done','task_blocked','needs_human','autopilot_done','debug_run','debug_fail','debug_done','run_start','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_round','teach_test','teach_done','skill_staged','goal_accept','edit','edit_failed','coder_start','coder_done','ws_open','ws_exec','round','step','tool_result','operator_note'].includes(ev)){
       liveReset();opEv($('oplog'),ICON[ev]||'•',fmtEv(ev,d),ev==='checkpoint'?'cp':ev==='needs_human'?'nh':(ev==='task_done'&&d.status==='done')?'done':'');refreshSelected();}
     else if(ev==='usage')setMeter(d.used,d.ctx);
   });
-  goalBusy(false);goalRun=null;refreshSelected();
+  goalBusy(false);goalRun=null;refreshSelected();if(selGoal!=null)loadLastRunFor(selGoal);
 }
 $('addGoal').onclick=async()=>{const title=$('gTitle').value.trim();if(!title)return;
   const g=await jpost('/api/goal',{title,detail:$('gDetail').value.trim()});$('gTitle').value='';$('gDetail').value='';await loadGoals();if(g&&g.id){g.tasks=g.tasks||[];selectGoal(g);}};
@@ -839,6 +862,10 @@ $('btnDebug').onclick=()=>{const spec=$('dbgSpec').value.trim();if(spec)startGoa
 $('btnExtend').onclick=()=>{const instruction=$('extendText').value.trim();
   if(instruction&&selGoal!=null){startGoalRun('goal/extend',{goal_id:selGoal,instruction});$('extendText').value='';}};
 $('btnSuggest').onclick=()=>{if(selGoal!=null)startGoalRun('goal/suggest',{goal_id:selGoal});};
+async function sendLiveNote(){const t=$('liveNoteText').value.trim();if(!t||!goalRun)return;
+  $('liveNoteText').value='';await jpost('/api/run/note',{run_id:goalRun,text:t});}
+$('btnLiveNote').onclick=sendLiveNote;
+$('liveNoteText').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendLiveNote();}});
 $('runsRefresh').onclick=loadRuns;
 
 /* ================= LIBRARY (corpus) ================= */

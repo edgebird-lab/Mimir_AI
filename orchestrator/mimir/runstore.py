@@ -387,6 +387,31 @@ class RunStore:
         except Exception:  # noqa: BLE001
             pass
 
+    # ------------------------------------------------------------------ live operator notes (mid-run chat)
+    # A long autopilot/coding run used to be a one-way street: the operator could only watch or Stop it,
+    # never say "actually, also handle X" until it finished. This is a lightweight mailbox a running
+    # generator polls once per step/task boundary — it never blocks, so a run with no notes pays nothing.
+    def inject_note(self, run_id: str, text: str) -> None:
+        text = (text or "").strip()[:2000]
+        if not text:
+            return
+        try:
+            key = f"mimir:run:{run_id}:notes"
+            self.r.rpush(key, text)
+            self.r.expire(key, 86400)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def pop_notes(self, run_id: str) -> list[str]:
+        try:
+            key = f"mimir:run:{run_id}:notes"
+            notes = self.r.lrange(key, 0, -1)
+            if notes:
+                self.r.delete(key)
+            return notes
+        except Exception:  # noqa: BLE001
+            return []
+
     # ------------------------------------------------------------------ settings (autonomy level etc.)
     def get_setting(self, key: str, default: str = "") -> str:
         r = self.db.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()

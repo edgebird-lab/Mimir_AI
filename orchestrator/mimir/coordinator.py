@@ -329,7 +329,7 @@ class Coordinator:
         return {"mode": "http", "url": u.group(0)} if u else None
 
     # ------------------------------------------------------------------ AUTOPILOT
-    def autopilot_events(self, goal_id, should_cancel, budget=Budget()):
+    def autopilot_events(self, goal_id, should_cancel, get_notes=lambda: [], budget=Budget()):
         goal = self.ws.get_goal(goal_id)
         if not goal:
             yield {"event": "error", "msg": "unknown goal"}
@@ -368,7 +368,7 @@ class Coordinator:
                 return
             yield {"event": "task_start", "task_id": task["id"], "title": task["title"], "iter": it + 1}
             result = {"status": "failed"}
-            for ev in self.process_task(task, goal, should_cancel, budget):
+            for ev in self.process_task(task, goal, should_cancel, budget, get_notes=get_notes):
                 if ev.get("event") == "task_result":
                     result = ev["decision"]
                 else:
@@ -442,7 +442,7 @@ class Coordinator:
             yield {"event": "learn_result", "text": ev.get("text", "")} if ev.get("event") == "final" else ev
 
     # ------------------------------------------------------------------ one task
-    def process_task(self, task, goal, should_cancel, budget):
+    def process_task(self, task, goal, should_cancel, budget, get_notes=lambda: []):
         tid = task["id"]
         attempts = self.ws.bump_attempts(tid)
         self.ws.set_task(tid, "active")
@@ -454,7 +454,7 @@ class Coordinator:
         steps, final = [], ""
         for ev in self.agent.run_events(prompt, should_cancel=should_cancel, conversation=[],
                                         seed_tainted=tainted, session_id=f"task:{tid}",
-                                        max_steps=budget.max_task_steps,
+                                        max_steps=budget.max_task_steps, get_notes=get_notes,
                                         on_checkpoint=lambda h: self._precompact_checkpoint(goal, task, h)):
             if ev["event"] == "tool_result":
                 steps.append((ev["tool"], ev["ok"], ev.get("reason", "")))

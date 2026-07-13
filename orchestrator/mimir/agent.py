@@ -35,6 +35,24 @@ CONTINUE_PROMPT = ("Your previous output was cut off by the token limit. Continu
                    "reasoning and your final answer completely.")
 
 
+def _summarize_args(args: dict) -> dict:
+    """Short, display-safe view of a tool call's args for the live event feed — never the raw
+    'content' blob (writes show their own diff via the 'edit' event instead)."""
+    out = {}
+    for k, v in list(args.items())[:4]:
+        if k == "content":
+            continue
+        out[k] = str(v)[:200]
+    return out
+
+
+def _unified_diff(before: str, after: str) -> str:
+    import difflib
+    return "".join(difflib.unified_diff((before or "").splitlines(keepends=True),
+                                        (after or "").splitlines(keepends=True),
+                                        fromfile="alt", tofile="neu", lineterm="", n=2))
+
+
 def approx_tokens(msg: dict) -> int:
     t = len(msg.get("content") or "") // 4 + 4
     for tc in msg.get("tool_calls") or []:
@@ -191,14 +209,19 @@ class Agent:
 
     def run_events(self, task: str, should_cancel=lambda: False, conversation: list[dict] | None = None,
                    session_id: str = "default", max_steps: int | None = None, seed_tainted: bool = False,
-                   summary: str = "", summary_tainted: bool = False, on_checkpoint=None):
+                   summary: str = "", summary_tainted: bool = False, on_checkpoint=None,
+                   get_notes=lambda: []):
         """Generator of UI/CLI events. Streams the planner turn, then routes each proposed tool call
         through the broker — with the two P0 defenses now LIVE:
           * P0-2: untrusted tool output is prompt-injection-screened, hidden-content-stripped and
             fenced before it re-enters the planner context.
           * P0-1: once any untrusted content has been ingested, protected-param values are wrapped
             Tainted so the broker forces human-in-the-loop on every subsequent sink.
-        Events: reasoning | token | step | tool_result | final.
+        `get_notes()` polls a mailbox of operator messages typed WHILE this run is in progress (e.g. an
+        Autopilot task in flight) — checked once per step so a long unattended run is still collaborative,
+        not a one-way status feed. A note is TRUSTED (the human operator typed it, not tool output).
+        Events: reasoning | token | step | tool_result | edit (on a successful project_write_out,
+        carrying a diff against the prior content) | operator_note | final.
         """
         # multi-turn chat: seed ONLY prior user/assistant turns (never tool/tainted scratchpad rows).
         nonce = secrets.token_hex(8)
@@ -219,6 +242,12 @@ class Agent:
             if should_cancel():
                 yield {"event": "final", "text": "(stopped)"}
                 return
+            notes = [n for n in (get_notes() or []) if str(n).strip()]
+            if notes:
+                joined = "\n".join(str(n).strip()[:2000] for n in notes)
+                prompt = (f"[OPERATOR — live instruction sent while you were working, apply it now]:\n"
+                          f"{joined}\n\n" + prompt)
+                yield {"event": "operator_note", "text": joined}
             # auto-compaction: fold aged turns BEFORE they overflow the window (over-count is safe)
             projected = sum(approx_tokens(m) for m in history) + len(prompt) // 4 + 400
             if projected >= COMPACT_TRIGGER * n_ctx or projected + reserve >= n_ctx:
@@ -299,15 +328,31 @@ class Agent:
                                             "function": {"name": n, "arguments": json.dumps(a)}}
                                            for i, (n, a) in enumerate(parsed)]})
             for i, (name, args) in enumerate(parsed):
-                yield {"event": "step", "n": step, "tool": name, "state": "start"}
+                disp_args = _summarize_args(args)
+                yield {"event": "step", "n": step, "tool": name, "state": "start", "args": disp_args}
                 # P0-1: after any untrusted ingestion, force HITL on protected sinks (taint-wrap).
                 call_args = ({k: Tainted(v, "tool_output") for k, v in args.items()}
                              if tainted_session else dict(args))
                 # P1-1: the planner may never choose memory provenance.
                 call_args.pop("source", None)
+                # A live diff (not just "ok/denied") is what makes writing-to-out/ feel like actually
+                # watching Mimir program, instead of a one-line status label — mirrors Zone W's 'edit'
+                # event. Best-effort: a missing/unreadable prior file just means an all-new-lines diff.
+                before = ""
+                if name == "project_write_out":
+                    try:
+                        r0 = self.broker.handle(PrimitiveCall("project_read_scoped",
+                                                              {"path": str(args.get("path", ""))},
+                                                              session_id=session_id))
+                        before = r0.value if r0.ok and isinstance(r0.value, str) else ""
+                    except Exception:  # noqa: BLE001 — best-effort diff context only, never blocks the write
+                        before = ""
                 res = self.broker.handle(PrimitiveCall(name, call_args, session_id=session_id))
+                if name == "project_write_out" and res.ok:
+                    yield {"event": "edit", "path": str(args.get("path", "")),
+                           "diff": _unified_diff(before, str(args.get("content", "")))}
                 yield {"event": "tool_result", "n": step, "tool": name,
-                       "ok": res.ok, "reason": res.reason or "ok"}
+                       "ok": res.ok, "reason": res.reason or "ok", "args": disp_args}
                 if reason := stuck.tool_step(name, args, res.ok, res.reason):
                     yield {"event": "final",
                            "text": f"Abgebrochen — {reason}. Bitte die Aufgabe konkreter fassen "

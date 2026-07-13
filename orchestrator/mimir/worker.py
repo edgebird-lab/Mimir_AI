@@ -87,7 +87,8 @@ class DurableDecider:
         return key
 
 
-def _events_for(kind: str, params: dict, run: dict, coord: Coordinator, ws: Workspace, should_cancel):
+def _events_for(kind: str, params: dict, run: dict, coord: Coordinator, ws: Workspace, should_cancel,
+                get_notes=lambda: []):
     """Dispatch a run kind to the right event generator."""
     if kind == "chat":
         cid = run["conversation_id"]
@@ -99,7 +100,7 @@ def _events_for(kind: str, params: dict, run: dict, coord: Coordinator, ws: Work
     if kind == "plan":
         return coord.plan_events(int(params.get("goal_id", 0)), should_cancel)
     if kind == "autopilot":
-        return coord.autopilot_events(int(params.get("goal_id", 0)), should_cancel)
+        return coord.autopilot_events(int(params.get("goal_id", 0)), should_cancel, get_notes=get_notes)
     if kind == "extend":
         return coord.extend_events(int(params.get("goal_id", 0)), str(params.get("instruction", "")), should_cancel)
     if kind == "suggest":
@@ -137,10 +138,11 @@ def execute_run(rs: RunStore, coord: Coordinator, ws: Workspace, approver: Durab
     rs.append_event(run_id, {"event": "run_start", "kind": run["kind"]})
     params = json.loads(run["params"] or "{}")
     should_cancel = lambda: rs.is_stopped(run_id)            # noqa: E731
+    get_notes = lambda: rs.pop_notes(run_id)                 # noqa: E731
     kind, cid = run["kind"], run["conversation_id"]
     final_text = ""
     try:
-        for ev in _events_for(kind, params, run, coord, ws, should_cancel):
+        for ev in _events_for(kind, params, run, coord, ws, should_cancel, get_notes=get_notes):
             if kind == "chat" and ev.get("event") == "compaction" and ev.get("summary") and cid:
                 ws.set_summary(cid, ev["summary"], bool(ev.get("tainted")))
             if ev.get("event") == "final":

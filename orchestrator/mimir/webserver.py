@@ -228,6 +228,23 @@ async def api_stop(request: Request):
     return JSONResponse({"ok": False, "error": "unknown run"}, 404)
 
 
+async def api_run_note(request: Request):
+    """Send a live instruction to a run that is still in progress (e.g. an Autopilot task mid-flight) —
+    picked up at its next step boundary instead of forcing the operator to wait for it to finish."""
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    rid = str(b.get("run_id", ""))
+    text = str(b.get("text", ""))[:2000]
+    run = rs.get_run(rid)
+    if not run or run["status"] in TERMINAL:
+        return JSONResponse({"ok": False, "error": "run not active"}, 404)
+    if not text.strip():
+        return JSONResponse({"ok": False, "error": "empty note"}, 400)
+    rs.inject_note(rid, text)
+    return JSONResponse({"ok": True})
+
+
 # ---------------------------------------------------------------- approvals inbox (persisted pauses)
 async def api_approvals(request: Request):
     if not _authed(request):
@@ -695,6 +712,7 @@ app = Starlette(routes=[
     Route("/api/run", api_run_get, methods=["GET"]),
     Route("/api/run/stream", api_run_stream, methods=["GET"]),
     Route("/api/stop", api_stop, methods=["POST"]),
+    Route("/api/run/note", api_run_note, methods=["POST"]),
     Route("/api/approvals", api_approvals, methods=["GET"]),
     Route("/api/approve", api_approve, methods=["POST"]),
     Route("/api/decisions", api_decisions, methods=["GET"]),
