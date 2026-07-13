@@ -82,7 +82,8 @@ of the jail — **always** require human approval, even at the highest autonomy 
 *Goals, Plan & Autopilot — decompose a long goal and run it autonomously with verified checkpoints.*
 
 ![Zone W isolated coding workspace](docs/img/04-coding.png)
-*Zone W — an isolated coding VM; changes leave only as a reviewed git diff you approve.*
+*Zone W — pick or create a project, describe what to build, and Mimir works autonomously in an
+isolated coding VM (shell, git, build, test); changes leave only as a reviewed git diff you approve.*
 
 ![Document library](docs/img/05-library.png)
 *Document library (RAG) — ask questions grounded in your own PDFs, DOCX, and PPTX with citations.*
