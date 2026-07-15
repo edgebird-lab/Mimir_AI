@@ -4,9 +4,9 @@ access but NO secrets and NO host mounts, so broad fetching stays off the secret
 Two endpoints, both GET-only and read-only:
   * POST /search {query,k} → meta-search via DuckDuckGo HTML (title/url/snippet).
   * POST /fetch  {url}      → fetch one page and return its readable text.
-Hardening: http(s) only, resolve-then-block private/loopback/link-local/metadata IPs (SSRF), a
-payment/bank/crypto denylist, size + time caps, redirects capped. Returned text is UNTRUSTED (the
-orchestrator taints + quarantines it). Reachable only on the internal compose net, bearer-token gated.
+Hardening: http(s) only, resolve-then-block private/loopback/link-local/metadata IPs (SSRF),
+size + time caps, redirects capped. Returned text is UNTRUSTED (the orchestrator taints +
+quarantines it). Reachable only on the internal compose net, bearer-token gated.
 """
 from __future__ import annotations
 
@@ -24,9 +24,6 @@ from starlette.routing import Route
 
 TOKEN = os.environ.get("MIMIR_WEBFETCH_TOKEN", "")
 MAX_BYTES = 3 * 1024 * 1024
-DENY = ("paypal", "stripe", "braintree", "adyen", "klarna", "squareup", "wise.com", "checkout",
-        "bank", "sparkasse", "volksbank", "coinbase", "binance", "crypto", "wallet", "sofort",
-        "giropay", "revolut", "n26", "mastercard", "visa.com", "americanexpress")
 
 
 def _authed(r: Request) -> bool:
@@ -43,8 +40,6 @@ def _safe_url(url: str) -> str:
     host = (u.hostname or "").lower()
     if not host:
         raise ValueError("no host")
-    if any(d in host for d in DENY):
-        raise PermissionError(f"denylisted host: {host}")
     ip = ipaddress.ip_address(socket.gethostbyname(host))
     if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
         raise PermissionError(f"non-routable ip: {ip}")

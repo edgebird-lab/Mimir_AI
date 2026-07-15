@@ -58,36 +58,46 @@ def decide_autonomy(name: str, taint_clean: bool, taint_exempt: bool, level: int
     here in the deterministic control plane, not by prompt):
       * TAINT FLOOR: an unclean protected arg on a non-taint_exempt sink is ALWAYS >= ASK — an
         untrusted-derived recipient/url/path can never be auto-approved (preserves the taint model).
-      * CRITICAL FLOOR: a `critical` action (name matches an outward/irreversible glob) or a PINNED op is
-        ALWAYS ASK, at EVERY level — outward side-effects (post/publish/deploy/install/send/…) can never
-        be silently auto-approved, even at full autonomy. This is checked BEFORE the level short-circuit.
+        This holds at EVERY level, including level 3 — it protects against a hijacked/injected model,
+        not against the operator's own choices, and full autonomy doesn't change what the model can be
+        tricked into wanting.
+      * CRITICAL FLOOR: a `critical` action (name matches an outward/irreversible glob) or a PINNED op
+        normally ASKs at every level. At level 3 ("Voll autonom") the operator has explicitly opted out
+        of this floor too — a deliberate, confirmed trade-off (see the operator-facing autonomy-level
+        confirmation dialog): outward/irreversible actions (post/deploy/install/send/merge-out-of-jail)
+        then run unattended. Levels 0-2 keep the floor.
       * The agent cannot raise `level`: it lives in operator-set settings; no primitive writes it, and
         payment/shell simply don't exist (capability-absence), so no level makes them composable.
-    level: 0 off (ask every side-effect, = today) · 1 guarded · 2 trusted · 3 autonomous."""
+    level: 0 off (ask every side-effect, = today) · 1 guarded · 2 trusted · 3 fully autonomous (no HITL
+    at all, including outward/irreversible actions — operator-confirmed opt-out of the critical floor)."""
     if not taint_clean and not taint_exempt:
         return "ask"
+    if level >= 3:
+        return "audit"
     if critical or name in PINNED_ASK:
         return "ask"
     if level <= 0:
         return "ask"
     if name in REVERSIBLE_AUTO:
         return "audit"                     # reversible, in-jail (out/) write → run + record, no prompt
-    return "audit" if level >= 3 else "ask"
+    return "ask"
 
 
 def decide_multipath(system_critical: bool, level: int, confidence: float, all_reversible: bool) -> str:
     """Return 'auto' or 'ask' for a MULTI-PATH decision (several valid approaches). Fail-safe: the
     wrong-way error is over-asking, never a silent commit to an irreversible/critical path.
+      * level 3 ("Voll autonom"): the operator opted out of the critical floor entirely (same trade-off
+        as decide_autonomy) — auto-picks the recommended option even for a system-critical fork;
       * a system-critical option (adds an external dep/API/credential, changes infra, enables an outward
-        side-effect) → ALWAYS ask, at every level;
+        side-effect) → ask at every level below 3;
       * level 0 → always ask;
-      * only reversible forks with high model confidence may auto-pick, and only at higher autonomy."""
+      * otherwise only reversible forks with high model confidence may auto-pick."""
+    if level >= 3:
+        return "auto"
     if system_critical:
         return "ask"
     if level <= 0:
         return "ask"
-    if all_reversible and level >= 3 and confidence >= 0.66:
-        return "auto"
     if all_reversible and level >= 2 and confidence >= 0.80:
         return "auto"
     return "ask"

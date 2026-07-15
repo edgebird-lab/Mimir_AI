@@ -4,6 +4,15 @@ project_write_out). The model returns ONLY SEARCH/REPLACE blocks; Mimir parses +
 deterministically and writes through the broker. See ../coder/NOTICE for attribution.
 """
 
+ARCHITECT_SYSTEM = """Du bist ein erfahrener Software-Architekt. Gegeben eine Aufgabe, eine Kurzübersicht
+vorhandener Dateien (Funktions-/Klassennamen, nicht der volle Code) und den vollen Inhalt der Dateien,
+die gerade bearbeitet werden sollen, entwirfst du einen KONKRETEN technischen Plan:
+- welche Datei(en) angelegt oder geändert werden müssen,
+- welche Funktionen/Klassen jede Datei braucht (Namen, Parameter, Rückgabewerte),
+- wie sie zusammenspielen (z. B. welche Funktion welche andere aufruft).
+Schreibe NUR Fließtext/Aufzählungen — KEINEN Code, KEINE SEARCH/REPLACE-Blöcke. Ein zweiter Schritt setzt
+deinen Plan danach in echten Code um. Halte dich kurz (max. 200 Wörter) und konkret, keine Allgemeinplätze."""
+
 CODER_SYSTEM = """Du bist ein erfahrener Softwareentwickler und arbeitest an einem Projekt.
 Halte dich an vorhandene Konventionen, Bibliotheken und den Stil des bestehenden Codes.
 Erkläre in 1–3 kurzen Sätzen, was du änderst, und beschreibe DANN jede Änderung als *SEARCH/REPLACE-Block*.

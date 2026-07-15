@@ -1,5 +1,8 @@
-"""Phase 0 — critical-action HITL classifier: outward/irreversible primitives are ALWAYS ask,
-at every autonomy level; current inward primitives keep their behaviour (zero new prompts)."""
+"""Phase 0 — critical-action HITL classifier: outward/irreversible primitives are ASK at every
+autonomy level below the highest; current inward primitives keep their behaviour (zero new prompts).
+Level 3 ("Voll autonom") is a confirmed operator opt-out of the critical floor too (see broker.py's
+decide_autonomy docstring) — deliberately tested separately below so a regression in levels 0-2 (the
+floor that actually matters day to day) is never masked by the level-3 exception."""
 import sys
 from pathlib import Path
 
@@ -29,17 +32,23 @@ for inward in ("project_write_out", "project_read_scoped", "project_list", "corp
                "run_named_skill", "read_memory", "write_memory", "http_get_allowlist"):
     check(not pol.is_critical(inward), f"not critical: {inward}")
 
-print("test: CRITICAL FLOOR — an outward primitive is ASK at EVERY autonomy level (even 3)")
-for lvl in (0, 1, 2, 3):
+print("test: CRITICAL FLOOR — an outward primitive is ASK at levels 0-2; level 3 is the confirmed opt-out")
+for lvl in (0, 1, 2):
     d = decide_autonomy("instagram_post_allowlist", taint_clean=True, taint_exempt=False, level=lvl,
                         critical=pol.is_critical("instagram_post_allowlist"))
     check(d == "ask", f"instagram_post at level {lvl} → {d} (must be ask)")
+check(decide_autonomy("instagram_post_allowlist", True, False, 3,
+                      critical=pol.is_critical("instagram_post_allowlist")) == "audit",
+      "instagram_post at level 3 → audit (operator-confirmed critical-floor opt-out)")
 
-print("test: PINNED still ask everywhere; reversible out/ write auto at level>=1")
-for lvl in (0, 1, 2, 3):
+print("test: PINNED still ask at levels 0-2 (level 3 opts out); reversible out/ write auto at level>=1")
+for lvl in (0, 1, 2):
     check(decide_autonomy("workspace_export_patch", True, False, lvl,
                           critical=pol.is_critical("workspace_export_patch")) == "ask",
           f"merge-back ask at level {lvl}")
+check(decide_autonomy("workspace_export_patch", True, False, 3,
+                      critical=pol.is_critical("workspace_export_patch")) == "audit",
+      "merge-back audit (no ask) at level 3")
 check(decide_autonomy("project_write_out", True, False, 0) == "ask", "out/ write ask at level 0")
 check(decide_autonomy("project_write_out", True, False, 1) == "audit", "out/ write auto at level 1")
 

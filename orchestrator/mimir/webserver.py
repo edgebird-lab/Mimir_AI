@@ -277,14 +277,17 @@ async def api_decide(request: Request):
     return JSONResponse({"ok": ok})
 
 
-# Honest labels: NO level auto-approves outward/critical actions (post/deploy/install/send/merge-back) —
-# those + system-critical decisions stay HITL at every level, enforced by broker.decide_autonomy's
-# CRITICAL FLOOR + PINNED_ASK. Higher levels only auto-approve reversible in-jail out/ writes + confident
-# reversible multi-path forks.
+# Honest labels: levels 0-2 never auto-approve outward/critical actions (post/deploy/install/send/
+# merge-back) or system-critical decisions — those stay HITL, enforced by broker.decide_autonomy's
+# CRITICAL FLOOR + PINNED_ASK and decide_multipath's system_critical gate. Level 3 ("Voll autonom") is
+# a confirmed operator opt-out of that floor too (see broker.py) — outward/critical actions and
+# system-critical decisions then run WITHOUT approval. Levels 1-2 additionally auto-approve reversible
+# in-jail out/ writes (+ level 2 also confident reversible multi-path forks).
 AUTONOMY_LEVELS = {0: "Sicher — alles fragen",
                    1: "Autonom — Dateien ohne Fragen (Outward + kritische Aktionen bleiben freigabepflichtig)",
                    2: "Autonom+ — auto-wählt sichere Entscheidungswege (Outward bleibt freigabepflichtig)",
-                   3: "Voll autonom — Ziele ohne Rückfragen (Outward-Posts/Deploy/Install + kritische Entscheidungen bleiben IMMER freigabepflichtig)"}
+                   3: "Voll autonom — läuft komplett ohne Rückfragen, AUCH Outward-Posts/Deploy/Install "
+                      "und systemkritische Entscheidungen (bewusster Sicherheits-Opt-out)"}
 
 
 async def api_autonomy(request: Request):

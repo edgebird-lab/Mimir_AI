@@ -27,11 +27,28 @@ $pids = @{}
 # enabled to start on distro boot and kept alive by systemd (PID 1) itself — NOT by any Windows-side
 # "keep a process open" hack, which WSL tears down the moment the launching wsl.exe client disconnects.
 # 'wsl -d <distro> -- systemctl start' both boots the distro if needed and is a harmless no-op if the
-# services are already running (Restart=always keeps them up on their own after this).
+# services are already running (Restart=always keeps them up on their own after this). VERIFY it actually
+# came up instead of trusting the exit code and moving on — a cold WSL2 boot (after a Windows sleep/
+# reboot, or another program's `wsl --shutdown`) can occasionally not be ready yet on the first try, and
+# a silently-unreachable Zone W looks to the operator like "the AI just talks, nothing gets written" with
+# no indication why. Retry once, then surface a clear warning (never swallow the failure with 2>$null).
 if ($env:MIMIR_SANDBOX_ADDR -and (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
     $distro = if ($env:MIMIR_WSL_DISTRO) { $env:MIMIR_WSL_DISTRO } else { "Mimir" }
     Write-Say "ensuring WSL2 sandbox daemons are running in distro '$distro' (advanced features) ..."
-    wsl.exe -d $distro -u root -- systemctl start mimir-sandbox mimir-workspace 2>$null
+    $sandboxLog = Join-Path $MimirRun "wsl-sandbox-start.log"
+    "" | Set-Content -Path $sandboxLog -Encoding utf8
+    $active = ""
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        wsl.exe -d $distro -u root -- systemctl start mimir-sandbox mimir-workspace 2>> $sandboxLog
+        $active = ((wsl.exe -d $distro -u root -- systemctl is-active mimir-sandbox mimir-workspace 2>> $sandboxLog) -join " ")
+        if ($active -notmatch "inactive|failed|unknown|activating") { break }
+        if ($attempt -eq 1) { Write-Say "  ... not up yet, retrying in 5s (cold WSL2 boot) ..."; Start-Sleep -Seconds 5 }
+    }
+    if ($active -match "inactive|failed|unknown|activating") {
+        Write-Warn "WSL2 sandbox daemons did not come up (status: $active) - Zone W coding / self-improvement will be unavailable this session. Details: $sandboxLog"
+    } else {
+        Write-Say "WSL2 sandbox daemons are up ($active)"
+    }
 }
 
 # ---- 1. Redis (loopback, in-memory) ----------------------------------------

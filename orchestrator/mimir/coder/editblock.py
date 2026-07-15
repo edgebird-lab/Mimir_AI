@@ -190,15 +190,23 @@ def strip_quoted_wrapping(res, fname=None, fence=DEFAULT_FENCE):
 def do_replace(fname, content, before_text, after_text, fence=None):
     """Apply one (before→after) edit to `content` and return the new content (or None if the SEARCH text
     couldn't be located). PURE: never touches the filesystem — new-file creation is the caller's job via
-    the broker. Pass content="" (or None) for a new/empty file; an empty SEARCH appends/creates."""
+    the broker. Pass content="" (or None) for a new/empty file; an empty-STRING SEARCH appends/creates
+    ONLY when `content` is itself empty (a genuinely new file) — if `content` already has real text, an
+    empty SEARCH is instead treated as a whole-file REPLACE (see below), never an append: a weaker model
+    reaching for "empty SEARCH" against an EXISTING file almost always means "here is the whole file",
+    and blindly appending would silently compound every such block into duplicated content. before_text
+    =None means the same whole-file REPLACE, taken via a different route (the model gave a full-file
+    rewrite with no SEARCH/REPLACE markers at all, e.g. inside a plain fenced code block)."""
     if fence is None:
         fence = DEFAULT_FENCE
-    before_text = strip_quoted_wrapping(before_text, fname, fence)
     after_text = strip_quoted_wrapping(after_text, fname, fence)
     if content is None:
         content = ""
+    if before_text is None:
+        return after_text                    # whole-file replace
+    before_text = strip_quoted_wrapping(before_text, fname, fence)
     if not before_text.strip():
-        return content + after_text          # new file or append
+        return after_text if content.strip() else (content + after_text)   # replace vs. new/append
     return replace_most_similar_chunk(content, before_text, after_text)
 
 
@@ -238,6 +246,22 @@ def strip_filename(filename, fence):
     return filename
 
 
+_BARE_FNAME = re.compile(r'^[\w][\w\-./]*\.[A-Za-z0-9]{1,10}$')
+
+
+def _plausible_bare_filename(line: str, valid_fnames):
+    """Strict (single-line, no fuzzy fallback) filename check for the whole-file-replace branch —
+    must be an exact valid_fnames match, or look unambiguously like a path (word/path chars ending
+    in a short extension, nothing that could be stray SEARCH/REPLACE marker text)."""
+    if not line:
+        return None
+    if valid_fnames and line in valid_fnames:
+        return line
+    if _BARE_FNAME.match(line) and not any(bad in line for bad in ("<<<", ">>>", "===", "SEARCH", "REPLACE")):
+        return line
+    return None
+
+
 def find_original_update_blocks(content, fence=DEFAULT_FENCE, valid_fnames=None):
     """Yield (filename, before_text, after_text) for each SEARCH/REPLACE block; shell blocks yield
     (None, shell_content) — Mimir callers MUST discard filename==None (never execute shell here)."""
@@ -266,6 +290,32 @@ def find_original_update_blocks(content, fence=DEFAULT_FENCE, valid_fnames=None)
                 i += 1
             yield None, "".join(shell_content)
             continue
+
+        # Whole-file replacement: some models (especially smaller/local ones) emit a plain fenced
+        # code block with a filename header instead of a proper SEARCH/REPLACE block when they think
+        # of an edit as "rewrite the whole file" — Aider itself has a dedicated whole-file edit format
+        # for exactly this reason. Recognize it (a plausible bare filename precedes a fence containing
+        # NO SEARCH marker) instead of silently dropping the edit entirely. Deliberately strict about
+        # what counts as a filename here (unlike find_filename's permissive multi-line fallback,
+        # reused by the real SEARCH/REPLACE path below) — this branch also sees the CLOSING fence of
+        # a normal SEARCH/REPLACE block, whose preceding line is REPLACE content, not a filename, and
+        # must never be misread as one.
+        if (line.strip().startswith(fence[0]) or line.strip().startswith(triple_backticks)) and not next_is_editblock:
+            j = i + 1
+            has_marker = False
+            while j < len(lines) and not lines[j].strip().startswith(fence[1]) and not lines[j].strip().startswith(triple_backticks):
+                if head_pattern.match(lines[j].strip()):
+                    has_marker = True
+                    break
+                j += 1
+            prev = lines[i - 1].strip() if i > 0 else ""
+            filename = _plausible_bare_filename(prev, valid_fnames)
+            if not has_marker and j < len(lines) and filename:
+                body = lines[i + 1:j]
+                current_filename = filename
+                i = j + 1
+                yield filename, None, "".join(body)   # None = whole-file replace, never append
+                continue
 
         if head_pattern.match(line.strip()):
             try:

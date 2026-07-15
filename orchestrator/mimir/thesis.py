@@ -31,6 +31,10 @@ class ThesisStore:
             heading TEXT, main_point TEXT DEFAULT '', target_words INTEGER DEFAULT 600,
             status TEXT DEFAULT 'pending', draft_md TEXT DEFAULT '', attempts INTEGER DEFAULT 0,
             PRIMARY KEY(thesis_id, section_id))""")
+        try:
+            self.db.execute("ALTER TABLE thesis ADD COLUMN briefs_done INTEGER DEFAULT 0")
+        except Exception:  # noqa: BLE001 — column already exists (older db)
+            pass
         self.db.commit()
 
     def close(self) -> None:
@@ -113,10 +117,36 @@ class ThesisStore:
         self.db.execute("UPDATE thesis SET updated=? WHERE thesis_id=?", (time.time(), thesis_id))
         self.db.commit()
 
-    def append_summary(self, thesis_id: str, text: str, cap: int = 6000) -> None:
+    def append_summary(self, thesis_id: str, text: str, cap: int = 16000) -> None:
+        """Sliding window of what's been written so far, fed into every subsequent section's prompt
+        (so the model doesn't repeat itself). Truncating from the FRONT means once a long thesis (18-26
+        sections) outgrows the cap, the EARLIEST chapters (Einleitung, Grundlagen) silently fall out of
+        the window first — the model then "forgets" it already covered them and restates them in later
+        chapters. 16000 chars (~2600 words) covers a realistic 18-26-section running summary at the
+        ~350-char/section budget without needing a smarter (e.g. summarize-the-summary) scheme yet."""
         r = self.get(thesis_id)
         cur = (r["running_summary"] if r else "") or ""
         self.set_meta(thesis_id, running_summary=(cur + "\n" + text)[-cap:])
+
+    # ------------------------------------------------------------------ per-section briefs (TODO pass)
+    # A separate pass (after the outline, before any section is written) expands each section's thin
+    # outline main_point into a concrete ~4-sentence writing brief — WHAT to cover and WHICH sources to
+    # draw on — with non-overlapping scope decided upfront across the whole outline. Each section is then
+    # written using ONLY its own brief (never the growing prose of prior sections): repetition is
+    # prevented structurally (a section literally cannot see what it might restate) instead of asking the
+    # model to avoid repeating itself from an ever-larger, eventually-truncated running summary. This
+    # also keeps every per-section prompt small — friendly to weak/local models and small context windows.
+    def has_briefs(self, thesis_id: str) -> bool:
+        r = self.get(thesis_id)
+        return bool(r and r.get("briefs_done"))
+
+    def set_section_brief(self, thesis_id: str, section_id: int, brief: str) -> None:
+        self.db.execute("UPDATE section SET main_point=? WHERE thesis_id=? AND section_id=?",
+                        (brief[:1500], thesis_id, section_id))
+        self.db.commit()
+
+    def mark_briefs_done(self, thesis_id: str) -> None:
+        self.set_meta(thesis_id, briefs_done=1)
 
     def accepted_count(self, thesis_id: str) -> tuple[int, int]:
         row = self.db.execute(

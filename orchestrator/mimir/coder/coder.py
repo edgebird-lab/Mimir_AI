@@ -16,6 +16,14 @@ import difflib
 from ..broker import PrimitiveCall
 from . import prompts
 from .editblock import apply_edit, find_original_update_blocks
+from .repomap import build_repo_map
+
+
+def _norm_rel(rel: str) -> str:
+    """Accept both 'app.py' and 'out/app.py' — a caller (operator field, model output) typing
+    either form must resolve to the same file, never a nonexistent nested out/out/app.py."""
+    rel = rel.lstrip("/")
+    return rel[4:] if rel.startswith("out/") else rel
 
 
 class MimirCodeCoder:
@@ -27,7 +35,7 @@ class MimirCodeCoder:
     def _read_out(self, rel: str) -> str | None:
         """Read a file under out/ through the broker (project-relative path)."""
         r = self.broker.handle(PrimitiveCall("project_read_scoped",
-                                             {"path": f"out/{rel}", "max_bytes": 200_000}))
+                                             {"path": f"out/{_norm_rel(rel)}", "max_bytes": 200_000}))
         if not r.ok:
             return None
         v = r.value
@@ -37,6 +45,13 @@ class MimirCodeCoder:
         """Write a file under out/ through the broker (side-effecting → policy/taint/HITL apply)."""
         r = self.broker.handle(PrimitiveCall("project_write_out", {"path": rel, "content": content}))
         return r.ok, (r.reason or "")
+
+    def _list_out(self) -> list[str]:
+        """Out/-relative file paths (no dirs), broker-mediated, best-effort (never blocks a run)."""
+        r = self.broker.handle(PrimitiveCall("project_list", {"path": "out"}))
+        if not r.ok or not isinstance(r.value, dict):
+            return []
+        return [_norm_rel(e) for e in r.value.get("entries", []) if not e.endswith("/")]
 
     @staticmethod
     def _diff(before: str, after: str) -> str:
@@ -78,12 +93,58 @@ class MimirCodeCoder:
         content_map = dict(original)
         yield {"event": "coder_start", "task": task, "files": files}
 
+        # Aider-style repo map: give the model "what already exists" awareness of OTHER out/ files
+        # (signatures only, not full bodies) — the middle ground Aider's repo-map strikes for a whole
+        # git repo, scoped here to out/ (typically a handful of files, so no tree-sitter/PageRank
+        # needed; see repomap.py). Best-effort: never blocks a run if listing/reading fails.
+        edited = {_norm_rel(f) for f in files}
+        other_map: dict[str, str] = {}
+        for p in self._list_out():
+            if _norm_rel(p) in edited or len(other_map) >= 20:
+                continue
+            c = self._read_out(p)
+            if c is not None and len(c) <= 20_000:
+                other_map[p] = c
+        repo_map = build_repo_map(other_map)
+        if repo_map:
+            yield {"event": "repo_map", "files": list(other_map)}
+
+        # Architect pass: design first, edit second (Aider's architect/editor split) — separates
+        # "what should this code do" (free-form reasoning) from "emit a correctly-formatted
+        # SEARCH/REPLACE block" (a narrower, mechanical task smaller local models follow more
+        # reliably than doing both at once).
+        plan = ""
+        if not should_cancel():
+            arch_user = f"AUFGABE: {task}\n"
+            if repo_map:
+                arch_user += f"\nVORHANDENE DATEIEN IM PROJEKT (Kurzübersicht):\n{repo_map}\n"
+            arch_user += f"\nZU BEARBEITENDE DATEIEN (voller Inhalt):\n{prompts.build_context(content_map)}"
+            yield {"event": "architect_start"}
+            parts: list[str] = []
+            for kind, payload in self.llm.stream_chat(prompts.ARCHITECT_SYSTEM, arch_user, tools=[],
+                                                      history=[], max_tokens=1200, think=True):
+                if should_cancel():
+                    break
+                if kind == "reasoning":
+                    yield {"event": "reasoning", "t": payload}
+                elif kind == "token":
+                    parts.append(payload)
+                    yield {"event": "token", "t": payload}
+            plan = "".join(parts).strip()
+            if plan:
+                yield {"event": "architect_plan", "text": plan}
+
         history: list[dict] = []
         for rnd in range(max_rounds):
             if should_cancel():
                 break
             if rnd == 0:
-                user = f"AUFGABE: {task}\n\nAKTUELLE DATEIEN:\n{prompts.build_context(content_map)}"
+                user = f"AUFGABE: {task}\n"
+                if plan:
+                    user += f"\nPLAN (vom Architekten-Schritt — so umsetzen):\n{plan}\n"
+                if repo_map:
+                    user += f"\nVORHANDENE DATEIEN IM PROJEKT (Kurzübersicht, NICHT direkt bearbeiten):\n{repo_map}\n"
+                user += f"\nAKTUELLE DATEIEN:\n{prompts.build_context(content_map)}"
                 seed = [{"role": "user", "content": prompts.EXAMPLE_USER},
                         {"role": "assistant", "content": prompts.EXAMPLE_ASSISTANT}]
             else:

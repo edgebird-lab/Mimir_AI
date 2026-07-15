@@ -1,159 +1,158 @@
 # Mimir
 
-**A hardened, local, self-improving AI agent that runs entirely on your own machine.**
+**Ein gehärteter, lokaler, selbstverbessernder KI-Agent für Recherche und wissenschaftliches
+Schreiben — läuft komplett auf deinem eigenen Rechner.**
 
-Mimir writes its own reusable skills as code, keeps persistent memory, and carries out
-long-running autonomous tasks — all without sending your data anywhere. It runs a local
-model on your GPU, grounds its answers in your own documents, and can even extend itself
-with new abilities. Every security guarantee is enforced by **topology** — hypervisor
-isolation, network absence, capability absence, and human-in-the-loop — **never** by asking
-the model to behave.
+Mimir durchsucht das Web und wissenschaftliche Literatur, fasst Quellen fundiert zusammen und
+schreibt komplette Bachelor-/Masterarbeiten mit echten, überprüfbaren Zitaten — nicht
+erfundenen. Es führt Chats mit einem lokalen Modell auf deiner GPU, gründet Antworten in deinen
+eigenen Dokumenten, und kann sich selbst neue Fähigkeiten beibringen — alles ohne dass deine
+Daten irgendwohin gesendet werden. Jede Sicherheitsgarantie wird durch **Topologie** erzwungen
+— Hypervisor-Isolation, Netzwerk-Abwesenheit, Fähigkeits-Abwesenheit und Human-in-the-Loop —
+**niemals**, indem das Modell einfach gebeten wird, sich zu benehmen.
 
-The web interface is in German (the product targets German users); the codebase and
-documentation are in English.
+Die Weboberfläche ist auf Deutsch (das Produkt richtet sich an deutsche Nutzer); Codebase und
+Dokumentation sind auf Englisch.
 
-![Mimir chat interface](docs/img/01-chat.png)
-*Chat with a local model — streaming responses and visible reasoning for thinking models.*
-
----
-
-## Why Mimir is different
-
-Most agent frameworks trust the model to follow the rules. Mimir assumes the opposite:
-**assume the model is jailbroken and writes malicious code.** Nothing bad should happen
-anyway, because the model simply does not have the reach to do damage.
-
-The guiding principle:
-
-> Push every guarantee into topology (Firecracker jail + no-net + capability-absence +
-> taint/fence + human-in-the-loop) — never rely on model refusal.
-
-### Three trust zones
-
-- **Zone A — Inference.** The llama.cpp GPU server. Runs zero untrusted code and never sees
-  a secret. Its only job is to turn tokens into tokens.
-- **Zone B — Orchestrator / web UI / worker.** The control plane. It holds the broker, the
-  policy engine, and taint tracking. It has **no** ability to run arbitrary shell, **no**
-  payment primitive, and **no** access to the Docker socket.
-- **Zone S / Zone W — Sandboxes.** Self-written skills and coding tasks run **only** inside
-  disposable **Firecracker microVMs**: no network, no secrets, no host mounts, no GPU. The
-  only way out is a **pre-approved primitive**, called through the **broker**, which enforces
-  an allowlist, a taint check, and human-in-the-loop.
-
-Because **no payment primitive exists**, a financial transaction is not *composable* — no
-matter what text is injected into the model, it cannot assemble one. Outward-facing or
-irreversible actions — posting, deploying, installing, sending email, or merging code out
-of the jail — **always** require human approval, even at the highest autonomy level.
+![Mimir Chat-Oberfläche](docs/img/01-chat.png)
+*Chat mit einem lokalen Modell — Streaming-Antworten und sichtbares Denken bei Reasoning-Modellen.*
 
 ---
 
-## Research & academic writing
+## Warum Mimir anders ist
 
-Mimir can research a topic and write it up, or draft an entire Bachelor/Master thesis — with
-**real, verifiable citations**, not invented ones.
+Die meisten Agenten-Frameworks vertrauen darauf, dass sich das Modell an die Regeln hält. Mimir
+geht vom Gegenteil aus: **das Modell könnte jailbroken sein und bösartigen Code schreiben.**
+Trotzdem darf nichts Schlimmes passieren, weil das Modell schlicht nicht die Reichweite dazu hat.
 
-- **🔎 Recherchieren (Research):** give it a topic and it queries **OpenAlex** (scientific
-  literature) and the web, then writes a grounded summary with inline citation markers `[1]`,
-  `[2]`, … and a matching bibliography built at the end.
-- **📖 Thesis schreiben (Thesis writing):** the same pipeline scaled up — it searches sources,
-  drafts an outline, writes chapter by chapter (choose an approximate length up to ~44 pages),
-  and produces a full bibliography in your choice of citation style: **APA, Harvard, IEEE,
-  Chicago (author-date), or DIN 1505-2**.
+Das Leitprinzip:
 
-The key design choice: the bibliography is **never left to the model to hallucinate**. Every
-entry is assembled from structured metadata (author, year, title, venue, DOI) returned by the
-search APIs themselves, and the citation markers the model writes are checked against that same
-source list. Documents export to Markdown, DOCX, PDF, HTML, ODT, EPUB, and PPTX. Both tools live
-in the **📚 Bibliothek** tab, right next to your uploaded documents (which they can also draw on).
+> Jede Garantie in die Topologie verlagern (Firecracker-Jail + kein Netz + Fähigkeits-Abwesenheit
+> + Taint/Fence + Human-in-the-Loop) — niemals auf die Verweigerung des Modells verlassen.
 
-![Research and academic writing](docs/img/07-research.png)
-*Research tool output — a grounded summary with inline citation markers and a real bibliography
-sourced from OpenAlex, not invented by the model.*
+### Drei Vertrauenszonen
+
+- **Zone A — Inferenz.** Der llama.cpp-GPU-Server. Führt keinerlei nicht vertrauenswürdigen Code
+  aus und sieht nie ein Secret. Seine einzige Aufgabe: Tokens in Tokens verwandeln.
+- **Zone B — Orchestrator / Web-UI / Worker.** Die Kontrollebene. Hält den Broker, die
+  Policy-Engine und das Taint-Tracking. Sie hat **keine** Möglichkeit, beliebige Shell-Befehle
+  auszuführen, **kein** Zahlungs-Primitiv und **keinen** Zugriff auf den Docker-Socket.
+- **Zone S — Sandbox.** Selbstgeschriebene Skills (Selbstverbesserung) laufen **ausschließlich**
+  in wegwerfbaren **Firecracker-microVMs**: kein Netzwerk, keine Secrets, keine Host-Mounts,
+  keine GPU. Der einzige Weg nach draußen ist ein **vorab genehmigtes Primitiv**, aufgerufen über
+  den **Broker**, der eine Allowlist, eine Taint-Prüfung und Human-in-the-Loop durchsetzt.
+
+Weil **kein Zahlungs-Primitiv existiert**, ist eine Finanztransaktion nicht *zusammensetzbar* —
+egal welcher Text ins Modell injiziert wird, es kann keine zusammenbauen. Nach außen wirkende
+oder unumkehrbare Aktionen — Posten, Deployen, Installieren, E-Mail senden — erfordern auf jeder
+Autonomiestufe unterhalb der höchsten eine menschliche Freigabe. Auf der höchsten Stufe
+(**🚀 Voll autonom**) kann der Betreiber dieses Sicherheitsnetz explizit abwählen — eine bewusste,
+bestätigte Entscheidung, kein Standard.
 
 ---
 
-## Features
+## Recherche & wissenschaftliches Schreiben
 
-- **Chat** with a local model: streaming output and visible reasoning for thinking models.
-- **Goals · Plan · Autopilot:** decompose a long goal into tasks and execute them
-  autonomously, with machine-verified "done" checks, bounded retries, and human-in-the-loop
-  escalation. The autonomy level is adjustable.
-- **Zone W coding:** an isolated Firecracker coding VM with real `git`, Python, Node, build,
-  and test tooling, running an edit → test → fix loop. Changes leave the jail only as a
-  reviewed git diff that you approve.
-- **Document library (RAG):** upload PDFs, DOCX, and PPTX and ask questions grounded in your
-  own documents, with page citations. Mimir can also generate grounded study notes and practice
-  exams from them.
-- **Research & thesis writing:** research a topic or draft a full academic thesis with a real,
-  non-hallucinated bibliography from OpenAlex and web search — see
-  [Research & academic writing](#research--academic-writing) above.
-- **Self-improvement:** when Mimir hits a capability gap, it can write a new reusable skill,
-  **test** it inside the jail against a held-out oracle, and stage it. A human must review and
-  cryptographically **sign (ed25519)** the skill before it becomes reusable. The agent can
-  never sign or promote its own skills.
-- **Model management (⚙ Einstellungen tab):** view your system specs (GPU / VRAM / RAM),
-  switch between installed GGUF models, and download new ones from HuggingFace with
-  recommendations matched to your VRAM. A one-click **Beenden** (shutdown) button frees GPU
-  memory.
-- **Persistent, reconnectable runs:** work continues in the background even if you close the
-  tab. A runs board and an approvals inbox let you reconnect and approve pending actions.
+Das Herzstück von Mimir: ein Thema recherchieren und aufschreiben, oder eine komplette
+Bachelor-/Masterarbeit entwerfen — mit **echten, überprüfbaren Zitaten**, nicht erfundenen.
+
+- **🔎 Recherchieren:** Thema angeben, Mimir durchsucht **OpenAlex** (wissenschaftliche
+  Literatur) und das Web, und schreibt eine fundierte Zusammenfassung mit Zitat-Markern im Text
+  `[1]`, `[2]`, … und einem passenden Literaturverzeichnis am Ende.
+- **📖 Thesis schreiben:** dieselbe Pipeline hochskaliert — Quellen suchen, Gliederung
+  entwerfen, Kapitel für Kapitel schreiben (Wunschlänge bis ca. 44 Seiten wählbar), und ein
+  vollständiges Literaturverzeichnis in deinem gewünschten Zitierstil: **APA, Harvard, IEEE,
+  Chicago (Autor-Jahr) oder DIN 1505-2**.
+
+Die zentrale Design-Entscheidung: das Literaturverzeichnis wird **niemals dem Modell zum
+Erfinden überlassen**. Jeder Eintrag wird aus strukturierten Metadaten (Autor, Jahr, Titel,
+Venue, DOI) zusammengesetzt, die von den Such-APIs selbst geliefert werden, und die
+Zitat-Marker, die das Modell schreibt, werden gegen genau diese Quellenliste geprüft. Dokumente
+werden nach Markdown, DOCX, PDF, HTML, ODT, EPUB und PPTX exportiert. Beide Werkzeuge leben im
+Tab **📚 Bibliothek**, direkt neben deinen hochgeladenen Dokumenten (auf die sie ebenfalls
+zugreifen können).
+
+![Recherche und wissenschaftliches Schreiben](docs/img/07-research.png)
+*Ausgabe des Recherche-Werkzeugs — eine fundierte Zusammenfassung mit Zitat-Markern im Text und
+einem echten, aus OpenAlex stammenden Literaturverzeichnis, nicht vom Modell erfunden.*
+
+---
+
+## Funktionen
+
+- **Chat** mit einem lokalen Modell: Streaming-Ausgabe und sichtbares Denken bei
+  Reasoning-Modellen.
+- **Dokumentbibliothek (RAG):** PDFs, DOCX und PPTX hochladen und Fragen stellen, die in deinen
+  eigenen Dokumenten verankert sind, mit Seitenangaben. Mimir kann daraus auch fundierte
+  Lernzusammenfassungen und Übungsklausuren erzeugen.
+- **Recherche & Thesis-Schreiben:** ein Thema recherchieren oder eine komplette
+  wissenschaftliche Arbeit mit echtem, nicht erfundenem Literaturverzeichnis aus OpenAlex und
+  Websuche entwerfen — siehe [Recherche & wissenschaftliches Schreiben](#recherche--wissenschaftliches-schreiben)
+  oben.
+- **Selbstverbesserung:** stößt Mimir an eine Fähigkeitsgrenze, kann es einen neuen
+  wiederverwendbaren Skill schreiben, ihn **im Jail gegen ein zurückgehaltenes Orakel testen**
+  und zur Prüfung bereitstellen. Ein Mensch muss den Skill prüfen und kryptographisch
+  **signieren (ed25519)**, bevor er wiederverwendbar wird. Der Agent kann eigene Skills niemals
+  selbst signieren oder freigeben.
+- **Modellverwaltung (Tab ⚙ Einstellungen):** Systemspezifikationen einsehen (GPU/VRAM/RAM),
+  zwischen installierten GGUF-Modellen wechseln, und neue von HuggingFace herunterladen — mit
+  Empfehlungen passend zu deinem VRAM. Ein Ein-Klick-**Beenden**-Button gibt den GPU-Speicher frei.
+- **Persistente, wiederverbindbare Runs:** Aufgaben laufen im Hintergrund weiter, auch wenn du
+  den Tab schließt. Ein Runs-Board und ein Freigabe-Postfach lassen dich wieder andocken und
+  ausstehende Aktionen freigeben.
 
 ---
 
 ## Screenshots
 
-![Model and system settings](docs/img/02-settings.png)
-*Settings — inspect your system specs, switch models, and download new ones sized to your VRAM.*
+![Modell- und Systemeinstellungen](docs/img/02-settings.png)
+*Einstellungen — Systemspezifikationen einsehen, Modelle wechseln und neue passend zu deinem VRAM
+herunterladen.*
 
-![Goals, Plan and Autopilot](docs/img/03-goals.png)
-*Goals, Plan & Autopilot — decompose a long goal and run it autonomously with verified checkpoints.*
+![Dokumentbibliothek](docs/img/05-library.png)
+*Dokumentbibliothek (RAG) — Fragen stellen, die in deinen eigenen PDFs, DOCX und PPTX verankert
+sind, mit Zitaten.*
 
-![Zone W isolated coding workspace](docs/img/04-coding.png)
-*Zone W — pick or create a project, describe what to build, and Mimir works autonomously in an
-isolated coding VM (shell, git, build, test); changes leave only as a reviewed git diff you approve.*
+![Runs-Board](docs/img/06-runs.png)
+*Runs-Board — zu Hintergrundaufgaben wieder andocken und ausstehende Aktionen freigeben.*
 
-![Document library](docs/img/05-library.png)
-*Document library (RAG) — ask questions grounded in your own PDFs, DOCX, and PPTX with citations.*
-
-![Runs board](docs/img/06-runs.png)
-*Runs board — reconnect to background work and approve pending actions.*
-
-![Research and academic writing](docs/img/07-research.png)
-*Research & thesis writing — grounded output with real citations from OpenAlex, not invented
-by the model.*
+![Recherche und wissenschaftliches Schreiben](docs/img/07-research.png)
+*Recherche & Thesis-Schreiben — fundierte Ausgabe mit echten Zitaten aus OpenAlex, nicht vom
+Modell erfunden.*
 
 ---
 
-## Requirements
+## Voraussetzungen
 
-- **Linux** for the full product: the microVM sandbox uses Firecracker + KVM, which is
-  Linux-only.
-- **Docker with the native Docker Engine** — **not** Docker Desktop. Docker Desktop's VM
-  cannot pass through the GPU or the host sockets Mimir relies on. Your user must be in the
-  `docker` group.
-- **A GPU helps a lot.** An **AMD Radeon (Vulkan)** card with ~24 GB VRAM runs the default
-  30–35B models; smaller models run comfortably on 8–12 GB. CPU-only works, but it is slow.
-- **~50 GB of disk** for model weights and **~30 GB of RAM** recommended.
+- **Linux** für das volle Produkt: die microVM-Sandbox nutzt Firecracker + KVM, was nur unter
+  Linux funktioniert.
+- **Docker mit der nativen Docker Engine** — **nicht** Docker Desktop. Die VM von Docker Desktop
+  kann die GPU oder die Host-Sockets, auf die Mimir angewiesen ist, nicht durchreichen. Dein
+  Nutzer muss in der `docker`-Gruppe sein.
+- **Eine GPU hilft sehr.** Eine **AMD-Radeon-Karte (Vulkan)** mit ~24 GB VRAM betreibt die
+  Standard-30–35B-Modelle komfortabel; kleinere Modelle laufen gut mit 8–12 GB. Nur-CPU
+  funktioniert, ist aber langsam.
+- **~50 GB Speicherplatz** für Modellgewichte, **~30 GB RAM** empfohlen.
 
-### Windows: native, GPU on any vendor
+### Windows: nativ, GPU jeden Herstellers
 
-Windows runs Mimir **natively — no Docker, no WSL required.** Chat, model management, document-RAG and
-web research work out of the box, with GPU acceleration on **AMD, NVIDIA and Intel** via a native
-**llama.cpp Vulkan** build (no CUDA/ROCm install). The one-click `MimirInstaller.exe` detects your
-GPU/VRAM and downloads a fitting model.
+Windows betreibt Mimir **nativ — kein Docker, kein WSL nötig.** Chat, Modellverwaltung,
+Dokument-RAG und Web-Recherche funktionieren direkt, mit GPU-Beschleunigung auf **AMD, NVIDIA
+und Intel** über einen nativen **llama.cpp-Vulkan**-Build (keine CUDA/ROCm-Installation nötig).
+Der Ein-Klick-`MimirInstaller.exe` erkennt deine GPU/VRAM und lädt ein passendes Modell herunter.
 
-**Self-improvement and Zone-W coding** run untrusted, model-written code, which Mimir contains only with
-a **Firecracker microVM (Linux + KVM)**. On Windows they are an **optional** feature: tick the box in the
-installer and Mimir sets up a **dedicated, isolated WSL2 distro** (your existing distros/data are never
-touched) that runs the *real* Firecracker sandbox and a self-hosted SearXNG. This path is validated
-end-to-end. See [windows-native/README.md](windows-native/README.md) and
-[windows-native/WSL_SANDBOX.md](windows-native/WSL_SANDBOX.md).
+**Selbstverbesserung** führt nicht vertrauenswürdigen, vom Modell geschriebenen Code aus, den
+Mimir nur mit einer **Firecracker-microVM (Linux + KVM)** einhegen kann. Unter Windows ist das
+eine **optionale** Funktion: Häkchen im Installer setzen, und Mimir richtet eine **dedizierte,
+isolierte WSL2-Distro** ein (deine bestehenden Distros/Daten werden nie angefasst), die die
+*echte* Firecracker-Sandbox betreibt. Siehe [windows-native/README.md](windows-native/README.md)
+und [windows-native/WSL_SANDBOX.md](windows-native/WSL_SANDBOX.md).
 
 ---
 
-## Install
+## Installation
 
-### Linux (quick start)
+### Linux (Schnellstart)
 
 ```
 git clone git@github.com:edgebird-lab/Mimir_AI.git
@@ -161,41 +160,45 @@ cd Mimir_AI
 ./install.sh
 ```
 
-Then launch Mimir from the desktop icons **"Mimir starten"** / **"Mimir beenden"**, or open
-<http://127.0.0.1:8082> in your browser.
+Danach Mimir über die Desktop-Icons **"Mimir starten"** / **"Mimir beenden"** starten, oder
+<http://127.0.0.1:8082> im Browser öffnen.
 
-### Windows (native — no Docker, no WSL)
+### Windows (nativ — kein Docker, kein WSL)
 
-Download and run **`MimirInstaller.exe`** from the Releases page. It installs per-user (no admin),
-detects your GPU and VRAM, downloads a fitting model, and starts Mimir at
-<http://127.0.0.1:8082>. Inference runs on a native **llama.cpp Vulkan** build, so the GPU is used on
-**AMD, NVIDIA and Intel** alike — **no Docker, no WSL, no CUDA/ROCm install**. See
-[windows-native/README.md](windows-native/README.md) for the architecture and how to build the installer.
+**`MimirInstaller.exe`** von der Releases-Seite herunterladen und ausführen. Installiert
+pro Benutzer (kein Admin nötig), erkennt GPU und VRAM, lädt ein passendes Modell herunter und
+startet Mimir unter <http://127.0.0.1:8082>. Inferenz läuft auf einem nativen
+**llama.cpp-Vulkan**-Build, sodass die GPU auf **AMD, NVIDIA und Intel** gleichermaßen genutzt
+wird — **kein Docker, kein WSL, keine CUDA/ROCm-Installation**. Siehe
+[windows-native/README.md](windows-native/README.md) für die Architektur und den Bau des
+Installers.
 
-The Firecracker microVM sandbox (self-improvement, Zone-W coding) remains **Linux-only**; chat, model
-management, goals/plan and document RAG work on Windows. The older Docker-based `install.ps1` (under
-`windows/`) is kept only for users who deliberately want the WSL2/Docker path.
+Die Firecracker-microVM-Sandbox (Selbstverbesserung) bleibt **nur unter Linux** verfügbar; Chat,
+Modellverwaltung, Recherche und Dokument-RAG funktionieren unter Windows vollständig. Das ältere
+Docker-basierte `install.ps1` (unter `windows/`) bleibt nur für Nutzer erhalten, die bewusst den
+WSL2/Docker-Weg wollen.
 
-> **Antivirus / SmartScreen note.** The Windows installer and the `.exe` are **not
-> code-signed** (code-signing certificates cost money). Windows Defender SmartScreen will
-> therefore show a warning such as *"Windows protected your PC,"* and your antivirus may
-> prompt you. This is expected for any unsigned open-source installer. Click **More info →
-> Run anyway** (or allow it in your antivirus). The entire source is open for inspection, so
-> you can verify exactly what you are running.
+> **Hinweis zu Antivirus / SmartScreen.** Der Windows-Installer und die `.exe` sind **nicht
+> code-signiert** (Code-Signing-Zertifikate kosten Geld). Windows Defender SmartScreen zeigt
+> daher eine Warnung wie *"Der Computer wurde durch Windows geschützt"*, und dein Antivirus
+> fragt eventuell nach. Das ist bei jedem unsignierten Open-Source-Installer zu erwarten. Klicke
+> auf **Weitere Informationen → Trotzdem ausführen** (oder erlaube es in deinem Antivirus). Der
+> gesamte Quellcode ist zur Prüfung offen, du kannst also genau nachvollziehen, was du ausführst.
 
-For a full, step-by-step walkthrough of both platforms — including prerequisites, what the
-installer does, first run, and troubleshooting — see **[INSTALL.md](INSTALL.md)**.
+Eine vollständige Schritt-für-Schritt-Anleitung für beide Plattformen — inklusive
+Voraussetzungen, was der Installer tut, erster Start und Fehlerbehebung — findest du in
+**[INSTALL.md](INSTALL.md)**.
 
 ---
 
-## Contributing
+## Mitwirken
 
-Found a bug or have an idea? Open an issue or pull request on GitHub:
+Einen Fehler gefunden oder eine Idee? Issue oder Pull Request auf GitHub eröffnen:
 [edgebird-lab/Mimir_AI](https://github.com/edgebird-lab/Mimir_AI).
 
-## License
+## Lizenz
 
-Mimir is licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) and
-[NOTICE](NOTICE) for details.
+Mimir steht unter der **Apache License, Version 2.0**. Siehe [LICENSE](LICENSE) und
+[NOTICE](NOTICE) für Details.
 
-Copyright © Olbricht Digital. Contact: <robin@olbricht-digital.de>.
+Copyright © Olbricht Digital. Kontakt: <robin@olbricht-digital.de>.

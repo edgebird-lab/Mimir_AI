@@ -59,8 +59,13 @@ node_modules/
 # ---- Local runtime / misc --------------------------------------------------
 /srv-local/
 *.log
+*.stackdump
 .DS_Store
 Thumbs.db
+
+# ---- Local tool state (Claude Code, Playwright MCP) — not project source ----
+/.claude/
+/.playwright-mcp/
 
 # Built Windows installer (published via Releases, not committed)
 dist/

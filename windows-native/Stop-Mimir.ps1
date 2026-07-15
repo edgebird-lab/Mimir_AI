@@ -21,6 +21,16 @@ Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'" -ErrorAction Sil
     Where-Object { $_.CommandLine -like "*$($MimirModels.Replace('\','\\'))*" } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
+# belt-and-suspenders #2: any stray python.exe we own (worker/docproc/webfetch/webui/supervisor) that
+# pids.json didn't know about. pids.json only ever remembers the LATEST pid per role — if a previous
+# Start-Mimir run's process for that role never actually exited (crashed mid-bind, or Start-Mimir was
+# re-run while an old instance was still up), its pid is simply overwritten in the file and it becomes
+# an orphan that stopped-and-restarted never touches, silently squatting on its port forever. Matching
+# on our own install path (not just process name) means this can never touch anything unrelated to us.
+Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like "*$($MimirRoot.Replace('\','\\'))*" } |
+    ForEach-Object { taskkill /F /T /PID $_.ProcessId 2>$null | Out-Null }
+
 # Stop the optional WSL2 jail distro too, and free the WSL2 VM's memory if nothing else runs there
 # (a plain --terminate stops the distro but WSL keeps the VM's RAM; --shutdown returns it to Windows).
 $envmap = Import-MimirEnv

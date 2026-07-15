@@ -82,35 +82,13 @@
   .b-blocked{background:#3a2417;color:var(--warn)}
   .b-failed{background:#3a1717;color:var(--bad)}
   .b-stopped{background:#33262b;color:var(--bad)}
-  /* goals board */
-  .board{flex:1;display:flex;min-height:0}
-  .goals-col{width:300px;flex:0 0 300px;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-  .goals-col h3{font-size:12px;letter-spacing:.05em;color:var(--dim);margin:0;padding:9px 12px;border-bottom:1px solid var(--line);text-transform:uppercase}
-  #goalList{overflow:auto;flex:1}
-  .goal{padding:9px 30px 9px 12px;border-bottom:1px solid var(--line);cursor:pointer;position:relative}
-  .goal-del{position:absolute;right:6px;top:8px;background:none;border:0;color:var(--dim);cursor:pointer;font-size:13px;padding:3px 6px;border-radius:5px}
-  .goal-del:hover{color:var(--bad);background:var(--panel2)}
-  .goal:hover{background:var(--panel)}.goal.sel{background:var(--panel2);border-left:3px solid var(--accent)}
-  .goal .gt{font-size:13px;color:var(--txt)}.goal .gm{font-size:11px;color:var(--dim);margin-top:2px}
-  .newgoal{padding:10px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
-  .newgoal input,.newgoal textarea,.dbg textarea{background:var(--panel);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:7px 9px;font:inherit;resize:vertical}
-  .newgoal button{background:var(--accent);color:#0a1330;border:0;border-radius:7px;padding:7px 10px;font-weight:700;cursor:pointer;font-size:12.5px}
-  .goal-detail{flex:1;display:flex;flex-direction:column;min-height:0}
-  .onboard{margin:16px;padding:16px 18px;border:1px solid #24406a;background:#141b28;border-radius:12px}
-  .onboard h2{margin:0 0 6px;font-size:15px}.onboard p{margin:6px 0;color:var(--dim);font-size:13px}
-  .onboard ol{margin:10px 0 4px;padding-left:20px;font-size:13.5px;line-height:1.9}.onboard ol b{color:var(--accent)}
-  .onboard .muted{font-size:12px;color:var(--dim);margin-top:10px}
-  .act{display:flex;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
-  .act button{background:var(--accent);color:#0a1330;border:0;border-radius:7px;padding:7px 10px;font-weight:700;cursor:pointer;font-size:12.5px}
+  /* generic action bar + live event log (used by Library and Runs) */
+  .act{display:flex;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center;flex:0 0 auto;min-width:0}
+  .act button{background:var(--accent);color:#0a1330;border:0;border-radius:7px;padding:7px 10px;font-weight:700;cursor:pointer;font-size:12.5px;flex:0 0 auto}
   .act button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
   .act button.danger{background:var(--bad);color:#2a0808}
   .act button:disabled{opacity:.4;cursor:not-allowed}
-  #tasks{padding:8px 12px;overflow:auto;flex:0 0 auto;max-height:38%;border-bottom:1px solid var(--line)}
-  .tk-wrap{padding:4px 0;border-bottom:1px solid var(--line)}
-  .tk-wrap:last-child{border-bottom:none}
-  .tk{display:flex;align-items:center;gap:8px;font-size:13px}
-  .tk-approach{margin:3px 0 2px 0;padding-left:2px;font-size:11.5px;color:var(--dim);line-height:1.4}
-  #oplog{flex:1;overflow:auto;padding:10px 12px;font-size:12.5px;display:flex;flex-direction:column;gap:5px}
+  .act input{min-width:0}
   .diffbox{margin:5px 0 0 0;padding:6px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;
     font-family:ui-monospace,Consolas,monospace;font-size:11.5px;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
   .ev.live .tx{color:var(--dim);font-style:italic;white-space:pre-wrap}
@@ -120,7 +98,6 @@
   .ev.cp{border:1px solid #24406a;background:#141b28;border-radius:8px;padding:7px 9px}
   .ev.nh{border:1px solid var(--warn);background:#241f12;border-radius:8px;padding:7px 9px;color:var(--warn)}
   .ev.done{color:var(--ok)}
-  .dbg{padding:10px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
   /* runs board */
   #runsList{flex:1;overflow:auto;padding:8px 0}
   .runrow{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -193,41 +170,6 @@
   .md-src td.ln{text-align:right;color:#5a637a;padding:0 12px;user-select:none;width:1%;white-space:nowrap;border-right:1px solid var(--line);background:var(--side)}
   .md-src td.code{padding:0 12px;white-space:pre-wrap;word-break:break-word;color:var(--txt)}
   .katex{font-size:1.05em}.katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
-  /* ===== Coding (Zone W) ===== */
-  #view-coding{background:var(--bg)}
-  .csess,.cauto{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
-  .csess input,.cauto input,.csess select{background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:6px 9px;font:inherit}
-  .csess select#wsProjectSelect{min-width:200px}
-  .cauto{align-items:flex-start}
-  .cauto textarea#wsTask{flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:8px 10px;font:inherit;resize:vertical;min-height:38px}
-  .cauto #wsTest{width:230px}
-  .cautobtns{display:flex;flex-direction:column;gap:6px}
-  .csess button,.cauto button,.cbar button{background:var(--accent);color:#0a1330;border:0;border-radius:7px;padding:6px 11px;font-weight:700;cursor:pointer;font-size:12.5px}
-  .csess button.sec,.cbar button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line);font-weight:600}
-  .csess button.danger{background:var(--bad);color:#2a0808}
-  .cauto button.think,.tab .think{background:var(--think);color:#12081f}
-  .csess button:disabled,.cbar button:disabled{opacity:.4;cursor:not-allowed}
-  .ztag{font-size:11px;color:var(--think);border:1px solid #3a2f55;background:#191527;border-radius:8px;padding:3px 8px;white-space:nowrap}
-  .wsstat{font-size:12px;color:var(--dim);padding:0 4px}.wsstat.on{color:var(--ok)}
-  .cwrap{flex:1;display:flex;min-height:0}
-  .cfiles{width:230px;flex:0 0 230px;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-  .cfh{padding:7px 11px;font-size:11px;letter-spacing:.07em;color:var(--dim);border-bottom:1px solid var(--line);display:flex;align-items:center}
-  .cfh button{margin-left:auto;background:none;border:0;color:var(--dim);cursor:pointer;font-size:14px}
-  .cfh button:hover{color:var(--accent)}
-  #wsTree{overflow:auto;flex:1;padding:6px 4px}
-  .wsf{font-size:13px;padding:3px 8px;border-radius:5px;cursor:pointer;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .wsf:hover{background:var(--panel2)}.wsf.active{background:#243;color:var(--accent)}
-  .cmain{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
-  .ceditor{flex:1;display:flex;flex-direction:column;min-height:0}
-  .cbar{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--side);border-bottom:1px solid var(--line);flex:0 0 auto}
-  .cbar .sp{margin-left:auto}
-  .cbar #wsCmd{flex:1;max-width:420px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:5px 9px;font:12.5px ui-monospace,monospace}
-  .cfile{font-size:12px;color:var(--dim);font-family:ui-monospace,monospace}
-  #wsEditor{flex:1;background:var(--bg);color:var(--txt);border:0;outline:0;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.5;padding:10px 12px;resize:none;tab-size:4}
-  .cterm{height:230px;display:flex;flex-direction:column;border-top:1px solid var(--line);flex:0 0 auto}
-  #wsTerm{flex:1;overflow:auto;background:#0a0c10;padding:8px 10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
-  #wsTerm .cmd{color:var(--accent)}#wsTerm .out{color:#c3ccd9}#wsTerm .rc0{color:var(--ok)}#wsTerm .rcx{color:var(--bad)}
-  #wsTerm .sys{color:var(--think)}#wsTerm .edt{color:var(--warn)}#wsTerm .diff .add{color:var(--ok)}#wsTerm .diff .del{color:var(--bad)}
 </style>
 <!--__VENDOR__-->
 </head>
@@ -250,8 +192,6 @@
   <div class="main">
     <div class="tabs" id="tabs">
       <div class="tab active" data-tab="chat">💬 Chat</div>
-      <div class="tab" data-tab="goals">🎯 Ziele · Plan · Autopilot</div>
-      <div class="tab" data-tab="coding">🧑‍💻 Coding <span style="font-size:10px;color:var(--think);border:1px solid #3a2f55;border-radius:9px;padding:0 5px;margin-left:2px">Zone W</span></div>
       <div class="tab" data-tab="runs">📊 Runs</div>
       <div class="tab" data-tab="library">📚 Bibliothek</div>
       <div class="tab" data-tab="settings">⚙ Einstellungen</div>
@@ -266,60 +206,10 @@
           <button id="clearChat" title="Diese Unterhaltung leeren">🧹 Leeren</button>
           <span class="sp" id="convInfo">neue Unterhaltung</span>
         </div>
-        <div id="chat"><div class="hint">Stell Mimir eine Aufgabe. Der Run läuft im Hintergrund weiter, auch wenn du den Tab schließt — oben rechts 🔔 sammelt Freigaben, „📊 Runs" zeigt alle Läufe. Für Langzeit-Aufgaben → Tab „🎯 Ziele".</div></div>
+        <div id="chat"><div class="hint">Stell Mimir eine Aufgabe. Der Run läuft im Hintergrund weiter, auch wenn du den Tab schließt — oben rechts 🔔 sammelt Freigaben, „📊 Runs" zeigt alle Läufe.</div></div>
         <div class="composer">
           <textarea id="task" placeholder="Aufgabe eingeben…  (Enter = senden, Shift+Enter = neue Zeile)"></textarea>
           <button class="send" id="send">Senden</button>
-        </div>
-      </div>
-      <!-- GOALS -->
-      <div class="view" id="view-goals">
-        <div class="board">
-          <div class="goals-col">
-            <h3>Ziele</h3>
-            <div id="goalList"><div class="hint">Noch keine Ziele.</div></div>
-            <div class="newgoal">
-              <input id="gTitle" placeholder="Ziel-Titel…">
-              <textarea id="gDetail" rows="2" placeholder="Details / Kontext…"></textarea>
-              <button id="addGoal">Ziel anlegen</button>
-            </div>
-          </div>
-          <div class="goal-detail">
-            <div id="onboard" class="onboard">
-              <h2>🎯 Ziele · Plan · Autopilot — für Langzeit-Aufgaben</h2>
-              <p>Mimir arbeitet mehrstufige Aufgaben selbstständig ab — geplant, überprüft, mit Freigabe bei echten Aktionen:</p>
-              <ol>
-                <li><b>① Ziel anlegen</b> — links unten Titel + Details.</li>
-                <li><b>② 📋 Planen</b> — zerlegt das Ziel in überprüfbare Tasks.</li>
-                <li><b>③ ▶ Autopilot</b> — arbeitet ab, prüft jedes Ergebnis, fragt bei Aktionen im 🔔-Postfach nach Freigabe. ■ Stop jederzeit.</li>
-              </ol>
-              <p class="muted">Läufe laufen im Hintergrund weiter, auch wenn du weg navigierst.</p>
-            </div>
-            <div class="act">
-              <button id="btnPlan" class="sec" disabled>📋 Planen</button>
-              <button id="btnAuto" disabled>▶ Autopilot</button>
-              <button id="btnStop" class="danger" disabled>■ Stop</button>
-              <button id="btnLastRun" class="sec" style="display:none" title="Vollständigen Verlauf des letzten Laufs in den Runs öffnen">📜 Letzter Lauf</button>
-              <span class="sp" id="goalName" style="margin-left:auto;color:var(--dim);font-size:12px"></span>
-            </div>
-            <div class="act" id="extendBar" style="display:none;gap:6px">
-              <input id="extendText" placeholder="Weitere Anweisung an dieses Ziel…" style="flex:1;min-width:0">
-              <button id="btnExtend" class="sec">➕ Weiter anweisen</button>
-              <button id="btnSuggest" class="sec">✅ Testen &amp; Vorschläge</button>
-            </div>
-            <div class="act" id="liveNoteBar" style="display:none;gap:6px">
-              <input id="liveNoteText" placeholder="💬 Läuft gerade — sag Mimir jetzt etwas dazu (wird vor dem nächsten Schritt gelesen)…" style="flex:1;min-width:0">
-              <button id="btnLiveNote" class="sec">➤ Senden</button>
-            </div>
-            <div id="suggestBox"></div>
-            <div id="tasks"><div class="hint" style="margin-top:12px">👈 Wähle links ein Ziel — oder lege unten links eins an.</div></div>
-            <div id="oplog"></div>
-            <div class="dbg">
-              <div style="font-size:11px;color:var(--dim);letter-spacing:.05em">DEBUG-LOOP (Code schreiben → in der Sandbox testen)</div>
-              <textarea id="dbgSpec" rows="2" placeholder="Spezifikation, z. B. „Funktion is_prime(n) mit Tests"></textarea>
-              <div><button id="btnDebug" class="act" style="background:var(--accent);color:#0a1330;border:0;border-radius:7px;padding:7px 10px;font-weight:700;cursor:pointer">🐞 Debug-Loop</button></div>
-            </div>
-          </div>
         </div>
       </div>
       <!-- LIBRARY -->
@@ -380,73 +270,8 @@
 
           <div style="border-top:1px solid var(--line);margin-top:22px;padding-top:14px">
             <b style="color:#e5837f;font-size:13px">Mimir beenden</b>
-            <div class="hint" style="margin:4px 0 8px">Stoppt alle Mimir-Container und gibt den GPU-Speicher frei. Deine Daten (Ziele, Bibliothek, gelernte Skills) bleiben erhalten. Neustart über das Desktop-Icon „Mimir starten".</div>
+            <div class="hint" style="margin:4px 0 8px">Stoppt alle Mimir-Container und gibt den GPU-Speicher frei. Deine Daten (Bibliothek, gelernte Skills) bleiben erhalten. Neustart über das Desktop-Icon „Mimir starten".</div>
             <button id="shutdownBtn" style="background:transparent;border:1px solid #5b2733;color:#e5837f;border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer">⏻ Mimir beenden</button>
-          </div>
-        </div>
-      </div>
-      <!-- CODING (Zone W: isolated coding workspace) -->
-      <div class="view" id="view-coding">
-        <div class="csess">
-          <span class="ztag" title="Isolierte Firecracker-VM: kein Host, keine Secrets, kein Netz — Freiheit im Jail, geprüfter Diff verlässt ihn">🛡 Zone W · isolierte Coding-VM</span>
-          <select id="wsProjectSelect" title="Projekt wählen"><option value="">① Projekt wählen…</option></select>
-          <button id="wsNewProjectBtn" class="sec" title="Neues, leeres Projekt anlegen">+ Neues Projekt</button>
-          <button id="wsOpen" disabled>▶ Öffnen</button>
-          <span id="wsStatus" class="wsstat">geschlossen</span>
-          <button id="wsMerge" class="sec" disabled title="Geprüften Diff nach out/ übernehmen (mit Freigabe)">⇪ Merge-back</button>
-          <button id="wsClose" class="danger" disabled>■ Schließen</button>
-        </div>
-        <div class="csess" id="wsNewProjectBar" style="display:none">
-          <input id="wsNewProjectName" placeholder="Name des neuen Projekts, z. B. taschenrechner" style="width:280px">
-          <button id="wsNewProjectCreate">Anlegen</button>
-          <button id="wsNewProjectCancel" class="sec">Abbrechen</button>
-        </div>
-        <div id="wsOnboard" class="onboard">
-          <h2>🧑‍💻 Coding — Mimir programmiert für dich, isoliert in einer eigenen VM</h2>
-          <p>Hier arbeitet Mimir selbstständig an echtem Code — mit Shell, Git, Build- und Testwerkzeugen,
-             komplett abgeschottet vom Rest deines Rechners:</p>
-          <ol>
-            <li><b>① Projekt wählen</b> — ein bestehendes aus der Liste, oder <b>+ Neues Projekt</b> für ein leeres.</li>
-            <li><b>② Beschreiben, was gebaut werden soll</b> — unten im großen Feld, z. B. „Baue einen
-                Taschenrechner mit Java Swing (Grundrechenarten)."</li>
-            <li><b>③ 🤖 Los</b> — Mimir öffnet die VM (falls nötig) und arbeitet autonom: bearbeitet Dateien,
-                führt Tests aus. Du siehst rechts unten live, was passiert.</li>
-            <li><b>⇪ Merge-back</b> übernimmt das Ergebnis erst nach deiner Prüfung/Freigabe in den
-                „📚 Bibliothek"-Export-Ordner. Links siehst du jederzeit die Dateien im Workspace.</li>
-          </ol>
-        </div>
-        <div class="cauto">
-          <textarea id="wsTask" rows="2" placeholder="Was soll Mimir bauen oder ändern? Z. B. „Baue einen Taschenrechner mit Java Swing (Grundrechenarten: +, -, ×, ÷)."></textarea>
-          <div class="cautobtns">
-            <button id="wsAuto" class="think" disabled title="Öffnet bei Bedarf automatisch die VM und arbeitet autonom (Edit→Test→Fix-Schleife)">🤖 Los</button>
-            <button id="wsAdvToggle" class="sec" type="button" title="Test-Befehl anpassen">⚙</button>
-          </div>
-        </div>
-        <div class="csess" id="wsAdvBar" style="display:none">
-          <input id="wsTest" placeholder="Test-Befehl, z. B. python3 -m unittest -q" value="python3 -m unittest -q">
-          <span class="hint" style="font-size:11.5px;color:var(--dim)">läuft nach jeder Änderungsrunde, um den Erfolg zu prüfen — leer lassen, wenn es keine Tests gibt</span>
-        </div>
-        <div class="cwrap">
-          <div class="cfiles">
-            <div class="cfh">WORKSPACE <button id="wsRefresh" title="Aktualisieren">⟳</button></div>
-            <div id="wsTree"><div class="hint" style="margin-top:20px;font-size:12px">Öffne einen Workspace, um die (secret-gefilterten) Dateien zu sehen.</div></div>
-          </div>
-          <div class="cmain">
-            <div class="ceditor">
-              <div class="cbar"><span id="wsFile" class="cfile">— keine Datei —</span>
-                <button id="wsSave" class="sec" disabled>💾 Speichern (in VM)</button>
-                <span class="sp"></span>
-                <input id="wsCmd" placeholder="Befehl im Jail ausführen (bash) …">
-                <button id="wsRun" class="sec" disabled>▶ Ausführen</button>
-              </div>
-              <textarea id="wsEditor" spellcheck="false" placeholder="Wähle links eine Datei oder öffne einen Workspace…"></textarea>
-            </div>
-            <div class="cterm">
-              <div class="cbar"><span class="cfile">TERMINAL · Build/Test-Ausgabe (Daten aus dem Jail)</span>
-                <span class="sp"></span><button id="wsDiffBtn" class="sec" disabled>📑 Diff anzeigen</button>
-                <button id="wsTermClear" class="sec">🧹</button></div>
-              <div id="wsTerm"><div class="hint" style="margin-top:14px;font-size:12px">Ausgaben von Befehlen und dem Auto-Fix erscheinen hier.</div></div>
-            </div>
           </div>
         </div>
       </div>
@@ -470,7 +295,7 @@ const $=id=>document.getElementById(id);
 const H={'Content-Type':'application/json','Authorization':'Bearer '+TOKEN};
 function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
 const chat=$('chat'),taskEl=$('task'),statusEl=$('status'),tabsEl=$('tabs'),viewsEl=$('views');
-let convId=null, selGoal=null, activeStreams={};
+let convId=null, activeStreams={};
 function scroll(){chat.scrollTop=chat.scrollHeight;}
 function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 async function jget(p){return (await fetch(p,{headers:H})).json();}
@@ -623,7 +448,7 @@ async function refreshApprovals(){
 async function loadAutonomy(){try{const d=await jget('/api/autonomy');$('autonomy').value=String(d.level);}catch(e){}}
 $('autonomy').onchange=async e=>{
   const lvl=Number(e.target.value);
-  if(lvl>=3 && !confirm('Volle Autonomie: Mimir arbeitet Ziele ohne Rückfragen ab.\n\nNach-außen-wirkende Aktionen (Posten, Deploy, Installieren, E-Mail, Merge-back) und systemkritische Entscheidungen bleiben AUCH hier immer freigabepflichtig.\n\nFortfahren?')){e.target.value=String(await jget('/api/autonomy').then(d=>d.level));return;}
+  if(lvl>=3 && !confirm('Volle Autonomie: Mimir arbeitet komplett ohne Rückfragen — AUCH nach-außen-wirkende oder unumkehrbare Aktionen (Posten, Deploy, Installieren, E-Mail, Merge-back aus Zone W) und systemkritische Entscheidungen laufen dann OHNE Freigabe.\n\nDas hebt die zentrale Sicherheitsbremse des Systems auf. Nur aktivieren, wenn du das wirklich willst.\n\nFortfahren?')){e.target.value=String(await jget('/api/autonomy').then(d=>d.level));return;}
   await jpost('/api/autonomy',{level:lvl});
 };
 $('bell').onclick=()=>{$('inbox').classList.toggle('open');refreshApprovals();};
@@ -673,7 +498,7 @@ function attachRunStream(runId,tabId){
     else if(ev==='final'){if(d.text)ui.ans.append('\n'+d.text);}
     else if(ev==='ws_diff'){if((d.files||[]).length)opEv(log,'📑',fmtEv(ev,d),'cp');}
     else if(ev==='decision'){opEv(log,'🔀',fmtEv('decision',d),'nh');refreshApprovals();}
-    else if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged','operator_note'].includes(ev))
+    else if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged','operator_note','repo_map','architect_start','architect_plan'].includes(ev))
       opEv(log,ICON[ev]||'•',fmtEv(ev,d),ev==='quality'?'cp':'');
     log.scrollTop=log.scrollHeight;
   });
@@ -712,63 +537,11 @@ async function downloadFile(path){
   }catch(e){}
 }
 
-/* ================= GOALS ================= */
-async function loadGoals(){
-  try{const d=await jget('/api/goals');const list=$('goalList');list.innerHTML='';
-    if(!(d.goals||[]).length)list.append(el('div','hint','Noch keine Ziele.'));
-    (d.goals||[]).forEach(g=>{const done=(g.tasks||[]).filter(t=>t.status==='done').length,tot=(g.tasks||[]).length;
-      const row=el('div','goal'+(selGoal===g.id?' sel':''));row.append(el('div','gt',g.title));
-      row.append(el('div','gm',(g.status||'open')+' · '+done+'/'+tot+' Tasks'));row.onclick=()=>selectGoal(g);
-      const del=el('button','goal-del','🗑');del.title='Ziel löschen';
-      del.onclick=async(e)=>{e.stopPropagation();if(!confirm('Ziel „'+g.title+'" mit allen Tasks löschen?'))return;
-        await jpost('/api/goal/delete',{id:g.id});if(selGoal===g.id){selGoal=null;$('onboard').style.display='';
-          $('btnPlan').disabled=true;$('btnAuto').disabled=true;$('goalName').textContent='';
-          $('tasks').innerHTML='';$('oplog').innerHTML='';}loadGoals();};
-      row.append(del);list.append(row);if(selGoal===g.id)renderTasks(g);});
-  }catch(e){}
-}
-function selectGoal(g){selGoal=g.id;$('goalName').textContent=g.title;$('onboard').style.display='none';
-  $('btnPlan').disabled=false;$('btnAuto').disabled=false;$('extendBar').style.display='flex';
-  $('suggestBox').innerHTML='';loadGoals();renderTasks(g);loadLastRunFor(g.id);}
-let lastRunForGoal=null;
-async function loadLastRunFor(goalId){
-  lastRunForGoal=null;$('btnLastRun').style.display='none';
-  try{const d=await jget('/api/runs');
-    const r=(d.runs||[]).find(x=>x.goal_id===goalId);   // /api/runs is newest-first
-    if(r){lastRunForGoal=r;$('btnLastRun').style.display='';}
-  }catch(e){}
-}
-$('btnLastRun').onclick=()=>{if(lastRunForGoal)openRunView(lastRunForGoal);};
-function renderTasks(g){const box=$('tasks');box.innerHTML='';
-  if(!(g.tasks||[]).length){box.append(el('div','hint','Noch keine Tasks — „Planen" zerlegt das Ziel.'));return;}
-  g.tasks.forEach(t=>{const wrap=el('div','tk-wrap');const r=el('div','tk');
-    r.append(el('span','badge b-'+t.status,t.status));r.append(el('span','',t.title));wrap.append(r);
-    if(t.approach){const a=el('div','tk-approach',t.approach);wrap.append(a);}
-    box.append(wrap);});}
-function renderSuggestions(d){
-  const box=$('suggestBox');box.innerHTML='';
-  const card=el('div','cp');
-  const head=el('div','',(d.verify_passed===false?'⚠ ':d.verify_passed===true?'✓ ':'')+(d.summary||'Vorschläge für die nächsten Schritte:'));
-  head.style.cssText='font-weight:600;margin-bottom:6px';card.append(head);
-  (d.items||[]).forEach(it=>{
-    const row=el('div','');row.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-top:1px solid var(--line)';
-    const tx=el('div','');tx.style.flex='1';
-    tx.append(el('div','',it.title));
-    if(it.why){const w=el('div','tk-approach',it.why);tx.append(w);}
-    row.append(tx);
-    const add=el('button','sec','➕');add.title='Als Task hinzufügen';
-    add.onclick=async()=>{add.disabled=true;await jpost('/api/goal/add-task',{goal_id:d.goal_id,title:it.title,approach:it.why});row.remove();refreshSelected();};
-    const dismiss=el('button','sec','✕');dismiss.title='Verwerfen';dismiss.onclick=()=>row.remove();
-    row.append(add,dismiss);
-    card.append(row);});
-  card.style.cssText='margin:8px 12px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;font-size:12.5px';
-  box.append(card);box.scrollIntoView({block:'nearest'});
-}
+/* ---------- shared event-log rendering (used by the Runs board) ---------- */
 function argStr(args){const a=args||{};const parts=Object.keys(a).map(k=>k+'='+String(a[k]).slice(0,60));
   return parts.length?(' ('+esc(parts.join(', '))+')'):'';}
 function opEv(box,ic,html,cls){const e=el('div','ev'+(cls?' '+cls:''));e.append(el('span','ic',ic));const tx=el('div','tx');tx.innerHTML=html;e.append(tx);box.append(e);box.scrollTop=box.scrollHeight;}
-async function refreshSelected(){try{const d=await jget('/api/goals');const g=(d.goals||[]).find(x=>x.id===selGoal);if(g)renderTasks(g);}catch(e){}}
-const ICON={run_start:'🚀',step:'⋯',tool_result:'•',verify:'✓',checkpoint:'🧭',task_start:'⋯',task_done:'✅',plan_task:'•',plan_done:'✅',autopilot_done:'🏁',needs_human:'🙋',debug_run:'▶',debug_fail:'✗',debug_done:'🏁',continue:'↩',status:'•',approval:'⚠',thesis_start:'📖',outline:'📑',research_start:'🔎',exam_start:'📝',notes_start:'📄',ws_open:'🛡',ws_list:'📁',round:'🔁',edit:'✎',edit_failed:'✗',snapshot:'📸',ws_exec:'▶',coder_start:'🧑‍💻',coder_done:'✅',merge_start:'⇪',merge_done:'⇪',ws_diff:'📑',decision:'🔀',decision_made:'🔀',decision_resolved:'✓',capability_gap:'🧩',learn_spawn:'🎓',learn_skip:'•',learn_result:'🎓',teach_start:'🎓',teach_round:'🔁',teach_test:'🧪',teach_done:'🏁',skill_staged:'📦',operator_note:'🧑'};
+const ICON={run_start:'🚀',step:'⋯',tool_result:'•',verify:'✓',checkpoint:'🧭',task_start:'⋯',task_done:'✅',plan_task:'•',plan_done:'✅',autopilot_done:'🏁',needs_human:'🙋',debug_run:'▶',debug_fail:'✗',debug_done:'🏁',continue:'↩',status:'•',approval:'⚠',thesis_start:'📖',outline:'📑',research_start:'🔎',exam_start:'📝',notes_start:'📄',ws_open:'🛡',ws_list:'📁',round:'🔁',edit:'✎',edit_failed:'✗',snapshot:'📸',ws_exec:'▶',coder_start:'🧑‍💻',coder_done:'✅',merge_start:'⇪',merge_done:'⇪',ws_diff:'📑',decision:'🔀',decision_made:'🔀',decision_resolved:'✓',capability_gap:'🧩',learn_spawn:'🎓',learn_skip:'•',learn_result:'🎓',teach_start:'🎓',teach_round:'🔁',teach_test:'🧪',teach_done:'🏁',skill_staged:'📦',operator_note:'🧑',architect_start:'📐',architect_plan:'📐',repo_map:'🗺'};
 function fmtEv(ev,d){
   if(ev==='plan_task')return 'Task: '+esc(d.title);
   if(ev==='plan_done')return 'Plan fertig: <b>'+d.count+'</b> Tasks';
@@ -805,6 +578,9 @@ function fmtEv(ev,d){
   if(ev==='skill_staged')return '📦 <b>Skill gestaged:</b> '+esc(d.staged||'')+' — Freigabe/Signatur nötig zur Wiederverwendung';
   if(ev==='learn_result')return esc(d.text||'');
   if(ev==='operator_note')return '<b>🧑 Deine Anweisung:</b> '+esc(d.text||'');
+  if(ev==='repo_map')return 'Kontext: '+(d.files||[]).length+' vorhandene Datei(en) einbezogen ('+esc((d.files||[]).join(', '))+')';
+  if(ev==='architect_start')return '<b>Architekt entwirft einen Plan…</b>';
+  if(ev==='architect_plan')return '<b>📐 Plan:</b><br>'+esc(d.text||'').replace(/\n/g,'<br>');
   if(ev==='ws_open')return '<b>🛡 Zone W offen</b> — Toolchain '+esc((d.toolchain||[]).join(', '))+' · '+esc(String(d.included||0))+' Datei(en)'+((d.secret_refused||[]).length?(' · ⚠ '+d.secret_refused.length+' Secret-Datei(en) abgelehnt'):'');
   if(ev==='round')return 'Runde '+d.n+'/'+d.of;
   if(ev==='edit')return 'bearbeitet <code>'+esc(d.path)+'</code>'+(d.diff?('<pre class="diffbox">'+esc(d.diff)+'</pre>'):'');
@@ -817,55 +593,6 @@ function fmtEv(ev,d){
   if(ev==='merge_done')return '<b>Patch exportiert:</b> '+esc(d.exported||'')+' ('+esc((d.files||[]).join(', '))+')';
   return esc(ev);
 }
-function goalBusy(on){$('btnPlan').disabled=on||selGoal==null;$('btnAuto').disabled=on||selGoal==null;$('btnStop').disabled=!on;$('btnDebug').disabled=on;
-  $('btnExtend').disabled=on||selGoal==null;$('btnSuggest').disabled=on||selGoal==null;
-  $('liveNoteBar').style.display=on?'flex':'none';if(!on)$('liveNoteText').value='';}
-let goalRun=null;
-// Live token/reasoning view: so you can watch Mimir think + write code as it happens, instead of only
-// seeing coarse milestones. A live row is created on the first token of a burst and grows in place;
-// any OTHER (discrete) event ends both live rows so the next burst starts a fresh one in the right spot.
-let liveThinkRow=null,liveTokRow=null;
-function liveAppend(kind,text){
-  if(kind==='reasoning'){
-    if(!liveThinkRow){liveThinkRow=el('div','ev live');liveThinkRow.append(el('span','ic','🧠'));const tx=el('div','tx');liveThinkRow.append(tx);$('oplog').append(liveThinkRow);}
-    liveThinkRow.querySelector('.tx').textContent+=text;
-  }else{
-    if(!liveTokRow){liveTokRow=el('div','ev live tok');liveTokRow.append(el('span','ic','✎'));const tx=el('div','tx');liveTokRow.append(tx);$('oplog').append(liveTokRow);}
-    liveTokRow.querySelector('.tx').textContent+=text;
-  }
-  $('oplog').scrollTop=$('oplog').scrollHeight;
-}
-function liveReset(){liveThinkRow=null;liveTokRow=null;}
-async function startGoalRun(kind,body){goalBusy(true);$('oplog').innerHTML='';liveReset();
-  const r=await jpost('/api/'+kind,body);goalRun=r.run_id;
-  await streamRun(r.run_id,(ev,d)=>{
-    if(ev==='token'){liveAppend('token',d.t||'');return;}
-    if(ev==='reasoning'){liveAppend('reasoning',d.t||'');return;}
-    if(ev==='approval'){liveReset();approvalCard({tl:$('oplog')},d);refreshApprovals();}
-    else if(ev==='approval_resolved')markResolved({tl:$('oplog')},d);
-    else if(ev==='decision'){liveReset();opEv($('oplog'),'🔀',fmtEv('decision',d),'nh');refreshApprovals();}
-    else if(ev==='suggestions'){liveReset();renderSuggestions(d);}
-    else if(ev==='error'){liveReset();opEv($('oplog'),'✗','Fehler: '+esc(d.msg||''),'nh');}
-    else if(ev==='tool_result'&&d.tool==='project_write_out'&&d.ok){/* superseded by the richer 'edit' event (diff) */}
-    else if(['plan_task','plan_done','task_start','verify','verify_start','checkpoint','task_done','task_blocked','needs_human','autopilot_done','debug_run','debug_fail','debug_done','run_start','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_round','teach_test','teach_done','skill_staged','goal_accept','edit','edit_failed','coder_start','coder_done','ws_open','ws_exec','round','step','tool_result','operator_note'].includes(ev)){
-      liveReset();opEv($('oplog'),ICON[ev]||'•',fmtEv(ev,d),ev==='checkpoint'?'cp':ev==='needs_human'?'nh':(ev==='task_done'&&d.status==='done')?'done':'');refreshSelected();}
-    else if(ev==='usage')setMeter(d.used,d.ctx);
-  });
-  goalBusy(false);goalRun=null;refreshSelected();if(selGoal!=null)loadLastRunFor(selGoal);
-}
-$('addGoal').onclick=async()=>{const title=$('gTitle').value.trim();if(!title)return;
-  const g=await jpost('/api/goal',{title,detail:$('gDetail').value.trim()});$('gTitle').value='';$('gDetail').value='';await loadGoals();if(g&&g.id){g.tasks=g.tasks||[];selectGoal(g);}};
-$('btnPlan').onclick=()=>{if(selGoal!=null)startGoalRun('plan',{goal_id:selGoal});};
-$('btnAuto').onclick=()=>{if(selGoal!=null)startGoalRun('autopilot',{goal_id:selGoal});};
-$('btnStop').onclick=()=>{if(goalRun)stopRun(goalRun);};
-$('btnDebug').onclick=()=>{const spec=$('dbgSpec').value.trim();if(spec)startGoalRun('debug',{spec});};
-$('btnExtend').onclick=()=>{const instruction=$('extendText').value.trim();
-  if(instruction&&selGoal!=null){startGoalRun('goal/extend',{goal_id:selGoal,instruction});$('extendText').value='';}};
-$('btnSuggest').onclick=()=>{if(selGoal!=null)startGoalRun('goal/suggest',{goal_id:selGoal});};
-async function sendLiveNote(){const t=$('liveNoteText').value.trim();if(!t||!goalRun)return;
-  $('liveNoteText').value='';await jpost('/api/run/note',{run_id:goalRun,text:t});}
-$('btnLiveNote').onclick=sendLiveNote;
-$('liveNoteText').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendLiveNote();}});
 $('runsRefresh').onclick=loadRuns;
 
 /* ================= LIBRARY (corpus) ================= */
@@ -935,8 +662,7 @@ async function loadTree(){$('tree').innerHTML='<div class="hint">lädt…</div>'
 const openTabs={};
 function activate(id){[...tabsEl.children].forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
   [...viewsEl.children].forEach(v=>v.classList.toggle('active',v.id==='view-'+id));
-  if(id==='goals')loadGoals(); if(id==='runs')loadRuns(); if(id==='library')loadCorpus(); if(id==='settings')loadSettings();
-  if(id==='coding')wsLoadProjects();}
+  if(id==='runs')loadRuns(); if(id==='library')loadCorpus(); if(id==='settings')loadSettings();}
 tabsEl.addEventListener('click',e=>{const tab=e.target.closest('.tab');if(tab&&!e.target.classList.contains('x'))activate(tab.dataset.tab);});
 
 /* ===== Einstellungen: Modell wechseln / herunterladen / System beenden ===== */
@@ -1083,126 +809,6 @@ async function openFile(path,node){markActiveFile(node);const id='f_'+path.repla
     else renderCodeView(fv,d.content||'');
   }catch(e){fv.innerHTML='<div class="err" style="padding:14px">Lesefehler</div>';}}
 
-/* ================= CODING (Zone W isolated workspace) ================= */
-let wsSid=null, wsCurFile=null;
-function wsTerm(cls,text){const t=$('wsTerm');if(t.querySelector('.hint'))t.innerHTML='';
-  const d=el('div',cls);d.textContent=text;t.append(d);t.scrollTop=t.scrollHeight;return d;}
-function wsDiffRender(diff){const t=$('wsTerm');const box=el('div','diff');
-  (diff||'').split('\n').forEach(ln=>{const c=ln.startsWith('+')&&!ln.startsWith('+++')?'add':ln.startsWith('-')&&!ln.startsWith('---')?'del':'';
-    const d=el('div',c);d.textContent=ln;box.append(d);});
-  t.append(box);t.scrollTop=t.scrollHeight;}
-// project picker: replaces free-text "type a folder path" with a list of what's actually there + a
-// "create new (empty) project" flow, so opening a workspace never requires guessing a path by hand.
-async function wsLoadProjects(){
-  const sel=$('wsProjectSelect');const keep=sel.value;
-  const d=await jget('/api/ws/projects');
-  sel.innerHTML='';sel.append(new Option('① Projekt wählen…',''));
-  if(d.error){$('wsOnboard').querySelector('p').insertAdjacentHTML('afterend','<p class="err">'+esc(d.error)+'</p>');return;}
-  (d.projects||[]).forEach(p=>sel.append(new Option(p.name+' ('+p.files+' Datei(en))',p.name)));
-  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
-  wsOnProjectChange();
-}
-function wsOnProjectChange(){
-  const has=!!$('wsProjectSelect').value;
-  $('wsOpen').disabled=has?!!wsSid:true;
-  $('wsAuto').disabled=!has;
-  if(has)$('wsOnboard').style.display='none';
-}
-$('wsProjectSelect').onchange=wsOnProjectChange;
-$('wsNewProjectBtn').onclick=()=>{$('wsNewProjectBar').style.display='flex';$('wsNewProjectName').focus();};
-$('wsNewProjectCancel').onclick=()=>{$('wsNewProjectBar').style.display='none';$('wsNewProjectName').value='';};
-async function wsCreateProject(){
-  const name=$('wsNewProjectName').value.trim();if(!name)return;
-  const d=await jpost('/api/ws/new-project',{name});
-  if(d.error){alert(d.error);return;}
-  $('wsNewProjectBar').style.display='none';$('wsNewProjectName').value='';
-  await wsLoadProjects();$('wsProjectSelect').value=name;wsOnProjectChange();
-}
-$('wsNewProjectCreate').onclick=wsCreateProject;
-$('wsNewProjectName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();wsCreateProject();}});
-
-function wsSetOpen(on,info){wsSid=on?info.session_id:null;
-  $('wsStatus').textContent=on?('offen · '+wsSid.slice(-6)):'geschlossen';$('wsStatus').classList.toggle('on',on);
-  ['wsClose','wsMerge','wsSave','wsRun','wsDiffBtn'].forEach(id=>$(id).disabled=!on);
-  $('wsProjectSelect').disabled=on;$('wsNewProjectBtn').disabled=on;
-  wsOnProjectChange();}
-async function wsOpenSession(){
-  const src=$('wsProjectSelect').value;if(!src)return;
-  $('wsOpen').disabled=true;$('wsStatus').textContent='öffne VM…';$('wsOnboard').style.display='none';
-  const d=await jpost('/api/ws/open',{source:src});
-  if(d.error){$('wsStatus').textContent='';wsTerm('rcx','✗ '+d.error);$('wsOpen').disabled=false;return;}
-  wsSetOpen(true,d);
-  const rep=d.clone_report||{};
-  wsTerm('sys','🛡 Zone W offen — Toolchain: '+Object.keys((d.hello||{}).toolchain||{}).join(', ')
-    +' · '+rep.included+' Datei(en) geklont'+(rep.excluded?(', '+rep.excluded+' ausgeschlossen'):'')
-    +((rep.secret_refused||[]).length?(' · ⚠ '+rep.secret_refused.length+' wegen Secrets abgelehnt'):''));
-  await wsLoadTree();
-}
-async function wsLoadTree(){if(!wsSid)return;
-  const d=await jpost('/api/ws/call',{session_id:wsSid,verb:'list'});
-  const box=$('wsTree');box.innerHTML='';
-  const files=(d.entries||[]).filter(e=>!e.endsWith('/')&&e!=='lost+found');
-  if(!files.length){box.append(el('div','hint','(leer)'));return;}
-  files.forEach(f=>{const r=el('div','wsf'+(f===wsCurFile?' active':''),f);r.onclick=()=>wsLoadFile(f);box.append(r);});}
-async function wsLoadFile(path){if(!wsSid)return;wsCurFile=path;
-  document.querySelectorAll('#wsTree .wsf').forEach(n=>n.classList.toggle('active',n.textContent===path));
-  $('wsFile').textContent=path;$('wsEditor').value='… lädt …';
-  const d=await jpost('/api/ws/call',{session_id:wsSid,verb:'read',path});
-  $('wsEditor').value=d.ok?(d.content||''):('# Fehler: '+(d.error||'?'));}
-async function wsSaveFile(){if(!wsSid||!wsCurFile)return;
-  const d=await jpost('/api/ws/call',{session_id:wsSid,verb:'write',path:wsCurFile,content:$('wsEditor').value});
-  wsTerm('sys',d.ok?('💾 gespeichert: '+wsCurFile+' ('+d.bytes+' B)'):('✗ Speichern: '+(d.error||'?')));}
-async function wsRunCmd(cmd){if(!wsSid||!cmd.trim())return;
-  wsTerm('cmd','$ '+cmd);const d=await jpost('/api/ws/call',{session_id:wsSid,verb:'exec',cmd,timeout:180});
-  if(d.error){wsTerm('rcx','✗ '+d.error);return;}
-  if(d.stdout)wsTerm('out',d.stdout.replace(/\n+$/,''));
-  if(d.stderr)wsTerm('out',d.stderr.replace(/\n+$/,''));
-  wsTerm(d.rc===0?'rc0':'rcx','[exit '+d.rc+']');
-  wsLoadTree();if(wsCurFile)wsLoadFile(wsCurFile);}
-async function wsShowDiff(){if(!wsSid)return;const d=await jpost('/api/ws/export',{session_id:wsSid});
-  if(d.error){wsTerm('rcx','✗ '+d.error);return;}
-  if(!(d.files||[]).length){wsTerm('sys','(keine Änderungen)');return;}
-  wsTerm('sys','📑 Diff — geänderte Dateien: '+d.files.join(', '));wsDiffRender(d.diff);}
-async function wsMergeBack(){if(!wsSid)return;
-  const name=(prompt('Name für den Patch (out/workspace-export/<name>.diff):','patch')||'patch');
-  const r=await jpost('/api/ws/merge',{session_id:wsSid,name});
-  if(r.run_id){wsTerm('sys','⇪ Merge-back angefordert → Freigabe im 🔔-Postfach. Nach Freigabe liegt der Diff unter out/workspace-export/'+name+'.diff');refreshApprovals();}
-  else wsTerm('rcx','✗ '+(r.error||'Merge fehlgeschlagen'));}
-async function wsCloseSession(){if(!wsSid)return;const sid=wsSid;await jpost('/api/ws/close',{session_id:sid});
-  wsSetOpen(false,{});$('wsTree').innerHTML='<div class="hint" style="margin-top:20px;font-size:12px">Workspace geschlossen.</div>';
-  $('wsEditor').value='';$('wsFile').textContent='— keine Datei —';wsCurFile=null;wsTerm('sys','■ Workspace '+sid.slice(-6)+' geschlossen (VM entfernt).');}
-async function wsAutoFix(){
-  const task=$('wsTask').value.trim();if(!task){$('wsTask').focus();return;}
-  const src=$('wsProjectSelect').value;if(!src&&!wsSid){alert('Bitte zuerst ein Projekt wählen (oder + Neues Projekt).');return;}
-  const test=$('wsTest').value.trim();
-  $('wsOnboard').style.display='none';
-  // run IN the open workspace if there is one (stays open + mergeable); else Mimir opens one itself
-  const body=wsSid?{mode:'workspace',session_id:wsSid,task,test_cmd:test}
-                  :{mode:'workspace',source:src||null,task,test_cmd:test};
-  wsTerm('sys','🤖 Los — Mimir arbeitet autonom (isolierte VM, Edit→Test→Fix-Schleife)'
-    +(wsSid?' im offenen Workspace':' — öffnet die VM…')+'…');
-  const r=await jpost('/api/code',body);
-  if(!r.run_id){wsTerm('rcx','✗ Start fehlgeschlagen');return;}
-  await streamRun(r.run_id,(ev,d)=>{
-    if(ev==='ws_open')wsTerm('sys','🛡 VM offen — Toolchain '+(d.toolchain||[]).join(', ')+' · '+d.included+' Datei(en)'+((d.secret_refused||[]).length?(' · ⚠ '+d.secret_refused.length+' Secret-Datei(en) abgelehnt'):''));
-    else if(ev==='round')wsTerm('sys','— Runde '+d.n+'/'+d.of);
-    else if(ev==='edit')wsTerm('edt','✎ bearbeitet '+d.path);
-    else if(ev==='edit_failed')wsTerm('rcx','✗ Edit '+(d.path||'')+': '+(d.error||''));
-    else if(ev==='snapshot')wsTerm('sys','📸 Snapshot vor riskantem Befehl ('+d.reason+')');
-    else if(ev==='ws_exec'){wsTerm('cmd','$ '+d.cmd);if(d.output)wsTerm('out',d.output.replace(/\n+$/,''));wsTerm(d.rc===0?'rc0':'rcx','[exit '+d.rc+']'+((d.injection||[]).length?(' ⚠ Injection-Signale: '+d.injection.join(',')):''));}
-    else if(ev==='ws_diff'){if((d.files||[]).length){wsTerm('sys','📑 Ergebnis-Diff ('+d.files.join(', ')+'):');wsDiffRender(d.diff);}}
-    else if(ev==='final')wsTerm('sys','🏁 '+d.text);
-    else if(ev==='error')wsTerm('rcx','✗ '+d.msg);
-  });
-  if(wsSid){await wsLoadTree(); if(wsCurFile)await wsLoadFile(wsCurFile);}   // reflect the new/edited files
-}
-$('wsOpen').onclick=wsOpenSession;$('wsClose').onclick=wsCloseSession;$('wsSave').onclick=wsSaveFile;
-$('wsMerge').onclick=wsMergeBack;$('wsDiffBtn').onclick=wsShowDiff;$('wsRefresh').onclick=wsLoadTree;
-$('wsAuto').onclick=wsAutoFix;$('wsTermClear').onclick=()=>{$('wsTerm').innerHTML='';};
-$('wsAdvToggle').onclick=()=>{const b=$('wsAdvBar');b.style.display=b.style.display==='none'?'flex':'none';};
-$('wsRun').onclick=()=>{const c=$('wsCmd').value.trim();if(c){$('wsCmd').value='';wsRunCmd(c);}};
-$('wsCmd').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('wsRun').click();}});
-$('wsEditor').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();wsSaveFile();}});
 
 /* ---------- wire up ---------- */
 $('send').onclick=send;$('refresh').onclick=loadTree;
