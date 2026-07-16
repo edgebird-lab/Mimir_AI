@@ -28,6 +28,7 @@ from starlette.routing import Route
 from .broker import PrimitiveCall
 from .control_client import ControlClient, ControlUnavailable
 from .corpus import CorpusStore
+from .wiki import WikiStore
 from .events import sse
 from .gateway import build
 from .runstore import TERMINAL, RunStore
@@ -78,6 +79,7 @@ ws = Workspace(os.environ.get("MIMIR_WORKSPACE_DB", "/state/workspace.db"))
 rs = RunStore(os.environ.get("MIMIR_RUNS_DB", "/state/runs.db"),
               os.environ.get("MIMIR_REDIS_URL", "redis://redis:6379/0"))
 corpus = CorpusStore(os.environ.get("MIMIR_CORPUS_DB", "/state/corpus.db"))
+wiki = WikiStore(os.environ.get("MIMIR_WIKI_DB", "/state/wiki.db"))
 
 
 def _origin_ok(request: Request) -> bool:
@@ -436,6 +438,21 @@ async def api_corpus_remove(request: Request):
     return JSONResponse({"ok": corpus.remove_document(str(b.get("name", "")))})
 
 
+# ---------------------------------------------------------------- Wissens-Wiki (read-only browse)
+async def api_wiki(request: Request):
+    if not _authed(request):
+        return PlainTextResponse("unauthorized", 401)
+    return JSONResponse({"pages": wiki.list_pages(), "log": wiki.recent_log(10)})
+
+
+async def api_wiki_page(request: Request):
+    if not _authed(request):
+        return PlainTextResponse("unauthorized", 401)
+    slug = request.query_params.get("slug", "")
+    page = wiki.get_page(slug)
+    return JSONResponse(page or {"error": "unknown page"}, 404 if not page else 200)
+
+
 # ---------------------------------------------------------------- project file tree / viewer (read-only)
 async def api_tree(request: Request):
     if (g := _guard(request)):
@@ -739,6 +756,8 @@ app = Starlette(routes=[
     Route("/api/corpus", api_corpus, methods=["GET"]),
     Route("/api/upload", api_upload, methods=["POST"]),
     Route("/api/corpus/remove", api_corpus_remove, methods=["POST"]),
+    Route("/api/wiki", api_wiki, methods=["GET"]),
+    Route("/api/wiki/page", api_wiki_page, methods=["GET"]),
 ])
 
 

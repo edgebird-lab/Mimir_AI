@@ -139,6 +139,7 @@
   .doc{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--panel)}
   .doc .dn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .doc .dm{font-size:11px;color:var(--dim)}
+  .wp.active{background:var(--panel2);color:var(--accent)}
   .doc .rm{cursor:pointer;color:var(--dim);border:0;background:none;font-size:15px}.doc .rm:hover{color:var(--bad)}
   .up{font-size:12px;color:var(--dim);margin-top:8px}
   .fileview{flex:1;overflow:auto;background:var(--bg)}
@@ -242,6 +243,15 @@
           <input type="file" id="fileInput" multiple accept=".pdf,.docx,.pptx,.txt,.md" style="display:none">
           <div id="uploadStatus"></div>
           <div id="docList" style="margin-top:14px"></div>
+
+          <div style="border-top:1px solid var(--line);margin-top:22px;padding-top:14px">
+            <b style="color:var(--txt);font-size:13px">🧠 Wissens-Wiki</b>
+            <div class="hint" style="margin:4px 0 10px">Wird automatisch beim Recherchieren/Thesis-Schreiben gepflegt — jede neue Quelle aktualisiert die passenden Seiten, statt bei null anzufangen. <span id="wikiEmpty">Noch leer — die erste Recherche legt Seiten an.</span></div>
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div id="wikiList" style="flex:0 0 220px;max-height:360px;overflow:auto"></div>
+              <div id="wikiPage" style="flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-height:80px;font-size:13px;white-space:pre-wrap"></div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- SETTINGS (model management + system) -->
@@ -541,7 +551,7 @@ async function downloadFile(path){
 function argStr(args){const a=args||{};const parts=Object.keys(a).map(k=>k+'='+String(a[k]).slice(0,60));
   return parts.length?(' ('+esc(parts.join(', '))+')'):'';}
 function opEv(box,ic,html,cls){const e=el('div','ev'+(cls?' '+cls:''));e.append(el('span','ic',ic));const tx=el('div','tx');tx.innerHTML=html;e.append(tx);box.append(e);box.scrollTop=box.scrollHeight;}
-const ICON={run_start:'🚀',step:'⋯',tool_result:'•',verify:'✓',checkpoint:'🧭',task_start:'⋯',task_done:'✅',plan_task:'•',plan_done:'✅',autopilot_done:'🏁',needs_human:'🙋',debug_run:'▶',debug_fail:'✗',debug_done:'🏁',continue:'↩',status:'•',approval:'⚠',thesis_start:'📖',outline:'📑',research_start:'🔎',exam_start:'📝',notes_start:'📄',ws_open:'🛡',ws_list:'📁',round:'🔁',edit:'✎',edit_failed:'✗',snapshot:'📸',ws_exec:'▶',coder_start:'🧑‍💻',coder_done:'✅',merge_start:'⇪',merge_done:'⇪',ws_diff:'📑',decision:'🔀',decision_made:'🔀',decision_resolved:'✓',capability_gap:'🧩',learn_spawn:'🎓',learn_skip:'•',learn_result:'🎓',teach_start:'🎓',teach_round:'🔁',teach_test:'🧪',teach_done:'🏁',skill_staged:'📦',operator_note:'🧑',architect_start:'📐',architect_plan:'📐',repo_map:'🗺'};
+const ICON={run_start:'🚀',step:'⋯',tool_result:'•',verify:'✓',checkpoint:'🧭',task_start:'⋯',task_done:'✅',plan_task:'•',plan_done:'✅',autopilot_done:'🏁',needs_human:'🙋',debug_run:'▶',debug_fail:'✗',debug_done:'🏁',continue:'↩',status:'•',approval:'⚠',thesis_start:'📖',outline:'📑',research_start:'🔎',exam_start:'📝',notes_start:'📄',ws_open:'🛡',ws_list:'📁',round:'🔁',edit:'✎',edit_failed:'✗',snapshot:'📸',ws_exec:'▶',coder_start:'🧑‍💻',coder_done:'✅',merge_start:'⇪',merge_done:'⇪',ws_diff:'📑',decision:'🔀',decision_made:'🔀',decision_resolved:'✓',capability_gap:'🧩',learn_spawn:'🎓',learn_skip:'•',learn_result:'🎓',teach_start:'🎓',teach_round:'🔁',teach_test:'🧪',teach_done:'🏁',skill_staged:'📦',operator_note:'🧑',architect_start:'📐',architect_plan:'📐',repo_map:'🗺',wiki_update:'🧠'};
 function fmtEv(ev,d){
   if(ev==='plan_task')return 'Task: '+esc(d.title);
   if(ev==='plan_done')return 'Plan fertig: <b>'+d.count+'</b> Tasks';
@@ -566,6 +576,10 @@ function fmtEv(ev,d){
   if(ev==='outline')return '<b>Gliederung:</b> '+esc(d.title)+'<br>'+(d.chapters||[]).map((c,i)=>(i+1)+'. '+esc(c)).join('<br>');
   if(ev==='quality')return '🔍 <b>Selbstprüfung:</b> Zitat-Beleg '+Math.round((d.citation_rate||0)*100)+'% ('+(d.checked||0)+' geprüft) · Note '+esc(d.grade||'?')+(d.flags?' · '+d.flags+' Warnung(en)':'');
   if(ev==='research_start')return '<b>🔎 Recherche</b> zu „'+esc(d.topic)+'"…';
+  if(ev==='wiki_update')return '🧠 <b>Wissens-Wiki:</b> '+(d.pages||[]).length+' Seite(n) aktualisiert — '+esc((d.pages||[]).join(', '))
+    +((d.low_confidence||[]).length?(' · ⚠ schwach belegt trotz Korrektur: '+esc(d.low_confidence.join(', '))):'')
+    +((d.skipped||[]).length?(' · ⏭ übersprungen (Konflikt mit parallelem Lauf): '+esc(d.skipped.join(', '))):'')
+    +((d.contradictions||[]).length?(' · ⚠ Widerspruch zu Vorwissen: '+esc(d.contradictions[0])):'');
   if(ev==='exam_start'||ev==='notes_start')return 'Verarbeite '+esc(d.doc||d.topic||'')+'…';
   if(ev==='decision')return '🔀 <b>Entscheidung nötig:</b> '+esc(d.question||'')+(d.system_critical?' <span style="color:var(--bad)">(systemkritisch)</span>':'')+' — im 🔔-Postfach wählen';
   if(ev==='decision_made')return '🔀 <b>Entscheidung:</b> '+esc(d.question||'')+' → <b>'+esc(d.label||d.chosen||'')+'</b>';
@@ -609,6 +623,48 @@ async function loadCorpus(){
       r.append(mk('📄 Zusammenfassung',()=>startAcademic('notes',doc.name)));
       const rm=el('button','rm','🗑');rm.title='Entfernen';rm.onclick=async()=>{await jpost('/api/corpus/remove',{name:doc.name});loadCorpus();};
       r.append(rm);box.append(r);});
+  }catch(e){}
+}
+/* ================= WISSENS-WIKI (read-only browser; pflegt sich selbst beim Recherchieren/Thesis) ================= */
+let wikiPages=[];
+function wikiRenderContent(md){
+  // [[Wikilink]] -> klickbar, wenn eine Seite mit dem Titel existiert; sonst normaler Text
+  return esc(md).replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{
+    const hit=wikiPages.find(p=>p.title.toLowerCase()===name.trim().toLowerCase());
+    return hit?('<a href="#" class="wl" data-slug="'+esc(hit.slug)+'" style="color:var(--accent)">'+esc(name)+'</a>'):('[['+esc(name)+']]');
+  });
+}
+function wikiAccBadge(acc){
+  if(acc===null||acc===undefined)return '';
+  const pct=Math.round(acc*100);
+  const color=acc>=0.75?'var(--ok,#6bbf6b)':(acc>=0.5?'var(--warn,#ffcf6b)':'var(--bad,#ff6b6b)');
+  return ' <span style="color:'+color+';font-size:11px;font-weight:600" title="Zuletzt gemessene Beleg-Genauigkeit">'+pct+'%</span>';
+}
+async function openWikiPage(slug){
+  const d=await jget('/api/wiki/page?slug='+encodeURIComponent(slug));
+  const box=$('wikiPage');
+  if(d.error){box.innerHTML='<span class="hint">Seite nicht gefunden.</span>';return;}
+  box.innerHTML='<b>'+esc(d.title)+'</b>'+wikiAccBadge(d.accuracy)+'<br><br>'+wikiRenderContent(d.content);
+  box.querySelectorAll('a.wl').forEach(a=>a.onclick=e=>{e.preventDefault();openWikiPage(a.dataset.slug);});
+  document.querySelectorAll('#wikiList .wp').forEach(n=>n.classList.toggle('active',n.dataset.slug===slug));
+}
+async function loadWiki(){
+  try{
+    const d=await jget('/api/wiki');
+    wikiPages=d.pages||[];
+    $('wikiEmpty').style.display=wikiPages.length?'none':'inline';
+    const box=$('wikiList');box.innerHTML='';
+    wikiPages.forEach(p=>{
+      const r=el('div','wp');
+      r.innerHTML=esc(p.title)+wikiAccBadge(p.accuracy);
+      r.dataset.slug=p.slug;
+      r.style.cssText='padding:6px 9px;border-radius:6px;cursor:pointer;font-size:12.5px;margin-bottom:2px';
+      r.onmouseover=()=>r.style.background='var(--panel2)';
+      r.onmouseout=()=>{if(!r.classList.contains('active'))r.style.background='';};
+      r.onclick=()=>openWikiPage(p.slug);
+      box.append(r);
+    });
+    if(wikiPages.length && !$('wikiPage').innerHTML)openWikiPage(wikiPages[0].slug);
   }catch(e){}
 }
 async function uploadFiles(files){
@@ -662,7 +718,7 @@ async function loadTree(){$('tree').innerHTML='<div class="hint">lädt…</div>'
 const openTabs={};
 function activate(id){[...tabsEl.children].forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
   [...viewsEl.children].forEach(v=>v.classList.toggle('active',v.id==='view-'+id));
-  if(id==='runs')loadRuns(); if(id==='library')loadCorpus(); if(id==='settings')loadSettings();}
+  if(id==='runs')loadRuns(); if(id==='library'){loadCorpus();loadWiki();} if(id==='settings')loadSettings();}
 tabsEl.addEventListener('click',e=>{const tab=e.target.closest('.tab');if(tab&&!e.target.classList.contains('x'))activate(tab.dataset.tab);});
 
 /* ===== Einstellungen: Modell wechseln / herunterladen / System beenden ===== */

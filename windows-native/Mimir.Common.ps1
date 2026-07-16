@@ -130,6 +130,7 @@ function Set-MimirProcessEnv {
     $env:MIMIR_WORKSPACE_DB= (Join-Path $MimirState "workspace.db")
     $env:MIMIR_LESSONS_DB  = (Join-Path $MimirState "lessons.db")
     $env:MIMIR_THESIS_DB   = (Join-Path $MimirState "thesis.db")
+    $env:MIMIR_WIKI_DB     = (Join-Path $MimirState "wiki.db")
     $env:MIMIR_AUDIT       = (Join-Path $MimirState "audit.jsonl")
     $env:MIMIR_GATEWAY_TOKEN_FILE = (Join-Path $MimirState "gateway.token")
 

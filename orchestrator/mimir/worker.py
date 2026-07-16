@@ -20,6 +20,7 @@ from .coordinator import Coordinator
 from .corpus import CorpusStore
 from .gateway import build
 from .runstore import TERMINAL, RunStore
+from .wiki import WikiStore
 from .workspace import Workspace
 
 CONCURRENCY = int(os.environ.get("MIMIR_WORKER_CONCURRENCY", "3"))
@@ -171,7 +172,8 @@ def worker_thread(idx: int) -> None:
     broker.approver = approver                                # this thread's runs use this thread's approver
     broker.autonomy_level = lambda: int(rs.get_setting("autonomy_level", "0") or 0)   # operator-set ceiling
     coord = Coordinator(agent, ws)
-    coord.academic = Academic(agent, ws, CorpusStore(os.environ.get("MIMIR_CORPUS_DB", "/state/corpus.db")))
+    coord.academic = Academic(agent, ws, CorpusStore(os.environ.get("MIMIR_CORPUS_DB", "/state/corpus.db")),
+                              WikiStore(os.environ.get("MIMIR_WIKI_DB", "/state/wiki.db")))
     coord.decider = DurableDecider(rs)                        # multi-path decisions → persisted inbox pause
     coord.autonomy_level = lambda: int(rs.get_setting("autonomy_level", "0") or 0)   # for decide_multipath
     consumer = f"worker-{idx}"
