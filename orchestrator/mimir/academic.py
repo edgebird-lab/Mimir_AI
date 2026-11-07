@@ -211,7 +211,17 @@ class Academic:
         self.wiki = wiki
 
     # ---------------------------------------------------------------- helpers
+    _UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss", "é": "e", "è": "e", "á": "a", "à": "a"})
+
     def _slug(self, s):
+        """File-name slug. German umlauts are transliterated (Geschäftsprozesse -> geschaeftsprozesse)
+        instead of being dropped (gesch-ftsprozesse)."""
+        s = (s or "dok").lower().translate(self._UMLAUTS)
+        return re.sub(r"[^a-z0-9]+", "-", s).strip("-")[:48] or "dok"
+
+    @staticmethod
+    def _slug_legacy(s):
+        """The slug before umlauts were transliterated — only to find thesis drafts started before 1.4."""
         return re.sub(r"[^a-z0-9]+", "-", (s or "dok").lower()).strip("-")[:48] or "dok"
 
     def _fence(self, chunks):
@@ -1022,6 +1032,9 @@ class Academic:
         run_id = "t_" + (self._slug(topic) or "thesis")
         target = int(params.get("target_words", 13000) or 13000)
         ts = ThesisStore(_os.environ.get("MIMIR_THESIS_DB", "/state/thesis.db"))
+        legacy = "t_" + (self._slug_legacy(topic) or "thesis")
+        if legacy != run_id and not ts.get(run_id) and ts.get(legacy):
+            run_id = legacy          # a draft started before 1.4 (umlauts dropped in the key) resumes, not restarts
         try:
             yield from self._thesis_impl(params, should_cancel, ts, run_id, target, topic)
         finally:
