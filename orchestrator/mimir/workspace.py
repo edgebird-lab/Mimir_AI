@@ -9,6 +9,7 @@ results). WAL + check_same_thread=False so the webserver worker thread and the l
 from __future__ import annotations
 
 import datetime
+import json
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,8 @@ class Workspace:
             ("tasks", "approach", "TEXT DEFAULT ''"),
             ("goals", "checkpoint", "TEXT DEFAULT ''"), ("goals", "replans", "INTEGER DEFAULT 0"),
             ("conversations", "summary_tainted", "INTEGER DEFAULT 0"),
+            # steps + sources of an assistant answer (JSON), so a reopened chat shows them again (L6)
+            ("messages", "meta", "TEXT DEFAULT ''"),
         ]
         for tbl, col, decl in add:
             if col not in cols(tbl):
@@ -87,17 +90,38 @@ class Workspace:
             out.append({"id": r["id"], "title": title, "updated": r["updated"]})
         return out
 
-    def add_message(self, conv_id: int, role: str, content: str) -> None:
+    def add_message(self, conv_id: int, role: str, content: str, meta: dict | None = None) -> None:
         if role not in ("user", "assistant") or not content:
             return
-        self.db.execute("INSERT INTO messages(conv_id,role,content,ts) VALUES(?,?,?,?)",
-                        (conv_id, role, content[:20000], _now()))
+        self.db.execute("INSERT INTO messages(conv_id,role,content,ts,meta) VALUES(?,?,?,?,?)",
+                        (conv_id, role, content[:20000], _now(), json.dumps(meta)[:60000] if meta else ""))
         self.db.execute("UPDATE conversations SET updated=? WHERE id=?", (_now(), conv_id))
         self.db.commit()
 
     def messages(self, conv_id: int) -> list[dict]:
-        return [dict(r) for r in self.db.execute(
-            "SELECT role,content,ts FROM messages WHERE conv_id=? ORDER BY id", (conv_id,))]
+        out = []
+        for r in self.db.execute("SELECT role,content,ts,meta FROM messages WHERE conv_id=? ORDER BY id", (conv_id,)):
+            d = dict(r)
+            try:
+                d["meta"] = json.loads(d["meta"]) if d.get("meta") else None
+            except Exception:  # noqa: BLE001 — a damaged meta blob never hides the message itself
+                d["meta"] = None
+            out.append(d)
+        return out
+
+    def rename_conversation(self, conv_id: int, title: str) -> bool:
+        title = " ".join(str(title or "").split())[:200]
+        if not title:
+            return False
+        cur = self.db.execute("UPDATE conversations SET title=? WHERE id=?", (title, conv_id))
+        self.db.commit()
+        return cur.rowcount > 0
+
+    def delete_conversation(self, conv_id: int) -> bool:
+        self.db.execute("DELETE FROM messages WHERE conv_id=?", (conv_id,))
+        cur = self.db.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+        self.db.commit()
+        return cur.rowcount > 0
 
     def history_seed(self, conv_id: int) -> list[dict]:
         """Seed for run_events: ONLY stored user/assistant turns (never tool/tainted scratchpad)."""

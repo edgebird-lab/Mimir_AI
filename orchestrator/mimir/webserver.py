@@ -52,6 +52,7 @@ except OSError:
 ORIGINS = {o for o in os.environ.get("MIMIR_WEB_ORIGINS", "http://127.0.0.1:8082,http://localhost:8082").split(",") if o}
 BIND = os.environ.get("MIMIR_WEB_BIND", "0.0.0.0")
 PORT = int(os.environ.get("MIMIR_WEB_PORT", "8082"))
+LABS = os.environ.get("MIMIR_LABS", "") == "1"     # experimental coding/autopilot/self-teach API (see routes)
 INDEX = (Path(__file__).parent / "webui" / "index.html").read_text(encoding="utf-8")
 
 
@@ -115,7 +116,8 @@ async def api_run(request: Request):
     cid = b.get("conversation_id")
     if not (isinstance(cid, int) and ws.conversation_exists(cid)):
         cid = ws.new_conversation()["id"]
-    run = rs.create_run("chat", {"task": task}, conversation_id=cid, title=task[:120])
+    params = {"task": task, "fast": bool(b.get("fast")), "use_docs": bool(b.get("use_docs"))}
+    run = rs.create_run("chat", params, conversation_id=cid, title=task[:120])
     rs.enqueue(run["id"])
     return JSONResponse({"run_id": run["id"], "conversation_id": cid})
 
@@ -158,11 +160,11 @@ async def api_code(request: Request):
 
 
 async def api_exam(request: Request):
-    return await _start(request, "exam", ["doc", "topic", "n"], "topic")
+    return await _start(request, "exam", ["doc", "topic", "n", "difficulty"], "topic")
 
 
 async def api_notes(request: Request):
-    return await _start(request, "notes", ["doc", "topic"], "topic")
+    return await _start(request, "notes", ["doc", "topic", "detail"], "topic")
 
 
 async def api_research(request: Request):
@@ -177,7 +179,43 @@ async def api_thesis(request: Request):
 async def api_runs(request: Request):
     if not _authed(request):
         return PlainTextResponse("unauthorized", 401)
-    return JSONResponse({"runs": rs.list_runs(int(request.query_params.get("limit", "60")))})
+    q = request.query_params
+    limit = max(1, min(int(q.get("limit", "60") or 60), 500))
+    runs = rs.list_runs(limit, exclude_kinds=("chat",) if q.get("hide_chat") == "1" else (),
+                        active_only=q.get("active") == "1")
+    return JSONResponse({"runs": runs, "total": rs.count_runs()})
+
+
+async def api_runs_delete(request: Request):
+    """Delete finished runs: {"ids": [...]} or {"older_than_days": N}. Running ones are never touched."""
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    if b.get("ids") is not None:
+        n = rs.delete_runs([str(x) for x in (b.get("ids") or [])][:500])
+    else:
+        n = rs.delete_runs(older_than_s=max(0.0, float(b.get("older_than_days", 30) or 30)) * 86400)
+    return JSONResponse({"ok": True, "deleted": n})
+
+
+RESTARTABLE = {"thesis", "research", "notes", "exam"}
+
+
+async def api_run_restart(request: Request):
+    """Start a finished/stopped job again with the same parameters. A thesis keys its saved progress off
+    the topic, so this RESUMES it where it stopped ("Fortsetzen")."""
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    old = rs.get_run(str(b.get("run_id", "")))
+    if not old or old["kind"] not in RESTARTABLE or old["status"] not in TERMINAL:
+        return JSONResponse({"ok": False, "error": "Dieser Lauf lässt sich nicht fortsetzen."}, 400)
+    import json as _json
+    params = _json.loads(old["params"] or "{}")
+    run = rs.create_run(old["kind"], params, title=old["title"])
+    rs.enqueue(run["id"])
+    return JSONResponse({"ok": True, "run_id": run["id"], "kind": run["kind"], "title": run["title"],
+                         "created": run["created"]})
 
 
 async def api_run_get(request: Request):
@@ -306,12 +344,17 @@ async def api_autonomy(request: Request):
             return g
         b = await request.json()
         lvl = max(0, min(int(b.get("level", 0)), 3))
+        if lvl == 2 and not LABS:      # level 2 only changes multi-path decisions, which only Labs runs make
+            lvl = 1
         rs.set_setting("autonomy_level", str(lvl))
         return JSONResponse({"ok": True, "level": lvl, "label": AUTONOMY_LEVELS[lvl]})
     if not _authed(request):
         return PlainTextResponse("unauthorized", 401)
     lvl = int(rs.get_setting("autonomy_level", "0") or 0)
-    return JSONResponse({"level": lvl, "label": AUTONOMY_LEVELS.get(lvl, "?"), "levels": AUTONOMY_LEVELS})
+    if lvl == 2 and not LABS:
+        lvl = 1                        # same behaviour for everything outside Labs (see POST)
+    levels = {k: v for k, v in AUTONOMY_LEVELS.items() if LABS or k != 2}
+    return JSONResponse({"level": lvl, "label": AUTONOMY_LEVELS.get(lvl, "?"), "levels": levels})
 
 
 # ---------------------------------------------------------------- goals / tasks (control-plane state)
@@ -407,7 +450,25 @@ async def api_clear(request: Request):
     return JSONResponse({"ok": False, "error": "unknown conversation"}, 404)
 
 
-# ---------------------------------------------------------------- corpus (📚 Bibliothek: upload + index)
+async def api_conversation_rename(request: Request):
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    cid = b.get("id")
+    ok = isinstance(cid, int) and ws.rename_conversation(cid, str(b.get("title", "")))
+    return JSONResponse({"ok": bool(ok)}, 200 if ok else 400)
+
+
+async def api_conversation_delete(request: Request):
+    if (g := _guard(request)):
+        return g
+    b = await request.json()
+    cid = b.get("id")
+    ok = isinstance(cid, int) and ws.delete_conversation(cid)
+    return JSONResponse({"ok": bool(ok)}, 200 if ok else 404)
+
+
+# ---------------------------------------------------------------- corpus (Recherche & Bibliothek: upload + index)
 async def api_corpus(request: Request):
     if not _authed(request):
         return PlainTextResponse("unauthorized", 401)
@@ -681,11 +742,71 @@ async def _control_rpc(request: Request, op: str, keys: list[str] | None = None)
     try:
         return JSONResponse(await asyncio.to_thread(_control.rpc, op, **args))
     except ControlUnavailable as e:
-        return JSONResponse({"error": f"Control-Daemon nicht erreichbar ({e}). Läuft mimir-control.service?"}, 503)
+        return JSONResponse({"error": f"Der Mimir-Hostdienst ist nicht erreichbar ({e}). Bitte Mimir neu starten."}, 503)
 
 
 async def api_sys_specs(request: Request):
-    return await _control_rpc(request, "system_specs")
+    resp = await _control_rpc(request, "system_specs")
+    try:                                   # add the measured generation speed (worker.record_speed)
+        import json as _json
+        d = _json.loads(resp.body)
+        if isinstance(d, dict) and not d.get("error"):
+            d["speed"] = {"last": _json.loads(rs.get_setting("speed_last", "{}") or "{}"),
+                          "best": _json.loads(rs.get_setting("speed_best", "{}") or "{}")}
+            return JSONResponse(d)
+    except Exception:  # noqa: BLE001
+        pass
+    return resp
+
+
+async def _probe(url: str) -> str:
+    """'ready' | 'loading' | 'down' for a llama-server /health endpoint (503 while the model loads)."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as c:
+            r = await c.get(url)
+        return "ready" if r.status_code == 200 else ("loading" if r.status_code == 503 else "down")
+    except Exception:  # noqa: BLE001
+        return "down"
+
+
+async def _ready() -> str:
+    return "ready"
+
+
+async def api_health(request: Request):
+    """Is Mimir really ready? The header shows "bereit" only when the chat model has finished loading -
+    right after the start llama-server answers 503 "Loading model" for a while."""
+    if not _authed(request):
+        return PlainTextResponse("unauthorized", 401)
+    infer = os.environ.get("MIMIR_INFERENCE_URL", "http://inference:8080").rstrip("/")
+    embed = os.environ.get("MIMIR_EMBED_URL", "").rstrip("/")
+    model, emb = await asyncio.gather(_probe(infer + "/health"), _probe(embed + "/health") if embed else _ready())
+    try:
+        worker = bool(await asyncio.to_thread(rs.ping))
+    except Exception:  # noqa: BLE001
+        worker = False
+    return JSONResponse({"model": model, "embed": emb, "queue": worker})
+
+
+_CAPS: dict = {}
+
+
+async def api_capabilities(request: Request):
+    """What this installation can do - the UI hides what is missing instead of failing on click:
+    export formats docproc can really produce (no PDF on Windows: weasyprint/GTK is not bundled),
+    and whether the experimental Labs API is on."""
+    if not _authed(request):
+        return PlainTextResponse("unauthorized", 401)
+    if not _CAPS.get("export"):
+        import httpx
+        try:
+            r = await asyncio.to_thread(lambda: httpx.get(f"{DOCPROC_URL}/health", headers=_dp_headers(), timeout=5))
+            d = r.json()
+            _CAPS["export"] = sorted(set(d.get("convert_available") or d.get("convert") or []) & EXPORT_TARGETS)
+        except Exception:  # noqa: BLE001 - docproc not up yet: ask again next time
+            return JSONResponse({"export": [], "labs": LABS, "pending": True})
+    return JSONResponse({"export": _CAPS["export"], "labs": LABS})
 
 
 async def api_models(request: Request):
@@ -708,7 +829,12 @@ async def api_shutdown(request: Request):
     return await _control_rpc(request, "stop")
 
 
-app = Starlette(routes=[
+# Labs (PLAN-1.4 L5): coding (Zone W), goals/plan/autopilot and self-teaching have had no web UI since the
+# product focused on research and writing, and they need the Firecracker sandbox (Linux, or the optional
+# WSL2 mode on Windows). Their endpoints are therefore OFF unless the operator opts in with MIMIR_LABS=1
+# (API only, for developers) - less attack surface, and no half-hidden features behind a UI that cannot
+# reach them. The backend code and its tests stay.
+_CORE_ROUTES = [
     Route("/", index),
     Route("/api/system/specs", api_sys_specs, methods=["GET"]),
     Route("/api/models", api_models, methods=["GET"]),
@@ -717,18 +843,6 @@ app = Starlette(routes=[
     Route("/api/models/download/status", api_model_download_status, methods=["GET"]),
     Route("/api/shutdown", api_shutdown, methods=["POST"]),
     Route("/api/run", api_run, methods=["POST"]),
-    Route("/api/plan", api_plan, methods=["POST"]),
-    Route("/api/autopilot", api_autopilot, methods=["POST"]),
-    Route("/api/debug", api_debug, methods=["POST"]),
-    Route("/api/code", api_code, methods=["POST"]),
-    Route("/api/learn", api_learn, methods=["POST"]),
-    Route("/api/ws/projects", api_ws_projects, methods=["GET"]),
-    Route("/api/ws/new-project", api_ws_new_project, methods=["POST"]),
-    Route("/api/ws/open", api_ws_open, methods=["POST"]),
-    Route("/api/ws/call", api_ws_call, methods=["POST"]),
-    Route("/api/ws/export", api_ws_export, methods=["POST"]),
-    Route("/api/ws/merge", api_ws_merge, methods=["POST"]),
-    Route("/api/ws/close", api_ws_close, methods=["POST"]),
     Route("/api/exam", api_exam, methods=["POST"]),
     Route("/api/notes", api_notes, methods=["POST"]),
     Route("/api/research", api_research, methods=["POST"]),
@@ -737,19 +851,11 @@ app = Starlette(routes=[
     Route("/api/run", api_run_get, methods=["GET"]),
     Route("/api/run/stream", api_run_stream, methods=["GET"]),
     Route("/api/stop", api_stop, methods=["POST"]),
-    Route("/api/run/note", api_run_note, methods=["POST"]),
     Route("/api/approvals", api_approvals, methods=["GET"]),
     Route("/api/approve", api_approve, methods=["POST"]),
     Route("/api/decisions", api_decisions, methods=["GET"]),
     Route("/api/decide", api_decide, methods=["POST"]),
     Route("/api/autonomy", api_autonomy, methods=["GET", "POST"]),
-    Route("/api/goals", api_goals, methods=["GET"]),
-    Route("/api/goal", api_goal, methods=["POST"]),
-    Route("/api/goal/delete", api_goal_delete, methods=["POST"]),
-    Route("/api/goal/extend", api_goal_extend, methods=["POST"]),
-    Route("/api/goal/suggest", api_goal_suggest, methods=["POST"]),
-    Route("/api/goal/add-task", api_goal_add_task, methods=["POST"]),
-    Route("/api/task", api_task, methods=["POST"]),
     Route("/api/conversations", api_conversations, methods=["GET", "POST"]),
     Route("/api/conversation", api_conversation, methods=["GET"]),
     Route("/api/clear", api_clear, methods=["POST"]),
@@ -763,7 +869,36 @@ app = Starlette(routes=[
     Route("/api/corpus/remove", api_corpus_remove, methods=["POST"]),
     Route("/api/wiki", api_wiki, methods=["GET"]),
     Route("/api/wiki/page", api_wiki_page, methods=["GET"]),
-])
+    Route("/api/health", api_health, methods=["GET"]),
+    Route("/api/capabilities", api_capabilities, methods=["GET"]),
+    Route("/api/runs/delete", api_runs_delete, methods=["POST"]),
+    Route("/api/run/restart", api_run_restart, methods=["POST"]),
+    Route("/api/conversation/rename", api_conversation_rename, methods=["POST"]),
+    Route("/api/conversation/delete", api_conversation_delete, methods=["POST"]),
+]
+_LABS_ROUTES = [
+    Route("/api/plan", api_plan, methods=["POST"]),
+    Route("/api/autopilot", api_autopilot, methods=["POST"]),
+    Route("/api/debug", api_debug, methods=["POST"]),
+    Route("/api/code", api_code, methods=["POST"]),
+    Route("/api/learn", api_learn, methods=["POST"]),
+    Route("/api/ws/projects", api_ws_projects, methods=["GET"]),
+    Route("/api/ws/new-project", api_ws_new_project, methods=["POST"]),
+    Route("/api/ws/open", api_ws_open, methods=["POST"]),
+    Route("/api/ws/call", api_ws_call, methods=["POST"]),
+    Route("/api/ws/export", api_ws_export, methods=["POST"]),
+    Route("/api/ws/merge", api_ws_merge, methods=["POST"]),
+    Route("/api/ws/close", api_ws_close, methods=["POST"]),
+    Route("/api/run/note", api_run_note, methods=["POST"]),
+    Route("/api/goals", api_goals, methods=["GET"]),
+    Route("/api/goal", api_goal, methods=["POST"]),
+    Route("/api/goal/delete", api_goal_delete, methods=["POST"]),
+    Route("/api/goal/extend", api_goal_extend, methods=["POST"]),
+    Route("/api/goal/suggest", api_goal_suggest, methods=["POST"]),
+    Route("/api/goal/add-task", api_goal_add_task, methods=["POST"]),
+    Route("/api/task", api_task, methods=["POST"]),
+]
+app = Starlette(routes=_CORE_ROUTES + (_LABS_ROUTES if LABS else []))
 
 
 def main():

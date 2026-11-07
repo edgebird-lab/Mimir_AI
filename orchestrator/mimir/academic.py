@@ -323,7 +323,11 @@ class Academic:
         yield {"event": "status", "status": "Fasse alles zu einer vollständigen Zusammenfassung zusammen…"}
         combined = "\n\n".join(partials)[:26000]
         final = ""
-        for ev in self._gen(REDUCE_NOTES_SYS, f"Thema: {topic}\n\nABSCHNITTS-NOTIZEN:\n{combined}", should_cancel):
+        detail = {"kompakt": "\n\nUMFANG: kompakt — nur das Wichtigste, höchstens etwa zwei Seiten.",
+                  "ausfuehrlich": "\n\nUMFANG: ausführlich — alle Definitionen, Herleitungen und Beispiele."
+                  }.get(str(params.get("detail") or ""), "")
+        for ev in self._gen(REDUCE_NOTES_SYS, f"Thema: {topic}{detail}\n\nABSCHNITTS-NOTIZEN:\n{combined}",
+                            should_cancel):
             if ev["event"] == "_text":
                 final = ev["text"]
             else:
@@ -342,7 +346,7 @@ class Academic:
     def exam_events(self, params, should_cancel):
         doc = params.get("doc") or None
         topic = params.get("topic") or (doc or "")
-        n = int(params.get("n", 12) or 12)
+        n = max(3, min(int(params.get("n", 12) or 12), 30))
         yield {"event": "exam_start", "doc": doc, "topic": topic}
         chunks = self._chunks(doc, topic)
         if not chunks:
@@ -363,8 +367,12 @@ class Academic:
                     keypoints.append(ev["text"])
         yield {"event": "status", "status": "Erstelle eine vollständige Probeklausur über das ganze Skript…"}
         kp = "\n".join(keypoints)[:24000]
+        level = {"leicht": "leicht (Grundbegriffe, Wiedergabe)", "mittel": "mittel (Anwenden, Rechnen)",
+                 "schwer": "anspruchsvoll (Transfer, Bewerten, mehrstufige Aufgaben)"}.get(
+            str(params.get("difficulty") or ""), "")
         user = (f"Erstelle eine umfassende Probeklausur mit etwa {n} Aufgaben zum Thema \"{topic}\", die das "
-                f"GANZE Skript abdeckt.\n\nWICHTIGE PUNKTE (mit Seiten):\n{sanitizer.wrap_untrusted(kp, 'kp')}")
+                f"GANZE Skript abdeckt." + (f" Schwierigkeitsgrad: {level}." if level else "")
+                + f"\n\nWICHTIGE PUNKTE (mit Seiten):\n{sanitizer.wrap_untrusted(kp, 'kp')}")
         final = ""
         for ev in self._gen(EXAM_SYS, user, should_cancel):
             if ev["event"] == "_text":

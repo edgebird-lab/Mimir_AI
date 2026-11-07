@@ -167,8 +167,10 @@ async def import_doc(request: Request):
 
 
 async def health(request: Request):
-    return JSONResponse({"ok": True, "supported": sorted(ALLOWED),
-                         "import": sorted(conv.IMPORT_OK), "convert": sorted(conv.EXPORT_FORMATS)})
+    # convert_available: what this platform can REALLY produce (no pdf without weasyprint/GTK, e.g. on Windows)
+    avail = sorted(f for f in conv.EXPORT_FORMATS if f != "pdf" or conv._has_weasyprint())
+    return JSONResponse({"ok": True, "supported": sorted(ALLOWED), "import": sorted(conv.IMPORT_OK),
+                         "convert": sorted(conv.EXPORT_FORMATS), "convert_available": avail})
 
 
 app = Starlette(routes=[
