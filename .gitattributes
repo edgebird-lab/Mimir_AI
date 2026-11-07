@@ -1,0 +1,9 @@
+# Skills are pinned by sha256 and the registry is signed with ed25519: their bytes must be identical on
+# every OS. Without this, core.autocrlf=true turned LF into CRLF on Windows (also inside `git archive`,
+# i.e. the installer) and every skill failed its hash check.
+skills/** text eol=lf
+skills/registry.release.sig binary
+skills/registry.sig binary
+skills/_keys/** binary
+# shell scripts run inside Linux/WSL
+*.sh text eol=lf

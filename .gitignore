@@ -16,8 +16,11 @@ id_*
 # on first setup, never shipped. (SkillLibrary is fail-closed, so a fresh clone loads
 # no skills until you run build-skill-registry.py + sign-skills.py.)
 /_keys/
-skills/_keys/
+skills/_keys/*
 skills/registry.sig
+# ...except the PUBLIC release key + its signature, which ship with the Windows installer
+# (scripts/sign-release-registry.py); the private key never enters the repository.
+!skills/_keys/release.pub
 /state/
 gateway.token
 

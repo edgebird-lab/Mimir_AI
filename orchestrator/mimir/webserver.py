@@ -805,8 +805,19 @@ async def api_capabilities(request: Request):
             d = r.json()
             _CAPS["export"] = sorted(set(d.get("convert_available") or d.get("convert") or []) & EXPORT_TARGETS)
         except Exception:  # noqa: BLE001 - docproc not up yet: ask again next time
-            return JSONResponse({"export": [], "labs": LABS, "pending": True})
-    return JSONResponse({"export": _CAPS["export"], "labs": LABS})
+            return JSONResponse({"export": [], "labs": LABS, "pending": True, **_runtime_caps()})
+    return JSONResponse({"export": _CAPS["export"], "labs": LABS, **_runtime_caps()})
+
+
+def _runtime_caps() -> dict:
+    """Sandbox reachable? Skills signed and verified? (shown in the settings, so nobody wonders why)"""
+    from .agent import sandbox_available
+    try:
+        from .skills import SkillLibrary
+        skills = SkillLibrary().status()
+    except Exception:  # noqa: BLE001
+        skills = {"signed_by": "", "verified": 0, "rejected": 0}
+    return {"sandbox": sandbox_available(), "skills": skills}
 
 
 async def api_models(request: Request):

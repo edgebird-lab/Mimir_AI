@@ -29,8 +29,10 @@ for d in sorted(ROOT.iterdir()):
             except Exception:  # noqa: BLE001
                 pass
         reg["skills"][d.name] = {"version": "1.0.0", "description": desc,
-                                 "sha256": hashlib.sha256(sp.read_bytes()).hexdigest()}
-(ROOT / "registry.json").write_text(json.dumps(reg, indent=2) + "\n")
+                                 # hash over LF line endings: the same pin on Linux and on a Windows checkout
+                                 "sha256": hashlib.sha256(sp.read_bytes().replace(b"\r\n", b"\n")).hexdigest()}
+# LF on every OS: the ed25519 signature covers these exact bytes
+(ROOT / "registry.json").write_bytes((json.dumps(reg, indent=2) + "\n").encode("utf-8"))
 print("wrote", ROOT / "registry.json", "with", len(reg["skills"]), "skills")
 for n in reg["skills"]:
     print("  -", n)
