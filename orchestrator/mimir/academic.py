@@ -1225,7 +1225,11 @@ class Academic:
         # 1:1 correspondence: only sources actually cited in the body appear in the Literaturverzeichnis
         cited = self._cited_indices(raw_body, len(sources))
         # formal submission gates: eidesstattliche + KI-Nutzungserklärung (many German universities require both)
-        model_name = os.environ.get("MIMIR_MODEL_NAME", "Qwen3-Coder-30B-A3B (llama.cpp, lokal)")
+        # the model that REALLY wrote this text (llama-server /props) — the declaration must not name a
+        # hard-coded default model that the user never ran
+        loaded = getattr(self.llm, "model_name", lambda: "")() if hasattr(self.llm, "model_name") else ""
+        model_name = os.environ.get("MIMIR_MODEL_NAME") or (
+            f"{loaded.rsplit('.gguf', 1)[0]} (llama.cpp, lokal)" if loaded else "lokales Sprachmodell (llama.cpp)")
         pipeline_steps = ["Recherche und Vorauswahl wissenschaftlicher Quellen (OpenAlex, Websuche)",
                           "Vorschlag einer Gliederung mit Wortbudgets",
                           "Formulierung der Kapitel-Fließtexte auf Basis der Quellen",
