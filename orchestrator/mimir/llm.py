@@ -87,6 +87,11 @@ class MimirLLM:
         finish_reason = None
         with httpx.Client(timeout=None) as c:
             with c.stream("POST", f"{self.base_url}/v1/chat/completions", json=payload) as r:
+                if r.status_code >= 400:
+                    # e.g. 503 "Loading model" right after start, or 400 "context too long": the body is a
+                    # JSON error, not SSE — without this the turn silently produced an EMPTY answer.
+                    detail = r.read().decode("utf-8", "replace")[:300]
+                    raise RuntimeError(f"llama-server HTTP {r.status_code}: {detail}")
                 for line in r.iter_lines():
                     if not line.startswith("data:"):
                         continue

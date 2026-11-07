@@ -821,7 +821,9 @@ const FINAL_DE={'(stopped)':'Gestoppt.','(max steps reached)':'Mimir hat die Hö
 function finalDe(t){return FINAL_DE[String(t||'').trim()]||t;}
 function errDe(e){e=String(e||'').trim();if(!e)return 'unbekannter Fehler';
   if(/ConnectError|ConnectionRefused|RemoteProtocolError|ReadTimeout|ConnectTimeout/i.test(e))return 'Das Sprachmodell ist nicht erreichbar oder lädt noch. Bitte kurz warten und erneut versuchen.';
-  return e.slice(0,400);}
+  if(/HTTP 503|Loading model/i.test(e))return 'Das Sprachmodell wird gerade noch geladen. Bitte einen Moment warten und dann erneut senden.';
+  if(/HTTP 400/.test(e)&&/context|exceed|too long|n_ctx/i.test(e))return 'Die Unterhaltung ist zu lang für das Kontextfenster des Modells. Bitte einen neuen Chat beginnen.';
+  return e.replace(/^RuntimeError:\s*/,'').slice(0,400);}
 const RUN_END={done:'Lauf abgeschlossen',stopped:'Lauf gestoppt',failed:'Lauf fehlgeschlagen'};
 function fmtTime(ts){if(!ts)return '';const d=new Date(ts*1000),now=new Date();
   const hm=d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
