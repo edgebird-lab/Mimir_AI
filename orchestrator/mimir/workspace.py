@@ -72,8 +72,20 @@ class Workspace:
         return self.db.execute("SELECT 1 FROM conversations WHERE id=?", (cid,)).fetchone() is not None
 
     def list_conversations(self) -> list[dict]:
-        return [dict(r) for r in self.db.execute(
-            "SELECT id,title,updated FROM conversations ORDER BY updated DESC LIMIT 100")]
+        # A conversation still carrying the default title is listed under its first question, otherwise
+        # the picker shows a column of identical "Chat · #n" entries.
+        rows = self.db.execute(
+            "SELECT c.id, c.title, c.updated, (SELECT m.content FROM messages m WHERE m.conv_id=c.id "
+            "AND m.role='user' ORDER BY m.id LIMIT 1) AS first_q FROM conversations c "
+            "ORDER BY c.updated DESC LIMIT 100")
+        out = []
+        for r in rows:
+            title = r["title"]
+            if (not title or title == "Chat") and r["first_q"]:
+                q = " ".join(str(r["first_q"]).split())
+                title = q if len(q) <= 80 else q[:79].rstrip() + "…"
+            out.append({"id": r["id"], "title": title, "updated": r["updated"]})
+        return out
 
     def add_message(self, conv_id: int, role: str, content: str) -> None:
         if role not in ("user", "assistant") or not content:
