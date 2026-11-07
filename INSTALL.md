@@ -100,13 +100,17 @@ The installer performs the full setup for you:
 ## 3b. Install on Windows (`MimirInstaller.exe` — native)
 
 Download and run **`MimirInstaller.exe`** from the Releases page. It installs per-user to
-`%LOCALAPPDATA%\Mimir` (no admin needed) and, on first launch:
+`%LOCALAPPDATA%\Mimir` (no admin needed). On first launch a **setup assistant opens in your browser**
+(<http://127.0.0.1:8081>, no console window) and:
 
-1. Detects your **GPU and VRAM** (AMD / NVIDIA / Intel, via Vulkan) and **RAM**.
-2. Downloads **llama.cpp (Vulkan)**, **Redis**, and a **chat model sized to your machine** (a smaller,
-   fast model by default — you can pick a larger one later under **Einstellungen** → *Modell
-   herunterladen*).
-3. Starts the stack on native processes and opens **<http://127.0.0.1:8082>**.
+1. Detects your **GPU and graphics memory** (AMD / NVIDIA / Intel via Vulkan; integrated graphics with
+   shared memory are recognised) and **RAM**.
+2. Downloads **llama.cpp (Vulkan)**, **Redis**, **pandoc** and the small embedding model, then lets you
+   **pick the language model** — with size, a short description and a recommendation for this machine —
+   and shows the download progress. You can switch or add models later under **Einstellungen**.
+3. Starts the stack on native processes and switches to **<http://127.0.0.1:8082>** once the model has
+   finished loading. If something fails (e.g. no internet), the assistant says what happened and what to
+   do; already downloaded parts are kept.
 
 No Docker and no WSL are involved. Manage it with the **Mimir starten / Mimir beenden** shortcuts, or the
 **Beenden** button in the UI. To run from source without the installer, or to build the installer
@@ -195,11 +199,28 @@ virtualization is enabled in your BIOS/UEFI, and that your user is in the `kvm` 
 4. Delete the cloned repository directory.
 
 On Windows (native installer): uninstall **Mimir** via *Settings → Apps* or the uninstaller in
-the Start menu; it stops Mimir first. Downloaded models and your data (`models\`, `data\`, `.env`
-in `%LOCALAPPDATA%\Mimir`) are kept on purpose — delete that folder afterwards to remove them
-too.
+the Start menu; it stops Mimir first and then **asks** whether the downloaded models and your data
+(library, conversations, runs, generated documents in `%LOCALAPPDATA%\Mimir`) should be deleted too.
+The default is *No*, so a reinstall keeps everything.
 
 ---
+
+## For maintainers: skills on Windows (release signature)
+
+Skills only load from a **signed** registry (fail-closed). Linux installs sign locally
+(`install.sh` → `scripts/sign-skills.py`). The Windows installer has no signing step, so it ships the
+project's **release** public key and signature: `skills/_keys/release.pub` and
+`skills/registry.release.sig`. Create them once per skill change on the machine that holds the private
+key (it never enters the repository), then commit both files:
+
+```
+python3 scripts/build-skill-registry.py
+python3 scripts/sign-release-registry.py --key _keys/owner_ed25519
+```
+
+`windows-native\Build-Installer.ps1` verifies the signature with the bundled Python and warns if it is
+missing. Experimental APIs (coding in Zone W, goals/autopilot, self-teaching) are off unless
+`MIMIR_LABS=1` is set for the web server.
 
 ## Getting help
 

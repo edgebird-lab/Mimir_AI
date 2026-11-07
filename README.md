@@ -84,30 +84,43 @@ stammenden Literaturverzeichnis, nicht vom Modell erfunden.*
 ## Funktionen
 
 - **Chat** mit einem lokalen Modell: Streaming-Ausgabe, Markdown mit Formeln (KaTeX) und
-  sichtbares Denken bei Reasoning-Modellen. Frühere Unterhaltungen lassen sich wieder aufrufen.
+  sichtbares Denken bei Reasoning-Modellen. Findet Mimir Fachliteratur oder Stellen in deinen
+  Dokumenten, steht unter der Antwort eine **Quellenliste** aus den Suchdaten (Autoren, Jahr,
+  DOI bzw. Dokument und Seite) – nicht vom Modell geschrieben. Mit **„Meine Dokumente
+  einbeziehen“** stützt sich jede Antwort auf deine hochgeladenen Skripte, **„Schnell
+  antworten“** spart den Gedankengang auf langsamer Hardware. Unterhaltungen lassen sich wieder
+  aufrufen, umbenennen und löschen.
 - **Dokumentbibliothek (RAG):** PDFs, DOCX, PPTX, TXT und Markdown unter **Recherche &
   Bibliothek → Eigene Dokumente** hochladen und Fragen stellen, die in deinen eigenen Dokumenten
   verankert sind, mit Seitenangaben. Pro Dokument erzeugt Mimir auf Knopfdruck eine
-  **Zusammenfassung** oder eine **Probeklausur**.
+  **Zusammenfassung** (kompakt bis ausführlich) oder eine **Probeklausur** (Anzahl Aufgaben und
+  Schwierigkeit wählbar). Ergebnisse gibt es als Markdown und DOCX; unter Windows wird ein PDF
+  über **Drucken → Als PDF speichern** in der Dokumentansicht erzeugt.
 - **Wissens-Wiki:** jede Recherche und Thesis ergänzt ein lokales Wiki mit geprüften Aussagen, auf
   dem spätere Recherchen aufbauen.
 - **Recherche & Thesis-Schreiben:** ein Thema recherchieren oder eine komplette
   wissenschaftliche Arbeit mit echtem, nicht erfundenem Literaturverzeichnis aus OpenAlex und
   Websuche entwerfen — siehe [Recherche & wissenschaftliches Schreiben](#recherche--wissenschaftliches-schreiben)
-  oben.
-- **Selbstverbesserung:** stößt Mimir an eine Fähigkeitsgrenze, kann es einen neuen
+  oben. Die Websuche fragt ohne API-Schlüssel nacheinander DuckDuckGo und Wikipedia (deutsch und
+  englisch), mit Pausen zwischen den Anfragen und ehrlichem User-Agent; unter Linux zuerst die
+  eigene SearXNG-Instanz.
+- **Selbstverbesserung (experimentell):** stößt Mimir an eine Fähigkeitsgrenze, kann es einen neuen
   wiederverwendbaren Skill schreiben, ihn **im Jail gegen ein zurückgehaltenes Orakel testen**
   und zur Prüfung bereitstellen. Ein Mensch muss den Skill prüfen und kryptographisch
   **signieren (ed25519)**, bevor er wiederverwendbar wird. Der Agent kann eigene Skills niemals
-  selbst signieren oder freigeben.
+  selbst signieren oder freigeben. Selbst-Lernen, Coding (Zone W) und Autopilot brauchen die
+  Firecracker-Sandbox und haben keine Oberfläche; ihre API ist nur mit `MIMIR_LABS=1` aktiv. Die
+  Einstellungen zeigen, ob Sandbox und signierte Skills verfügbar sind.
 - **Modellverwaltung (Bereich Einstellungen):** Systemspezifikationen einsehen (GPU/VRAM/RAM),
   zwischen installierten GGUF-Modellen wechseln, und neue von HuggingFace herunterladen — mit
   Empfehlungen passend zu deinem VRAM. Dort stellst du auch die **Darstellung** (hell, dunkel oder
   automatisch) ein. Der Knopf **Beenden** oben rechts gibt den GPU-Speicher mit einem Klick frei.
 - **Läufe, die weiterlaufen:** Aufgaben laufen im Hintergrund weiter, auch wenn du das
-  Browserfenster schließt. Unter **Läufe** dockst du wieder an, unter **Freigaben** (oben rechts)
-  entscheidest du über ausstehende Aktionen. Die **Autonomie-Stufe** daneben legt fest, wie viel
-  Mimir ohne Nachfrage tun darf.
+  Browserfenster schließt. Unter **Läufe** dockst du wieder an, stoppst einen Lauf, setzt eine
+  gestoppte Thesis fort („Fortsetzen“, mit Restzeit-Schätzung) oder räumst alte Läufe auf. Unter
+  **Freigaben** (oben rechts) entscheidest du über ausstehende Aktionen – beim Speichern einer
+  Datei mit Vorschau des Inhalts. Die **Autonomie-Stufe** daneben legt fest, wie viel Mimir ohne
+  Nachfrage tun darf.
 
 ---
 
@@ -170,8 +183,10 @@ Danach Mimir über die Desktop-Icons **"Mimir starten"** / **"Mimir beenden"** s
 ### Windows (nativ — kein Docker, kein WSL)
 
 **`MimirInstaller.exe`** von der Releases-Seite herunterladen und ausführen. Installiert
-pro Benutzer (kein Admin nötig), erkennt GPU und VRAM, lädt ein passendes Modell herunter und
-startet Mimir unter <http://127.0.0.1:8082>. Inferenz läuft auf einem nativen
+pro Benutzer (kein Admin nötig). Beim ersten Start öffnet sich ein **Einrichtungsassistent im
+Browser**: er erkennt GPU und Grafikspeicher (auch geteilten Speicher von Onboard-Grafik), schlägt
+ein passendes Sprachmodell vor, zeigt den Download-Fortschritt und öffnet Mimir unter
+<http://127.0.0.1:8082>, sobald das Modell geladen ist – ganz ohne Konsolenfenster. Inferenz läuft auf einem nativen
 **llama.cpp-Vulkan**-Build, sodass die GPU auf **AMD, NVIDIA und Intel** gleichermaßen genutzt
 wird — **kein Docker, kein WSL, keine CUDA/ROCm-Installation**. Siehe
 [windows-native/README.md](windows-native/README.md) für die Architektur und den Bau des
