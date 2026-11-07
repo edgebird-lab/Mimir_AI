@@ -1,8 +1,44 @@
 # Mimir 1.4 – Funktionsprüfung und Verbesserungsplan
 
-**Status: Entwurf.** Punkte mit *(noch zu prüfen)* brauchen einen laufenden Mimir und werden nach dem
-zweiten Testdurchgang bestätigt oder gestrichen. Umgesetzt wird erst, wenn Robin entschieden hat;
-in diesem Durchgang sind nur kleine, eindeutige Fehler behoben worden (Liste am Ende).
+**Status: umgesetzt.** Robin hat den Plan freigegeben; alle Punkte sind umgesetzt (Übersicht direkt
+unten, Commits auf main, nicht gepusht). Offen ist nur das Signieren der Skills mit dem
+Release-Schlüssel (M2), weil der private Schlüssel nicht auf dem Windows-PC liegt. Die Abschnitte
+darunter sind die ursprüngliche Analyse mit Beleg, Vorschlag, Aufwand, Nutzen und Risiko.
+
+## Umsetzungsstand
+
+Geprüft: Mock-Harness (ui_test 45/45, func_test 19/19), alle 19 Python-Testskripte grün unter Windows
+(neu: test_agent_chat, test_webserver_api, test_websearch, test_skills_signing, test_academic_misc),
+Live-Prüfung mit der Testinstallation (gemma-4-E2B für Funktionstests, gemma-4-E4B für Screenshots).
+
+| Punkt | Stand | Umsetzung | Geprüft |
+|---|---|---|---|
+| M1 Websuche | erledigt | webfetch fragt DuckDuckGo, dann Wikipedia de/en; ehrlicher User-Agent, Pause je Host, 10-min-Cache, gesperrte Quelle 15 min pausiert, Status je Quelle, 502 wenn alles fehlt; Linux fällt von SearXNG darauf zurück; Recherche nennt die Herkunft | test_websearch; live: „8 wissenschaftliche + 5 Web-Quellen (DuckDuckGo)“ |
+| M2 Skills | erledigt bis aufs Signieren | `.gitattributes` (LF), Hash/Signatur über LF-Bytes, zweiter Vertrauensanker release.pub/registry.release.sig, `scripts/sign-release-registry.py`, Prüfung im Installer-Build, Status in den Einstellungen | test_skills_signing (beide Anker, CRLF, Manipulation) |
+| M3 Werkzeugliste | erledigt | Chat bietet nur CHAT_TOOLS an; Sandbox-/E-Mail-Werkzeuge nur wenn vorhanden; Labs-Coordinator behält alle | test_agent_chat |
+| M4 Antwort nach Werkzeugen | erledigt | Ursache live gefunden: die Frage fehlte nach Werkzeugschritten im Verlauf. Dazu klarer (deutscher) Folgeprompt, „TOOL FAILED … nicht erneut“, einmalige Nachfrage ohne Werkzeuge bei leerer Antwort, Antwort statt „(max steps reached)“ | test_agent_chat; live: Freigabe-Test antwortet jetzt sinnvoll |
+| M5 Quellen im Chat | erledigt | nummerierte, lesbare Suchergebnisse für das Modell; Ereignis `sources`; Quellenliste unter der Antwort (nur zitierte, gleiche Seiten zusammengefasst) | test_agent_chat; live mit OpenAlex und eigenen Dokumenten |
+| M6 Formeln im Viewer | erledigt | Viewer nutzt die Chat-Kette (Formelschutz vor markdown-it); GFM-Mathe aus DOCX-Import wird zurückgewandelt | Mock (Formel im Dokument); live: 34 KaTeX-Formeln in einer DOCX-Zusammenfassung |
+| M7 Modellkatalog | erledigt | Katalog für deutsches Schreiben (Gemma 4, Qwen3), geteilter Speicher erkannt, „passt“ dort konservativ, Geschwindigkeit gemessen, Antwortzeit je Modell geschätzt | live in den Einstellungen und im Assistenten |
+| M8 Erster Start | erledigt | `/api/health`; Kopfzeile „Modell wird geladen …“ bis das Modell bereit ist; Einrichtungsassistent im Browser (L1); Downloads geprüft, bevor ein Modell eingetragen wird | test_webserver_api; Assistent mit Testkopie (Modellwahl, .env, Fehleransicht) |
+| M9 PDF unter Windows | erledigt | `/api/capabilities` (docproc meldet, was es wirklich kann), Export ohne PDF + „Drucken“, Druckknopf mit Druckansicht | live: Exportliste ohne PDF, Hinweis „Drucken“ |
+| S1 Lange Läufe | erledigt | Restzeit „Abschnitt k von n · noch ca. …“, „Fortsetzen“/„Erneut starten“ (`/api/run/restart`), Filter, Löschen, Aufräumen, „Mehr anzeigen“ | test_webserver_api; live: Filter/Löschen; Thesis (~22 Seiten, gemma-4-E2B): 22 Quellen, Gliederung mit 17 Abschnitten und Schreibaufträge nach ~8 min, Abschnitt 1 nach ~1 min; „Lauf stoppen“ nach 13 s wirksam, „Fortsetzen“ setzte mit „Wiederaufnahme“ bei Abschnitt 2/17 fort |
+| S2 Dialoge | erledigt | eigener Dialog mit Thema, Umfang bzw. Anzahl/Schwierigkeit | live: Zusammenfassung „kompakt“ mit DOCX |
+| S3 Antwortzeit | erledigt, eine Ausnahme | „Schnell antworten“ (ohne Gedankengang), `cache_prompt`, gemessene Geschwindigkeit, Hinweis bei deutlich langsamerer Antwort. **Nicht umgesetzt:** kleinere Kontextgröße auf iGPUs – bringt wenig Tempo, würde aber lange Thesis-Abschnitte kappen | test_agent_chat |
+| S4 Dokumente/Unterhaltungen | erledigt | „Meine Dokumente einbeziehen“ (Suche vor dem ersten Modellaufruf, Passagen eingezäunt), Umbenennen/Löschen | live: Antwort mit „[1, S. 3]“; Umbenennen/Löschen |
+| S5 Umlaute | erledigt | ae/oe/ue/ss, alter Thesis-Schlüssel als Fallback | test_academic_misc |
+| S6 Links | erledigt | im Viewer und Wiki Links als Text, nur nackte DOI-Links klickbar | Mock |
+| S7 Freigaben/Autonomie | erledigt | Vorschau bei „Datei speichern“; Stufe 2 nur mit Labs | test_webserver_api; live: Freigabe im Chat und Postfach |
+| S8 Tests | erledigt | Wiki mit Versionszähler, Gateway-Test unter Windows übersprungen | 19/19 grün |
+| L1 Assistent | erledigt | `windows-native/setup_ui.py` | siehe M8 |
+| L2 Deinstallation | erledigt | Rückfrage (Standard „Nein“) | ISCC 6 kompiliert |
+| L3 Installer | erledigt | Linux-/Docker-Teile aus dem Staging entfernt | Skript-Parser |
+| L4 UTF-8 | erledigt | `encoding="utf-8"` überall | Testsuite |
+| L5 Coding/Autopilot | entschieden: aus den Nutzerpfaden entfernt | Endpunkte nur mit `MIMIR_LABS=1`, Backend und Tests bleiben. Begründung: seit dem Fokus auf Recherche keine Oberfläche, braucht die Sandbox, kostet Angriffsfläche und Prompt-Tokens; eine halbe Oberfläche hätte mehr verwirrt als genutzt | test_webserver_api (404 ohne Labs) |
+| L6 Verlauf | erledigt | Schritte und Quellen werden mit der Antwort gespeichert und beim Öffnen gezeigt | test_webserver_api |
+
+Zusätzlich behoben: KI-Nutzungserklärung der Thesis nannte ein fest eingetragenes Modell (08e3352);
+Umlaute in den Modellbeschreibungen des Assistenten; DOCX-Formeln (fc41d84).
 
 ## Grundlage
 
