@@ -18,9 +18,14 @@ echo "> exporting tracked files (git archive) → clean staging dir"
 git archive --format=tar HEAD | tar -x -C "$STAGE"
 mkdir -p "$STAGE/installer"
 
-echo "> compiling setup.iss with amake/innosetup (Inno Setup under Wine)…"
+# Version from the git tag (MIMIR_VERSION overrides; leading "v" dropped), else 0.0.0-dev.
+VERSION="${MIMIR_VERSION:-$(git describe --tags 2>/dev/null || true)}"
+VERSION="$(printf '%s' "${VERSION#[vV]}" | tr -cd '0-9A-Za-z.+-')"
+VERSION="${VERSION:-0.0.0-dev}"
+
+echo "> compiling setup.iss (version $VERSION) with amake/innosetup (Inno Setup under Wine)…"
 # LANG=C.UTF-8 is required so Wine can read non-ASCII paths correctly.
-docker run --rm -e LANG=C.UTF-8 -v "$STAGE":/work amake/innosetup windows/setup.iss
+docker run --rm -e LANG=C.UTF-8 -v "$STAGE":/work amake/innosetup "/DMyAppVersion=$VERSION" windows/setup.iss
 
 mkdir -p dist
 cp "$STAGE"/installer/*.exe dist/

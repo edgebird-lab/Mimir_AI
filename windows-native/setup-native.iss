@@ -12,13 +12,21 @@
 ; (SourceDir below is the STAGING dir the build script fills; do not compile this .iss in place.)
 
 #define MyAppName "Mimir"
-#define MyAppVersion "1.0.0"
+; The version comes from the git tag: Build-Installer.ps1 passes /DMyAppVersion=1.2.3 (and the numeric
+; /DMyFileVersion=1.2.3.0 for the .exe file properties). These defaults only apply to a bare ISCC run.
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0-dev"
+#endif
+#ifndef MyFileVersion
+  #define MyFileVersion "0.0.0.0"
+#endif
 #define MyAppPublisher "Olbricht Digital"
 #define MyAppURL "https://github.com/edgebird-lab/Mimir_AI"
 
 [Setup]
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+VersionInfoVersion={#MyFileVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues

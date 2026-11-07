@@ -10,7 +10,8 @@
 # ============================================================================
 param(
     [string]$CacheDir = "",           # optional: reuse already-downloaded llama/redis/python zips
-    [switch]$SkipBinaries             # build a small installer that downloads llama/redis on first run
+    [switch]$SkipBinaries,            # build a small installer that downloads llama/redis on first run
+    [string]$Version = ""             # optional: override the version (default: git tag, see below)
 )
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -65,11 +66,26 @@ if (-not $SkipBinaries) {
     Expand-Archive -Force $rz $binRedis
 }
 
-# ---- 5. compile the installer ----------------------------------------------
+# ---- 5. version (from the git tag) + compile the installer -----------------
+# Priority: -Version > the tag that triggered the GitHub Action (GITHUB_REF_NAME, e.g. v1.1.2) >
+# `git describe --tags` (e.g. v1.1.2-3-gabc123 between releases) > 0.0.0-dev. A leading "v" is dropped.
+if (-not $Version -and $env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME) { $Version = $env:GITHUB_REF_NAME }
+if (-not $Version) {
+    # PS 5.1 + ErrorActionPreference=Stop turns git's stderr ("No names found") into an exception.
+    try { $Version = (& git -C $RepoRoot describe --tags 2>$null | Select-Object -First 1) } catch { $Version = "" }
+    if ($LASTEXITCODE -ne 0) { $Version = "" }
+}
+$Version = ("$Version".Trim() -replace '^[vV]', '') -replace '[^0-9A-Za-z.+-]', ''
+if (-not $Version) { $Version = "0.0.0-dev" }
+# Windows file properties need a purely numeric a.b.c.d version: take the leading digits only.
+$num = @(([regex]::Match($Version, '^\d+(\.\d+){0,3}').Value -split '\.') | Where-Object { $_ -ne "" })
+while ($num.Count -lt 4) { $num += "0" }
+$FileVersion = $num -join "."
+
 New-Item -ItemType Directory -Force -Path (Join-Path $Stage "installer") | Out-Null
-Say "compiling MimirInstaller.exe ..."
+Say "compiling MimirInstaller.exe (version $Version, file version $FileVersion) ..."
 Push-Location $Stage
-& $iscc (Join-Path $Stage "windows-native\setup-native.iss")
+& $iscc "/DMyAppVersion=$Version" "/DMyFileVersion=$FileVersion" (Join-Path $Stage "windows-native\setup-native.iss")
 $code = $LASTEXITCODE
 Pop-Location
 if ($code -ne 0) { throw "ISCC failed with exit $code" }

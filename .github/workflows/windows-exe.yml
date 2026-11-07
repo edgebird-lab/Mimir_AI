@@ -19,10 +19,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history + tags: a manual (non-tag) run gets its version from `git describe --tags`
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
 
+      # The installer version is taken from the pushed tag (GITHUB_REF_NAME, e.g. v1.2.0 -> 1.2.0).
       - name: Build MimirInstaller.exe (native)
         shell: pwsh
         run: powershell -ExecutionPolicy Bypass -File windows-native\Build-Installer.ps1

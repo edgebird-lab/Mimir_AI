@@ -4,7 +4,11 @@
 ; (SmartScreen will warn; that is expected and documented in README/INSTALL).
 
 #define MyAppName "Mimir"
-#define MyAppVersion "1.0.0"
+; Version from the git tag: build-setup-exe.sh passes /DMyAppVersion=1.2.3; this default only applies
+; to a bare ISCC run.
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0-dev"
+#endif
 #define MyAppPublisher "Olbricht Digital"
 #define MyAppURL "https://github.com/edgebird-lab/Mimir_AI"
 
