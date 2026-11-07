@@ -49,9 +49,33 @@ if ($LASTEXITCODE -ne 0) { throw "git archive failed (is this a git repo with a 
 & tar -x -f $tar -C $Stage
 Remove-Item -Force $tar
 
+# ---- 2b. Windows payload only (PLAN-1.4 L3) --------------------------------
+# The native build never uses the Docker/Linux-host parts. Kept: sandbox\ + searxng\ (the optional WSL2
+# mode provisions them), config\, skills\, csl\, docproc\, webfetch\, orchestrator\ (without its tests).
+$linuxOnly = @(".github", "docker-compose.yml", "install.sh", "install.ps1", "install.bat", "windows", "inference",
+               "proxy", "host", "scripts", "project", "orchestrator\tests", "orchestrator\test_ws_boot.py",
+               "orchestrator\Dockerfile", "docproc\Dockerfile", "webfetch\Dockerfile", "docs\design")
+foreach ($p in $linuxOnly) { $full = Join-Path $Stage $p; if (Test-Path $full) { Remove-Item -Recurse -Force $full } }
+
 # ---- 3. self-contained Python runtime --------------------------------------
 Say "building bundled Python runtime ..."
 & (Join-Path $Win "Build-Runtime.ps1") -OutDir (Join-Path $Stage "runtime")
+
+# ---- 3b. skill signature (PLAN-1.4 M2) --------------------------------------
+# Windows has no local signing step, so the installer ships the PROJECT release key + signature
+# (skills\_keys\release.pub, skills\registry.release.sig, made by scripts/sign-release-registry.py).
+# Verified here with the bundled runtime exactly as the installed Mimir will verify it.
+$chk = & (Join-Path $Stage "runtime\python.exe") -c ("import os, sys; os.environ['MIMIR_SKILLS_DIR'] = r'" +
+    (Join-Path $Stage "skills") + "'; sys.path.insert(0, r'" + (Join-Path $Stage "orchestrator") +
+    "'); from mimir.skills import SkillLibrary; s = SkillLibrary().status(); print(s['signed_by'], s['verified'], s['rejected'])")
+$parts = "$chk".Trim() -split " "
+if ($parts.Count -ge 3 -and $parts[0] -eq "release" -and [int]$parts[2] -eq 0) {
+    Say "skills: release-signed, $($parts[1]) verified"
+} else {
+    Write-Host ("!  skills are NOT release-signed (" + "$chk".Trim() + "): the installed Mimir will load no skills." +
+        " Sign once on the maintainer machine: python3 scripts/sign-release-registry.py --key _keys/owner_ed25519" +
+        " and commit skills/_keys/release.pub + skills/registry.release.sig") -ForegroundColor Yellow
+}
 
 # ---- 4. llama.cpp Vulkan + Redis binaries ----------------------------------
 if (-not $SkipBinaries) {
