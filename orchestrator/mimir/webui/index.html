@@ -1654,7 +1654,10 @@ function renderMarkdownView(fv,path,content,opts){
   const pr=el('button','icon-btn');pr.title='Drucken oder als PDF speichern';pr.setAttribute('aria-label','Drucken oder als PDF speichern');pr.append(ico('printer'));pr.onclick=()=>printDoc(path);bar.append(pr);
   const dl=el('button','icon-btn');dl.title='Herunterladen';dl.setAttribute('aria-label','Herunterladen');dl.append(ico('download'));dl.onclick=()=>downloadFile(path);bar.append(dl);
   const body=el('div','md-body');
-  renderChatMd(body,content||'',{md:mdParser(),doi:true});
+  // DOCX/ODT are imported via pandoc's GFM writer, which writes math as ```math blocks and $`…`$ — turn that
+  // back into $$…$$ / $…$ so formulas render instead of showing up as code
+  const shown=String(content||'').replace(/```[ \t]*math[ \t]*\r?\n([\s\S]*?)```/g,(m,t)=>'$$'+t.trim()+'$$').replace(/\$`([^`\n]+)`\$/g,(m,t)=>'$'+t+'$');
+  renderChatMd(body,shown,{md:mdParser(),doi:true});
   const src=el('div','md-src');src.style.display='none';
   const tbl=el('table');(content||'').split('\n').forEach((ln,i)=>{const tr=el('tr');tr.append(el('td','ln',String(i+1)),el('td','code',ln));tbl.append(tr);});src.append(tbl);
   fv.append(bar,body,src);
