@@ -122,13 +122,19 @@ Systemschrift-Stack). CSP bleibt unverändert (`font-src data:`). Lizenzen: OFL 
 | Autonomie | `.autonomy` + `#autonomy` | Sicher: neutral + grünes Schild. Autonom: Bernstein. Voll autonom: roter 2-px-Rahmen + Warndreieck (per `:has(option:checked)`, ohne JS). |
 | Lauf-Protokoll | `.run-head`, `.rh-acts`, `.runlog`, `.ev`, `.ev.cp`, `.ev.nh`, `.ev.fail` | Kopf mit Art, Titel (nur das Thema), Startzeit, Status-Plakette und „Lauf stoppen“ (solange der Lauf nicht beendet ist). Generierter Text als Markdown in einer scrollbaren Karte (max. 26 rem) an der Stelle im Verlauf, an der er beginnt. Ergebnisse als Karte, „Mensch nötig“/Entscheidung als Bernstein-Karte, Laufende „fehlgeschlagen“ als rote Karte mit verständlichem Fehlertext (`errDe`). |
 | Dokument | `.viewbar`, `.vseg`, `.md-body` | Papierfläche, Segment-Umschalter Ansicht/Quelltext, Download als Icon. |
+| Bereitschaft | `#status`, `.st-warn`, `.st-bad` | Kopfzeilen-Status aus `/api/health`: „Modell wird geladen …“ (Bernstein, Senden gesperrt), „Sprachmodell nicht erreichbar“ (Rot), sonst „bereit“; während eines Chat-Laufs „Mimir arbeitet…“/„wartet auf Freigabe“. |
+| Quellen | `.srcs`, `.srch`, `.sn` | Unter der Antwort, aus dem Ereignis `sources` (Suchmetadaten, nicht Modelltext). Zitiert die Antwort [n], nur diese; gleiche Dokumentseiten zusammengefasst; Adressen als Text. |
+| Chat-Optionen | `.composer-opts`, `#optDocs`, `#optFast` | Zwei Schalter über der Eingabe, im Browser gemerkt; „Meine Dokumente einbeziehen“ nur aktiv, wenn Dokumente hochgeladen sind. |
+| Dialog | `dialog.dlg`, `askDialog()` | Eigener modaler Dialog für Eingaben (Zusammenfassung, Probeklausur, Umbenennen) statt `prompt()`; Esc/Abbrechen schließen. |
+| Läufe-Werkzeuge | `.runs-tools`, `.runrow .rm`, `#runsMore` | Filter „Chats ausblenden“ (Standard) und „Nur laufende“, Löschen fertiger Läufe, „Alte Läufe aufräumen“ (> 30 Tage), „Mehr anzeigen“. Lauf-Kopf mit `.eta` (Abschnitt k von n, Restzeit) und „Fortsetzen“/„Erneut starten“ für gestoppte Läufe. |
+| Drucken | `#i-printer`, `body.printing` | Druckknopf in der Dokumentansicht; Druckansicht zeigt nur die Dokumentseite (Weg zum PDF, wo docproc kein PDF kann). |
 | Wissens-Wiki | `.wiki`, `.wp`, `#wikiPage` | Seitenliste mit Beleg-Genauigkeit (`.acc-hi/mid/lo`); Seite als Markdown wie eine Chat-Antwort (`renderChatMd`), `[[Titel]]` wird danach zu `a.wl`, wenn die Seite existiert. |
 
 ## Icons
 
 Inline-SVG-Sprite direkt nach `<body>` (`<symbol id="i-…">`, 24er-Raster, 1,75 px Kontur, runde
 Enden), eingesetzt über `<svg class="ico"><use href="#i-name"/></svg>` bzw. `ico('name')` im JS.
-Vorhanden: feather, chat, library, runs, settings, bell, power, shield, shield-check, alert, info,
+Vorhanden: feather, chat, library, runs, settings, bell, power, shield, shield-check, alert, info, printer,
 folder, file, refresh, plus, trash, send, x, chevron, download, upload, search, pen, check, play,
 split, list, user, book, dot, sidebar, sun, moon, monitor. Die Pfade sind eigens gezeichnet (keine
 Fremdlizenz). Der Beendet-Bildschirm trägt das Logo als eigenes SVG, weil der Sprite mit dem Body
