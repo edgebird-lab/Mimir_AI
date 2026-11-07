@@ -929,13 +929,20 @@ function sourceItem(it){const li=el('li');li.append(el('span','sn','['+it.n+']')
   else if(it.kind==='doc'){t.append(el('i','',it.doc||'Dokument'));if(it.page!=null)t.append(', S. '+it.page);}
   else{t.append(el('i','',it.title||''));if(it.url)t.append(' – '+it.url);}     // Adresse nur als Text (wie Links im Chat)
   li.append(t);return li;}
-// answer: if it cites [n], show only those (plus a count of the rest); otherwise everything that was found
+// answer: if it cites [n], show only those (plus a count of the rest); otherwise everything that was found.
+// Citations look like [1], [1, 3], [2–4] or [1, S. 3] (page numbers after "S."/"p." are not sources).
+function citedNumbers(answer){const out=new Set();
+  String(answer||'').replace(/\[([^\]\n]{1,40})\]/g,(m,g)=>{g.split(/[,;]/).forEach(p=>{p=p.trim();
+    const r=/^(\d{1,3})(?:\s*[–-]\s*(\d{1,3}))?$/.exec(p);if(!r)return;const a=+r[1],b=r[2]?+r[2]:a;
+    for(let i=a;i<=b&&i-a<50;i++)out.add(i);});return m;});return out;}
 function renderSources(box,items,answer){box.innerHTML='';if(!items||!items.length)return;
-  const cited=new Set();String(answer||'').replace(/\[(\d+(?:\s*[,–-]\s*\d+)*)\]/g,(m,g)=>{g.split(/\s*,\s*/).forEach(p=>{const r=p.split(/\s*[–-]\s*/).map(Number);
-    for(let i=r[0];i<=(r[1]||r[0])&&i-r[0]<50;i++)cited.add(i);});return m;});
-  const shown=cited.size?items.filter(it=>cited.has(it.n)):items;if(!shown.length)return;
+  const cited=citedNumbers(answer);
+  let shown=cited.size?items.filter(it=>cited.has(it.n)):items;if(!shown.length)shown=items;
+  // several passages from the same document page: one line "[2, 3] Skript.pdf, S. 1"
+  const merged=[];shown.forEach(it=>{const k=it.kind==='doc'?('doc|'+it.doc+'|'+it.page):'n'+it.n;
+    const prev=merged.find(x=>x.key===k);if(prev)prev.ns.push(it.n);else merged.push({key:k,ns:[it.n],it});});
   const h=el('div','srch','Quellen');h.append(el('span','',cited.size&&shown.length<items.length?('zitiert · '+(items.length-shown.length)+' weitere gefunden'):'aus der Suche, nicht vom Modell geschrieben'));
-  const ol=el('ol');shown.forEach(it=>ol.append(sourceItem(it)));box.append(h,ol);}
+  const ol=el('ol');merged.forEach(m=>{const li=sourceItem(m.it);li.firstChild.textContent='['+m.ns.join(', ')+']';ol.append(li);});box.append(h,ol);}
 
 /* ================= CHAT ================= */
 function whoMimir(){const w=el('div','who');w.append(ico('feather'));return w;}

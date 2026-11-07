@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from mimir.agent import CHAT_TOOLS, FOLLOWUP_PROMPT, Agent  # noqa: E402
+from mimir.agent import CHAT_TOOLS, FOLLOWUP_PROMPT, FOLLOWUP_PROMPT_DE, Agent  # noqa: E402
 from mimir.broker import BrokerResult  # noqa: E402
 from mimir.guards.taint import Tainted  # noqa: E402
 from mimir.primitives import Primitive  # noqa: E402
@@ -140,6 +140,12 @@ broker = FakeBroker({"academic_search": BrokerResult(ok=True, value=PAPERS)})
 evs = run(Agent(llm, broker, REGISTRY, max_steps=3))
 finals = [e["text"] for e in evs if e["event"] == "final"]
 check("final answer instead of (max steps reached)", finals == ["Zusammenfassung der Funde."], finals)
+
+print("test: German questions get a German follow-up (small models switch language otherwise)")
+llm = ScriptLLM([("tool", "academic_search", '{"query": "ERP"}'), ("text", "Antwort.")])
+run(Agent(llm, FakeBroker({"academic_search": BrokerResult(ok=True, value=PAPERS)}), REGISTRY),
+    task="Welche Studien gibt es zur Akzeptanz von ERP-Systemen? Bitte mit Quellen.")
+check("German follow-up", llm.calls[1]["user"] == FOLLOWUP_PROMPT_DE)
 
 if FAILS:
     print(f"\nFAILED: {len(FAILS)} check(s): {FAILS}")
