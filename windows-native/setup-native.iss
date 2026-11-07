@@ -97,14 +97,43 @@ Filename: "powershell.exe"; \
   WorkingDir: "{app}"; Description: "Erweiterte Features einrichten (WSL2 + Sandbox)"; \
   Flags: postinstall shellexec skipifsilent; Tasks: advanced
 
-; First run is visible so the user sees GPU detection + the one-time model download, then the browser opens.
+; First run: no console window - Start-Mimir opens the setup assistant in the browser (setup_ui.py), which
+; shows GPU detection, the model choice, the download progress and any error, then switches to Mimir.
 Filename: "powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\windows-native\Start-Mimir.ps1"""; \
-  WorkingDir: "{app}"; Description: "Mimir jetzt einrichten und starten (GPU wird erkannt, Modell wird geladen)"; \
-  Flags: postinstall shellexec skipifsilent
+  Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\windows-native\Start-Mimir.ps1"""; \
+  WorkingDir: "{app}"; Description: "Mimir jetzt einrichten und starten (Fortschritt im Browser)"; \
+  Flags: postinstall shellexec skipifsilent runhidden
 
 [UninstallRun]
 ; Stop the stack before files are removed so no llama-server/redis keeps a handle on the folder.
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\windows-native\Stop-Mimir.ps1"""; \
   WorkingDir: "{app}"; Flags: runhidden; RunOnceId: "StopMimir"
+
+[Code]
+// PLAN-1.4 L2: the uninstaller removes the program files; models (often several GB) and the user's data
+// were left behind without a word. Ask - default "No", so nobody loses their library by accident.
+// Umlauts as char codes (#$00E4 ...) keep this file ASCII.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  AppDir: String;
+begin
+  if CurUninstallStep <> usPostUninstall then
+    Exit;
+  AppDir := ExpandConstant('{app}');
+  if UninstallSilent or not (DirExists(AppDir + '\models') or DirExists(AppDir + '\data')) then
+    Exit;
+  if MsgBox('Sollen auch die heruntergeladenen Sprachmodelle und deine Mimir-Daten gel' + #$00F6 + 'scht werden?' + #13#10#13#10 +
+            'Dazu geh' + #$00F6 + 'ren die Modelle (oft mehrere GB), deine Bibliothek, Unterhaltungen, L' + #$00E4 + 'ufe und die erzeugten ' +
+            'Dokumente in ' + AppDir + '\data\project\out.' + #13#10#13#10 +
+            'W' + #$00E4 + 'hle ' + #$201E + 'Nein' + #$201C + ', wenn du Mimir sp' + #$00E4 + 'ter wieder installieren und alles behalten willst.',
+            mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+  begin
+    DelTree(AppDir + '\models', True, True, True);
+    DelTree(AppDir + '\data', True, True, True);
+    DelTree(AppDir + '\run', True, True, True);
+    DelTree(AppDir + '\bin', True, True, True);
+    DeleteFile(AppDir + '\.env');
+    RemoveDir(AppDir);
+  end;
+end;
