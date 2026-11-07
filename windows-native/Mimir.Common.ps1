@@ -166,6 +166,28 @@ function Set-MimirProcessEnv {
     if ($pandocExe) { $env:PATH = "$($pandocExe.DirectoryName);$env:PATH" }
 }
 
+# ---- first-run progress for the browser setup assistant (setup_ui.py reads run\setup-status.json) ----
+# Step ids only (ASCII): the German labels live in setup_ui.py. Phases: setup | choose | error.
+$script:SetupState = @{ phase = "setup"; message = ""; steps = [ordered]@{}; hardware = $null; models = @(); recommended = "" }
+function Write-SetupStatus {
+    try {
+        New-Item -ItemType Directory -Force -Path $MimirRun | Out-Null
+        $p = Join-Path $MimirRun "setup-status.json"
+        $tmp = "$p.tmp"
+        ($script:SetupState | ConvertTo-Json -Depth 6) | Set-Content -Path $tmp -Encoding utf8
+        Move-Item -Force $tmp $p
+    } catch { }
+}
+function Set-SetupStep([string]$Id, [string]$State) {
+    $script:SetupState.steps[$Id] = $State
+    Write-SetupStatus
+}
+function Set-SetupPhase([string]$Phase, [string]$Message = "") {
+    $script:SetupState.phase = $Phase
+    $script:SetupState.message = $Message
+    Write-SetupStatus
+}
+
 function Wait-MimirPort([int]$Port,[int]$TimeoutSec = 180) {
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while ((Get-Date) -lt $deadline) {

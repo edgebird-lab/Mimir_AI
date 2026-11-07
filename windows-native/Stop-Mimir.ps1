@@ -11,7 +11,7 @@ if (Test-Path $pidFile) {
         $procId = $pids.$name
         try {
             taskkill /F /T /PID $procId 2>$null | Out-Null
-            Write-Say "stopped $name (pid $procId)"
+            Write-Say "beendet: $name (PID $procId)"
         } catch { }
     }
     Remove-Item -Force $pidFile -ErrorAction SilentlyContinue
@@ -32,7 +32,7 @@ Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'" -ErrorAction Sil
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
 # belt-and-suspenders #2: any stray python.exe we own (worker/docproc/webfetch/webui/supervisor) that
-# pids.json didn't know about. pids.json only ever remembers the LATEST pid per role — if a previous
+# pids.json didn't know about. pids.json only ever remembers the LATEST pid per role - if a previous
 # Start-Mimir run's process for that role never actually exited (crashed mid-bind, or Start-Mimir was
 # re-run while an old instance was still up), its pid is simply overwritten in the file and it becomes
 # an orphan that stopped-and-restarted never touches, silently squatting on its port forever. Matching
@@ -53,4 +53,4 @@ if ($envmap["MIMIR_SANDBOX_ADDR"] -and (Get-Command wsl.exe -ErrorAction Silentl
     if (-not $running) { wsl.exe --shutdown 2>$null | Out-Null; Write-Say "WSL2 VM shut down (memory released)" }
     else { Write-Say "WSL sandbox distro '$distro' stopped" }
 }
-Write-Say "Mimir stopped - GPU memory released."
+Write-Say "Mimir beendet - Grafikspeicher freigegeben."

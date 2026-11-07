@@ -344,6 +344,18 @@ def switch_model(req: dict) -> dict:
 
 
 # ---- model download (direct HF HTTPS; native = full internet, no egress proxy/allowlist) ----------------
+def _progress(**kw) -> None:
+    """Download progress for the browser setup assistant (setup_ui.py reads run/download-progress.json)."""
+    try:
+        p = HOME / "run" / "download-progress.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps({**kw, "ts": time.time()}), encoding="utf-8")
+        tmp.replace(p)
+    except Exception:  # noqa: BLE001 — progress display only
+        pass
+
+
 def _do_download(repo: str, file: str) -> None:
     try:
         MODELS_DIR.mkdir(parents=True, exist_ok=True)
@@ -354,7 +366,7 @@ def _do_download(repo: str, file: str) -> None:
         req = urllib.request.Request(url, headers={"User-Agent": "Mimir/1.0"})
         with urllib.request.urlopen(req, timeout=60) as r:
             total = int(r.headers.get("Content-Length", "0"))
-            done = 0
+            done, last = 0, 0.0
             with open(tmp, "wb") as out:
                 while True:
                     chunk = r.read(1 << 20)
@@ -365,12 +377,18 @@ def _do_download(repo: str, file: str) -> None:
                     if total:
                         with _dl_lock:
                             _dl.update(pct=min(99, int(done * 100 / total)))
+                    if time.time() - last > 1.0:
+                        last = time.time()
+                        _progress(state="downloading", file=file, done=done, total=total,
+                                  pct=min(99, int(done * 100 / total)) if total else 0)
         tmp.replace(MODELS_DIR / file)
         with _dl_lock:
-            _dl.update(state="done", pct=100, log=f"{file} bereit — im Einstellungen-Tab wählbar")
+            _dl.update(state="done", pct=100, log=f"{file} bereit — in den Einstellungen wählbar")
+        _progress(state="done", file=file, done=done, total=total, pct=100)
     except Exception as e:  # noqa: BLE001
         with _dl_lock:
             _dl.update(state="error", log=f"{type(e).__name__}: {e}")
+        _progress(state="error", file=file, error=f"{type(e).__name__}: {e}")
 
 
 def download_model(req: dict) -> dict:
