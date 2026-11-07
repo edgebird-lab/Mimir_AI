@@ -1582,6 +1582,9 @@ function renderSuggestions(sug,best){
 async function switchModel(file,btn){
   if(!confirm('Modell auf „'+file+'" umstellen?\n\nDie Inferenz wird neu gestartet (~1 Min, kurze Unterbrechung).'))return;
   if(btn){btn.disabled=true;btn.textContent='…';}
+  // the switch restarts llama-server and the request only returns once the new model answers (1–2 min):
+  // show "Modell wird geladen …" and block sending for the whole time, not just afterwards
+  modelState='loading';applyReadyState();clearTimeout(refreshHealth.t);
   const r=await jpost('/api/models/switch',{file});
   if(r.error){alert('Fehler: '+r.error);if(btn){btn.disabled=false;btn.textContent='Aktivieren';}}
   else{loadModels();modelState='loading';applyReadyState();setTimeout(refreshHealth,2000);}
