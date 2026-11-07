@@ -1024,7 +1024,7 @@ async function refreshApprovals(){
 async function loadAutonomy(){try{const d=await jget('/api/autonomy');$('autonomy').value=String(d.level);}catch(e){}}
 $('autonomy').onchange=async e=>{
   const lvl=Number(e.target.value);
-  if(lvl>=3 && !confirm('Volle Autonomie: Mimir arbeitet komplett ohne Rückfragen — AUCH nach-außen-wirkende oder unumkehrbare Aktionen (Posten, Deploy, Installieren, E-Mail, Merge-back aus Zone W) und systemkritische Entscheidungen laufen dann OHNE Freigabe.\n\nDas hebt die zentrale Sicherheitsbremse des Systems auf. Nur aktivieren, wenn du das wirklich willst.\n\nFortfahren?')){e.target.value=String(await jget('/api/autonomy').then(d=>d.level));return;}
+  if(lvl>=3 && !confirm('Voll autonom: Mimir arbeitet dann komplett ohne Rückfragen – AUCH Aktionen, die nach außen wirken oder sich nicht rückgängig machen lassen (z. B. E-Mails senden, etwas veröffentlichen, Software installieren, Dateien überschreiben), und wichtige Entscheidungen laufen OHNE deine Freigabe.\n\nDas schaltet die zentrale Sicherheitsbremse ab. Nur wählen, wenn du das wirklich willst.\n\nFortfahren?')){e.target.value=String(await jget('/api/autonomy').then(d=>d.level));return;}
   await jpost('/api/autonomy',{level:lvl});
 };
 $('bell').onclick=()=>{const o=$('inbox').classList.toggle('open');$('bell').setAttribute('aria-expanded',String(o));refreshApprovals();};
