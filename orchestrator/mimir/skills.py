@@ -75,7 +75,12 @@ class SkillLibrary:
     def code(self, name: str) -> str:
         s = self.skills.get(name)
         if not s or not s.get("verified"):
-            raise PermissionError(f"skill '{name}' not found or failed hash verification")
+            # The text reaches the model as the tool result: name the real skills and tell it to answer
+            # directly, instead of leaving it with an empty result (it then tends to reply with nothing).
+            avail = ", ".join(sorted(n for n, v in self.skills.items() if v.get("verified"))) or "none"
+            raise PermissionError(f"skill '{name}' not found or failed hash verification (available skills: "
+                                  f"{avail}). Do not retry it; if no available skill fits, answer the user "
+                                  f"directly without a skill.")
         return s["code"]
 
     def catalog(self) -> str:

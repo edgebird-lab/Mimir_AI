@@ -149,12 +149,7 @@ TOOL_SPECS = {
                              "access; to affect the outside world the code may call "
                              "call_primitive(name, **args). Use this to compute or build things.",
                              {"code": "Python source that sets `result`", "input": "optional input value"}),
-    "run_named_skill": ("Run a ready-made, vetted skill from the library in the sandbox. Prefer this "
-                        "over writing code when a matching skill exists. Available: summarize-project-file, "
-                        "analyze-csv, code-write-and-test, fetch-and-extract-url, remember-fact, "
-                        "extract-structured-data, make-practice-exam, study-notes, flashcards, "
-                        "explain-concept, research-report, export-document.",
-                        {"name": "skill name", "input": "object with the skill's inputs"}),
+    # run_named_skill: description built at runtime from the REAL library, see _named_skill_spec()
     "corpus_search": ("Search the user's uploaded documents (lecture scripts, papers, PDFs) for the "
                       "passages most relevant to a query. Returns chunks WITH their document name and "
                       "PAGE number so you can cite them. Use this to ground answers/exams/summaries in "
@@ -177,11 +172,35 @@ TOOL_SPECS = {
 }
 
 
+def _named_skill_spec():
+    """run_named_skill advertises only skills that can REALLY be loaded (signed + hash-verified), never a
+    fixed wish list: a phantom name like 'explain-concept' made small models call a skill that does not
+    exist and then answer with nothing. None loadable → None (the tool is not offered to the model at all;
+    the broker/policy registry is unchanged, so the coordinator's own reuse path is unaffected)."""
+    try:
+        from .skills import SkillLibrary
+        names = sorted(s["name"] for s in SkillLibrary().list() if s.get("verified"))
+    except Exception:  # noqa: BLE001 — a broken/unsigned library just means "no skills", never a boot failure
+        names = []
+    if not names:
+        return None
+    return ("Run a ready-made, vetted skill from the library in the sandbox. Prefer this over writing code "
+            "when a matching skill exists. Only these skills exist: " + ", ".join(names) + ". Explanations "
+            "and ordinary questions need no skill — answer them directly.",
+            {"name": "skill name (exactly one of the names above)", "input": "object with the skill's inputs"})
+
+
 def build_tools_schema(registry) -> list[dict]:
     """Expose each registered primitive to the model as an OpenAI function (args validated downstream)."""
     schema = []
     for name, prim in registry.items():
-        desc, params = TOOL_SPECS.get(name, (f"Mimir primitive {name}", {}))
+        if name == "run_named_skill":
+            spec = _named_skill_spec()
+            if spec is None:
+                continue
+            desc, params = spec
+        else:
+            desc, params = TOOL_SPECS.get(name, (f"Mimir primitive {name}", {}))
         if prim.side_effecting and "approval" not in desc:
             desc += " (needs human approval)"
         schema.append({"type": "function", "function": {
