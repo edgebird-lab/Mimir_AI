@@ -318,6 +318,10 @@ class Academic:
                 final = ev["text"]
             else:
                 yield ev
+        if should_cancel():                       # stopped: no half-empty file, no "Fertige …" claim
+            yield {"event": "final", "text": "(stopped)"}
+            yield {"event": "notes_done", "ok": False}
+            return
         name = f"zusammenfassung-{self._slug(topic)}.md"
         files = [self._write(name, final)] + self._export(name, final)
         yield {"event": "document", "files": files, "main": files[0]}
@@ -357,6 +361,10 @@ class Academic:
                 final = ev["text"]
             else:
                 yield ev
+        if should_cancel():                       # stopped: no half-empty file, no "Fertige …" claim
+            yield {"event": "final", "text": "(stopped)"}
+            yield {"event": "exam_done", "ok": False}
+            return
         name = f"klausur-{self._slug(topic)}.md"
         files = [self._write(name, final)] + self._export(name, final)
         yield {"event": "document", "files": files, "main": files[0]}
@@ -1294,6 +1302,10 @@ class Academic:
                 final = ev["text"]
             else:
                 yield ev
+        if should_cancel():                       # stopped: no half-written report, no "Fertige …" claim
+            yield {"event": "final", "text": "(stopped)"}
+            yield {"event": "research_done", "ok": False}
+            return
         # deterministic bibliography from metadata (real refs, not model-invented)
         bib = ["\n\n## Quellenverzeichnis"]
         for i, s in enumerate(sources, 1):
