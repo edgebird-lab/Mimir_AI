@@ -64,9 +64,14 @@ def _vendor_bundle() -> str:
         css = (vd / "katex.min.css").read_text(encoding="utf-8")
         js = "\n".join((vd / f).read_text(encoding="utf-8") for f in
                        ("markdown-it.min.js", "purify.min.js", "katex.min.js", "auto-render.min.js"))
-        return f"<style>{css}</style>\n<script>{js}</script>"
     except FileNotFoundError:
         return ""  # fail-soft: viewer falls back to the plain source view if vendor bundle is absent
+    # UI fonts (Inter + Plus Jakarta Sans, OFL-1.1) as data: URIs; optional — without them the page
+    # falls back to the system font stack.
+    fonts = vd / "fonts.css"
+    if fonts.is_file():
+        css += "\n" + fonts.read_text(encoding="utf-8")
+    return f"<style>{css}</style>\n<script>{js}</script>"
 
 
 INDEX = INDEX.replace("<!--__VENDOR__-->", _vendor_bundle())

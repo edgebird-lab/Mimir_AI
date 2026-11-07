@@ -20,6 +20,14 @@ This product includes or bundles third-party software:
 - markdown-it (MIT), DOMPurify (Apache-2.0 / MPL-2.0), KaTeX (MIT) — bundled in
   orchestrator/mimir/webui/vendor/ for the in-app document/markdown/math viewer.
 
+- Inter (SIL Open Font License 1.1, Copyright 2016 The Inter Project Authors,
+  https://github.com/rsms/inter) and Plus Jakarta Sans (SIL Open Font License
+  1.1, Copyright 2020 The Plus Jakarta Sans Project Authors,
+  https://github.com/tokotype/PlusJakartaSans) — Latin subsets of the variable
+  fonts (via @fontsource-variable 5.3.0), embedded as data: URIs in
+  orchestrator/mimir/webui/vendor/fonts.css for the web UI. License texts:
+  orchestrator/mimir/webui/vendor/OFL-Inter.txt and OFL-PlusJakartaSans.txt.
+
 - SearXNG (AGPL-3.0) and the models served at runtime (e.g. Qwen, Llama) are NOT
   distributed with this source; they are pulled as separate container images /
   model files at install time and remain under their own licenses.
