@@ -33,7 +33,7 @@ STREAM_MAXLEN = 20000        # per-run live event buffer (tokens included); one 
 # High-frequency deltas (token/reasoning/usage) live ONLY in the Redis stream (ephemeral, for live view
 # + reconnect-replay). Everything else is ALSO persisted to SQLite so the runs list / history / audit
 # survive a Redis flush or full restart. (Same split Suna/OpenHands use.)
-_EPHEMERAL = {"token", "reasoning", "usage"}
+_EPHEMERAL = {"token", "reasoning", "usage", "timings"}
 
 
 def _now() -> float:
@@ -169,12 +169,44 @@ class RunStore:
         r = self.db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         return dict(r) if r else None
 
-    def list_runs(self, limit: int = 60, status: str | None = None) -> list[dict]:
-        q, args = "SELECT * FROM runs", []
+    def list_runs(self, limit: int = 60, status: str | None = None, exclude_kinds: tuple[str, ...] = (),
+                  active_only: bool = False) -> list[dict]:
+        q, args, where = "SELECT * FROM runs", [], []
         if status:
-            q += " WHERE status=?"; args.append(status)
+            where.append("status=?"); args.append(status)
+        if exclude_kinds:
+            where.append("kind NOT IN (%s)" % ",".join("?" * len(exclude_kinds))); args.extend(exclude_kinds)
+        if active_only:
+            where.append("status NOT IN (%s)" % ",".join("?" * len(TERMINAL))); args.extend(sorted(TERMINAL))
+        if where:
+            q += " WHERE " + " AND ".join(where)
         q += " ORDER BY created DESC LIMIT ?"; args.append(limit)
         return [dict(r) for r in self.db.execute(q, args)]
+
+    def count_runs(self) -> int:
+        return int(self.db.execute("SELECT COUNT(*) AS n FROM runs").fetchone()["n"])
+
+    def delete_runs(self, run_ids: list[str] | None = None, older_than_s: float | None = None) -> int:
+        """Delete FINISHED runs (never one that is queued/running/waiting) with their events, approvals,
+        decisions and live stream. Either explicit ids or every finished run older than `older_than_s`."""
+        if run_ids is not None:
+            rows = [self.get_run(r) for r in run_ids]
+            ids = [r["id"] for r in rows if r and r["status"] in TERMINAL]
+        else:
+            cutoff = _now() - float(older_than_s or 0)
+            ids = [r["id"] for r in self.db.execute(
+                "SELECT id FROM runs WHERE updated < ? AND status IN (%s)" % ",".join("?" * len(TERMINAL)),
+                (cutoff, *sorted(TERMINAL)))]
+        for rid in ids:
+            for tbl in ("run_events", "approvals", "decisions"):
+                self.db.execute(f"DELETE FROM {tbl} WHERE run_id=?", (rid,))
+            self.db.execute("DELETE FROM runs WHERE id=?", (rid,))
+            try:
+                self.r.delete(f"mimir:run:{rid}:stream")
+            except Exception:  # noqa: BLE001 — the durable rows are gone; a leftover stream expires anyway
+                pass
+        self.db.commit()
+        return len(ids)
 
     def set_status(self, run_id: str, status: str, error: str = "", result: str = "") -> None:
         sets, args = ["status=?", "updated=?"], [status, _now()]

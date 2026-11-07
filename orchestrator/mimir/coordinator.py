@@ -453,7 +453,7 @@ class Coordinator:
         prompt = self._task_prompt(task, goal, trusted, untrusted, retry_hint)
         steps, final = [], ""
         for ev in self.agent.run_events(prompt, should_cancel=should_cancel, conversation=[],
-                                        seed_tainted=tainted, session_id=f"task:{tid}",
+                                        seed_tainted=tainted, session_id=f"task:{tid}", toolset="all",
                                         max_steps=budget.max_task_steps, get_notes=get_notes,
                                         on_checkpoint=lambda h: self._precompact_checkpoint(goal, task, h)):
             if ev["event"] == "tool_result":

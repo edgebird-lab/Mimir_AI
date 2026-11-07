@@ -97,7 +97,8 @@ def _events_for(kind: str, params: dict, run: dict, coord: Coordinator, ws: Work
         summary, tainted = ws.get_summary(cid) if cid else ("", False)
         return coord.agent.run_events(params.get("task", ""), should_cancel=should_cancel,
                                       conversation=seed, session_id=f"chat:{cid}",
-                                      summary=summary, summary_tainted=tainted)
+                                      summary=summary, summary_tainted=tainted,
+                                      think=not params.get("fast"), use_docs=bool(params.get("use_docs")))
     if kind == "plan":
         return coord.plan_events(int(params.get("goal_id", 0)), should_cancel)
     if kind == "autopilot":
@@ -127,6 +128,26 @@ def _events_for(kind: str, params: dict, run: dict, coord: Coordinator, ws: Work
     raise ValueError(f"unknown run kind {kind!r}")
 
 
+def record_speed(rs: RunStore, ev: dict, model: str = "") -> dict:
+    """Remember llama-server's measured generation speed (tokens/s): the latest value and the best value
+    seen for the loaded model. The settings page shows them; the chat compares the two to notice that
+    another program is slowing the GPU down (measured: 13 tok/s alone, 7 tok/s next to Ollama)."""
+    try:
+        tps = float(ev.get("gen_tps") or 0)
+        if tps <= 0 or int(ev.get("gen_n") or 0) < 20:          # too short to be a meaningful measurement
+            return {}
+        model = model or os.environ.get("MIMIR_MODEL_FILE", "")
+        best = json.loads(rs.get_setting("speed_best", "{}") or "{}")
+        if best.get("model") != model or tps > float(best.get("tps") or 0):
+            best = {"model": model, "tps": tps}
+            rs.set_setting("speed_best", json.dumps(best))
+        rs.set_setting("speed_last", json.dumps({"model": model, "tps": tps, "prompt_tps": ev.get("prompt_tps"),
+                                                 "ts": time.time()}))
+        return {"best_tps": float(best.get("tps") or tps)}
+    except Exception:  # noqa: BLE001 — a statistic must never break a run
+        return {}
+
+
 def execute_run(rs: RunStore, coord: Coordinator, ws: Workspace, approver: DurableApprover, run_id: str):
     run = rs.get_run(run_id)
     if not run or run["status"] in TERMINAL:
@@ -142,16 +163,27 @@ def execute_run(rs: RunStore, coord: Coordinator, ws: Workspace, approver: Durab
     get_notes = lambda: rs.pop_notes(run_id)                 # noqa: E731
     kind, cid = run["kind"], run["conversation_id"]
     final_text = ""
+    meta = {"steps": [], "sources": []}           # shown again when the conversation is reopened (L6)
     try:
         for ev in _events_for(kind, params, run, coord, ws, should_cancel, get_notes=get_notes):
-            if kind == "chat" and ev.get("event") == "compaction" and ev.get("summary") and cid:
+            e = ev.get("event")
+            if kind == "chat" and e == "compaction" and ev.get("summary") and cid:
                 ws.set_summary(cid, ev["summary"], bool(ev.get("tainted")))
-            if ev.get("event") == "final":
+            if e == "final":
                 final_text = ev.get("text", "")
+            elif e == "tool_result" and len(meta["steps"]) < 30:
+                meta["steps"].append({"tool": ev.get("tool"), "ok": ev.get("ok"), "reason": ev.get("reason"),
+                                      "args": ev.get("args") or {}})
+            elif e == "sources":
+                meta["sources"].extend((ev.get("items") or [])[:20])
+            elif e == "timings":
+                mn = getattr(getattr(coord.agent, "llm", None), "model_name", lambda: "")
+                ev = {**ev, **record_speed(rs, ev, mn())}
             rs.append_event(run_id, ev)
         if kind == "chat" and cid and final_text and final_text not in ("(stopped)", "(max steps reached)"):
             ws.add_message(cid, "user", params.get("task", ""))
-            ws.add_message(cid, "assistant", final_text)
+            ws.add_message(cid, "assistant", final_text,
+                           meta=meta if (meta["steps"] or meta["sources"]) else None)
         status = "stopped" if should_cancel() else "done"
         rs.set_status(run_id, status, result=final_text[:8000])
         rs.append_event(run_id, {"event": "run_end", "status": status})

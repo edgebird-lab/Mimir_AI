@@ -80,7 +80,10 @@ class MimirLLM:
                 {"role": "user", "content": user}]
         payload = {"messages": msgs, "tools": tools or [], "temperature": 0.6, "top_p": 0.95,
                    "top_k": 20, "max_tokens": max_tokens, "stream": True,
-                   "stream_options": {"include_usage": True}}
+                   "stream_options": {"include_usage": True},
+                   # reuse the KV cache for the unchanged prefix (system prompt + tool list + history):
+                   # on an iGPU that prefix alone took ~16 s of prompt processing per call
+                   "cache_prompt": True}
         if not think:                          # WRITING tasks (essays/chapters) don't need visible
             self._no_think(payload)            # reasoning; disabling it puts the whole budget into
         tool_acc: dict[int, dict] = {}         # content (a thinking model otherwise burns it thinking → 0 content)
@@ -104,6 +107,13 @@ class MimirLLM:
                         continue
                     if obj.get("usage"):
                         yield ("usage", obj["usage"])       # server's exact prompt_tokens count
+                    t = obj.get("timings")
+                    if isinstance(t, dict) and t.get("predicted_n"):
+                        # llama-server's own speed measurement (final chunk) — shown in the settings and
+                        # used to notice when another program slows the GPU down
+                        yield ("timings", {"gen_tps": round(float(t.get("predicted_per_second") or 0), 2),
+                                           "prompt_tps": round(float(t.get("prompt_per_second") or 0), 1),
+                                           "gen_n": int(t.get("predicted_n") or 0)})
                     ch = obj.get("choices") or []
                     if not ch:
                         continue
@@ -123,6 +133,24 @@ class MimirLLM:
         yield ("tool_calls", list(tool_acc.values()))
 
     _n_ctx_cache: int | None = None
+    _model_cache: tuple[str, float] | None = None
+
+    def model_name(self) -> str:
+        """File name of the model llama-server has loaded (GET /props, cached for a minute — the model can
+        be switched at runtime, so the worker's MIMIR_MODEL_FILE may be stale)."""
+        import os
+        import time
+        now = time.time()
+        if self._model_cache and now - self._model_cache[1] < 60:
+            return self._model_cache[0]
+        try:
+            import httpx
+            p = httpx.get(f"{self.base_url}/props", timeout=5).json()
+            name = os.path.basename(str(p.get("model_path") or "").replace("\\", "/"))
+        except Exception:  # noqa: BLE001
+            name = ""
+        self._model_cache = (name, now)
+        return name
 
     def n_ctx(self) -> int:
         """Context length of the loaded model (GET /props once, cached; env override wins)."""
