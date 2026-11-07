@@ -70,6 +70,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:400 14px/1.5 var(--font
 button,input,select,textarea{font:inherit;color:inherit}
 h1,h2,h3,h4,h5,h6,.wiki-title{font-family:var(--font-head);word-spacing:.08em}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .ico{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
 button svg,[role=button] svg{pointer-events:none}
@@ -249,6 +250,9 @@ body.side-collapsed .sidebar{display:none}
 .tl{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt-2);flex-wrap:wrap}
 .tl .st{width:16px;text-align:center;font-weight:700;color:var(--txt-3)}
 .tl code{font-family:var(--mono);font-size:12px;color:var(--txt);background:var(--surface-2);border:1px solid var(--line);padding:0 7px;border-radius:5px;line-height:1.7}
+.tl .tn{color:var(--txt);font-weight:550}
+.tl .td{color:var(--txt-3);min-width:0;max-width:30rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl .why{color:var(--bad);flex-basis:100%;padding-left:24px;font-size:12px}
 .caret{display:inline-block;width:8px;height:17px;background:var(--accent);vertical-align:-3px;border-radius:2px;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 #chat>.divider{width:auto;align-self:center;display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt-2);background:var(--surface-2);
@@ -283,6 +287,8 @@ body.side-collapsed .sidebar{display:none}
 button.send{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border:0;border-radius:11px;background:var(--accent);color:var(--on-accent);font-weight:650;font-size:14px;cursor:pointer;flex:0 0 auto}
 button.send:hover{background:var(--accent-strong)}
 button.send .ico{width:17px;height:17px;stroke-width:2.1}
+button.send.stop{background:var(--surface);color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad-line)}
+button.send.stop:hover{background:var(--bad-tint)}
 .composer-hint{max-width:calc(var(--measure) + 44px);margin:7px auto 0;font-size:12px;color:var(--txt-3);text-align:center}
 
 /* ---------- Freigaben (im Chat und im Postfach) ---------- */
@@ -290,7 +296,7 @@ button.send .ico{width:17px;height:17px;stroke-width:2.1}
 .timeline .approval{margin:6px 0 4px}
 .approval h4,.apr .h{display:flex;align-items:center;gap:8px;margin:0 0 4px;color:var(--warn);font:650 14px/1.35 var(--font);word-spacing:normal}
 .approval h4 .ico,.apr .h .ico{width:18px;height:18px}
-.apr .meta{font-size:13px;color:var(--txt-2)}
+.approval .meta,.apr .meta{font-size:13px;color:var(--txt-2)}
 .approval .args,.apr .args{font-family:var(--mono);font-size:12.5px;line-height:1.55;color:var(--txt);background:var(--surface);border:1px solid var(--line);border-radius:8px;
   padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 12px;max-height:160px;overflow:auto}
 .approval button,.apr button{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 16px;border-radius:9px;font-weight:650;font-size:13.5px;cursor:pointer;margin:0 8px 0 0}
@@ -344,23 +350,28 @@ button.send .ico{width:17px;height:17px;stroke-width:2.1}
 
 /* ---------- Läufe ---------- */
 #runsList{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
-.runrow{display:grid;grid-template-columns:176px 120px minmax(0,1fr) 18px;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.runrow{display:grid;grid-template-columns:176px 120px minmax(0,1fr) auto 18px;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.runrow .rd{font-size:12.5px;color:var(--txt-3);white-space:nowrap;font-variant-numeric:tabular-nums}
 .runrow:last-child{border-bottom:0}
 .runrow:hover{background:var(--surface-2)}
 .runrow .badge{justify-self:start}
 .runrow .rk{font-size:13px;color:var(--txt-2)}
 .runrow .rt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:550}
 .runrow .chev{width:16px;height:16px;color:var(--txt-3)}
-@container (max-width:620px){.runrow{grid-template-columns:auto minmax(0,1fr) 18px}.runrow .rk{display:none}}
+@container (max-width:620px){.runrow{grid-template-columns:auto minmax(0,1fr) 18px}.runrow .rk,.runrow .rd{display:none}}
 /* Lauf-Detail (Live-Protokoll) */
 .run-head{flex:0 0 auto;padding:22px 40px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
-.run-head>div{max-width:880px;margin:0 auto}
+.run-head>div{max-width:880px;margin:0 auto;display:flex;align-items:flex-start;gap:16px}
+.run-head .rh-main{flex:1;min-width:0}
+.run-head .rh-acts{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding-top:2px}
+.ev.fail{background:var(--bad-tint);border:1px solid var(--bad-line);padding:12px 14px;margin-top:6px}
+.ev.fail .tx,.ev.fail .tx b,.ev.fail .ic{color:var(--bad)}
 .run-head .kind{font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-strong)}
 .run-head h2{font:700 20px/1.3 var(--font-head);letter-spacing:-.01em;margin:4px 0 0;overflow-wrap:anywhere}
 .run-head .rid{font-size:12px;color:var(--txt-3);margin-top:4px}
 .runlog{flex:1;overflow:auto;padding:24px 40px 56px;display:flex;flex-direction:column;gap:4px}
 .runlog>*{width:100%;max-width:880px;margin-left:auto;margin-right:auto}
-.runlog>.bubble{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:12px;box-shadow:var(--shadow-sm);flex:0 0 auto}
+.runlog>.bubble{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 18px;margin:6px auto 10px;box-shadow:var(--shadow-sm);flex:0 0 auto;max-height:26rem;overflow:auto}
 .runlog>.bubble:has(>.answer:empty){display:none}
 .runlog .answer{font-size:14.5px}
 .runlog>.approval{margin:8px auto}
@@ -573,7 +584,7 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
   <div class="brand"><span class="logo" aria-hidden="true"><svg class="ico"><use href="#i-feather"/></svg></span><h1>Mimir</h1></div>
   <span class="sub" id="status" role="status">bereit</span>
   <div class="top-right">
-    <div class="meter" title="Kontextfenster-Auslastung"><span class="meter-lbl">Kontext</span><div class="bar"><div class="fill" id="mfill"></div></div><span id="mtxt">0 / 0</span></div>
+    <div class="meter" title="Kontextfenster-Auslastung"><span class="meter-lbl">Kontext</span><div class="bar"><div class="fill" id="mfill"></div></div><span id="mtxt">–</span></div>
     <div class="autonomy">
       <svg class="ico a-safe" aria-hidden="true"><use href="#i-shield-check"/></svg>
       <svg class="ico a-warn" aria-hidden="true"><use href="#i-shield"/></svg>
@@ -715,7 +726,7 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
             </section>
             <section class="card danger-zone">
               <h3><svg class="ico"><use href="#i-power"/></svg>Mimir beenden</h3>
-              <p class="desc">Stoppt alle Mimir-Container und gibt den GPU-Speicher frei. Deine Daten (Bibliothek, gelernte Skills) bleiben erhalten. Neustart über das Desktop-Icon „Mimir starten“.</p>
+              <p class="desc">Stoppt alle Mimir-Dienste und gibt den Grafikspeicher frei. Deine Daten (Bibliothek, gelernte Skills) bleiben erhalten. Neustart über das Desktop-Icon „Mimir starten“.</p>
               <button id="shutdownBtn" class="btn btn-danger" type="button"><svg class="ico"><use href="#i-power"/></svg>Mimir beenden</button>
             </section>
           </div>
@@ -781,6 +792,43 @@ function setMeter(used,ctx){ if(!ctx)return; const p=Math.min(100,Math.round(use
   $('mtxt').textContent=used.toLocaleString('de')+' / '+ctx.toLocaleString('de')+' ('+p+'%)';
   const f=$('mfill'); f.style.width=p+'%'; f.style.background=p>85?'var(--bad)':p>65?'var(--warn)':'var(--ok)'; }
 
+/* ---------- Werkzeuge, Gründe und Endtexte verständlich auf Deutsch (Rohname bleibt als Tooltip) ---------- */
+// name -> [Beschriftung, Argument, das als Detail gezeigt wird]
+const TOOLS={corpus_search:['Suche in deinen Dokumenten','query'],corpus_list:['Bibliothek auflisten'],corpus_add:['Dokument aufnehmen','path'],
+  academic_search:['Suche in Fachliteratur (OpenAlex)','query'],web_search:['Websuche','query'],web_fetch:['Webseite lesen','url'],
+  http_get_allowlist:['Webseite abrufen','url'],project_list:['Projektdateien ansehen','path'],project_read_scoped:['Datei lesen','path'],
+  project_write_out:['Datei speichern','path'],email_send_allowlist:['E-Mail senden','recipient'],read_memory:['Im Gedächtnis nachsehen','query'],
+  write_memory:['Notiz merken','text'],run_named_skill:['Fähigkeit ausführen','name'],run_skill_in_sandbox:['Code in der Sandbox ausführen'],
+  probe_artifact:['Datei prüfen','path'],workspace_export_patch:['Änderungen exportieren'],workspace_export_media:['Medien exportieren'],
+  webhook_post_allowlist:['Webhook auslösen','url'],post_social:['Beitrag veröffentlichen'],stage_skill_candidate:['Neue Fähigkeit zur Prüfung vorlegen','name']};
+const ARGKEY={path:'Datei',content:'Inhalt',url:'Adresse',recipient:'Empfänger',subject:'Betreff',body:'Text',query:'Suche',text:'Text',name:'Name',code:'Code',input:'Eingabe',k:'Anzahl',doc:'Dokument'};
+function toolLabel(n){const t=TOOLS[n];return t?t[0]:'Werkzeug „'+n+'“';}
+function toolDetail(n,args){const k=(TOOLS[n]||[])[1];let v=k&&args?args[k]:'';if(!v)return '';
+  v=String(v).replace(/\s+/g,' ').trim();if(k==='url')v=v.replace(/^https?:\/\//i,'');
+  if(v.length>72)v=v.slice(0,71)+'…';return (k==='query'||k==='text')?'„'+v+'“':v;}
+function argsText(args){return Object.entries(args||{}).map(([k,v])=>(ARGKEY[k]||k)+': '+v).join('\n');}
+// Gründe aus Broker/Policy (englisch, technisch) -> kurzer deutscher Satz
+function reasonDe(r){r=String(r||'').trim();let m;
+  if(!r||r==='ok')return '';
+  if(/^human declined/i.test(r))return 'von dir abgelehnt';
+  if(/not permitted by policy|not registered/i.test(r))return 'dieses Werkzeug gibt es nicht oder es ist nicht erlaubt';
+  if((m=r.match(/^primitive error:\s*[\w.]+:\s*([\s\S]*)$/i)))return 'Fehler: '+(m[1].trim()||'unbekannt').slice(0,180);
+  return r.slice(0,200);}
+function approvalReasonDe(r){return String(r||'').split(/;\s*/).filter(Boolean).map(p=>
+  p==='side-effecting action'?'ändert Dateien oder wirkt nach außen':
+  /^taint:/.test(p)?'enthält Angaben aus Web oder Dokumenten (nicht geprüft)':p).join(' · ');}
+const FINAL_DE={'(stopped)':'Gestoppt.','(max steps reached)':'Mimir hat die Höchstzahl an Arbeitsschritten erreicht, ohne eine Antwort zu formulieren. Stell die Frage bitte etwas enger oder noch einmal.'};
+function finalDe(t){return FINAL_DE[String(t||'').trim()]||t;}
+function errDe(e){e=String(e||'').trim();if(!e)return 'unbekannter Fehler';
+  if(/ConnectError|ConnectionRefused|RemoteProtocolError|ReadTimeout|ConnectTimeout/i.test(e))return 'Das Sprachmodell ist nicht erreichbar oder lädt noch. Bitte kurz warten und erneut versuchen.';
+  return e.slice(0,400);}
+const RUN_END={done:'Lauf abgeschlossen',stopped:'Lauf gestoppt',failed:'Lauf fehlgeschlagen'};
+function fmtTime(ts){if(!ts)return '';const d=new Date(ts*1000),now=new Date();
+  const hm=d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===now.toDateString())return 'heute, '+hm;
+  const y=new Date(now);y.setDate(now.getDate()-1);if(d.toDateString()===y.toDateString())return 'gestern, '+hm;
+  const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+(d.getFullYear()!==now.getFullYear()?d.getFullYear():'')+' '+hm;}
+
 /* ================= CHAT ================= */
 function whoMimir(){const w=el('div','who');w.append(ico('feather'));return w;}
 function addUser(t){const m=el('div','msg user');m.append(el('div','who'));const b=el('div','bubble');b.append(el('div','answer',t));m.append(b);chat.append(m);scroll();}
@@ -826,12 +874,21 @@ function addAssistant(){const m=el('div','msg assistant');m.append(whoMimir());c
   const think=el('details','think');const sum=el('summary','','Denkt…');const tb=el('div','body');think.append(sum,tb);think.style.display='none';
   const ans=el('div','answer md');const caret=el('span','caret');const tl=el('div','timeline');
   b.append(think,tl,ans,caret);m.append(b);chat.append(m);scroll();return{think,sum,tb,ans,caret,tl,steps:{},inThink:false,md:true,raw:'',mdT:0};}
+// while a chat run streams, the send button becomes "Stoppen" (the worker honours /api/stop between tokens)
+let chatBusy=false, chatRun=null;
+function setSendMode(busy){const b=$('send');chatBusy=busy;b.disabled=false;b.classList.toggle('stop',busy);
+  b.replaceChildren(ico(busy?'x':'send'),busy?'Stoppen':'Senden');b.title=busy?'Antwort abbrechen':'';}
 async function run(task){
-  addUser(task); const ui=addAssistant(); statusEl.textContent='läuft…'; $('send').disabled=true;
-  const r=await jpost('/api/run',{task, conversation_id: convId});
-  convId=r.conversation_id; $('convInfo').textContent='Unterhaltung #'+convId;
-  await streamRun(r.run_id,(ev,d)=>handleChat(ev,d,ui));
-  flushAnswer(ui); endThink(ui); ui.caret.remove(); statusEl.textContent='bereit'; $('send').disabled=false;
+  addUser(task); const ui=addAssistant(); statusEl.textContent='Mimir arbeitet…'; setSendMode(true);
+  try{
+    const r=await jpost('/api/run',{task, conversation_id: convId});
+    convId=r.conversation_id; chatRun=r.run_id; $('convInfo').textContent='Unterhaltung #'+convId;
+    await streamRun(r.run_id,(ev,d)=>handleChat(ev,d,ui));
+  }catch(e){const x=el('div','err','Mimir ist gerade nicht erreichbar. Läuft Mimir noch? Seite neu laden oder Mimir neu starten.');ui.ans.after(x);ui.lastErr=x;}
+  flushAnswer(ui); endThink(ui); ui.caret.remove();
+  // nothing came back (no text, no error): say so instead of leaving an empty bubble
+  if(!ui.raw.trim()&&!ui.lastErr&&!ui.tl.querySelector('.approval')){const x=el('div','err','Keine Antwort erhalten. Kleine Modelle bleiben nach einem Werkzeugfehler manchmal stumm – stell die Frage bitte noch einmal, gern etwas genauer.');ui.ans.after(x);ui.lastErr=x;}
+  chatRun=null; statusEl.textContent='bereit'; setSendMode(false);
   loadConversations(convId);
 }
 function handleChat(ev,d,ui){
@@ -846,8 +903,11 @@ function handleChat(ev,d,ui){
   else if(ev==='approval_resolved'){markResolved(ui,d);}
   else if(ev==='decision'){chat.append(el('div','divider','Entscheidung nötig – bitte unter „Freigaben“ oben rechts wählen'));refreshApprovals();}
   else if(ev==='decision_made'){chat.append(el('div','divider','Entschieden: '+(d.label||d.chosen||'gewählt')));}
-  else if(ev==='final'){if(d.text&&!(ui.md?ui.raw:ui.ans.textContent).trim())toAnswer(ui,d.text);endThink(ui);}
+  else if(ev==='final'){if(d.text&&!(ui.md?ui.raw:ui.ans.textContent).trim())toAnswer(ui,finalDe(d.text));endThink(ui);}
   else if(ev==='error'){const e=el('div','err',d.msg);(ui.lastErr||ui.ans).after(e);ui.lastErr=e;}   // outside .answer: survives re-renders
+  else if(ev==='run_end'&&d.status==='failed'){const e=el('div','err','Das hat nicht geklappt: '+errDe(d.error));(ui.lastErr||ui.ans).after(e);ui.lastErr=e;}
+  else if(ev==='status'&&d.status==='waiting_approval'){statusEl.textContent='wartet auf Freigabe';}
+  else if(ev==='status'&&d.status==='running'){statusEl.textContent='Mimir arbeitet…';}
   else if(ev==='stream_end'){/* done */}
   scroll();
 }
@@ -860,8 +920,8 @@ function startThink(ui){showThink(ui);if(ui.thinkDone){ui.thinkDone=false;ui.sum
 function endThink(ui){if(ui.think.style.display!=='none'&&!ui.thinkDone){ui.thinkDone=true;ui.think.open=false;ui.sum.textContent='Gedankengang';}}
 function toAnswer(ui,t){if(t.trim())endThink(ui);
   if(!ui.md){ui.ans.append(t);return;}
-  ui.raw+=t;if(!ui.mdT)ui.mdT=setTimeout(()=>flushAnswer(ui),60);}   // Markdown: re-render, throttled
-function flushAnswer(ui){if(ui.mdT){clearTimeout(ui.mdT);ui.mdT=0;}if(ui.md){renderChatMd(ui.ans,ui.raw);scroll();}}
+  ui.raw+=t;if(!ui.mdT)ui.mdT=setTimeout(()=>flushAnswer(ui),ui.raw.length>20000?700:60);}   // Markdown: re-render, throttled (long thesis text: less often)
+function flushAnswer(ui){if(ui.mdT){clearTimeout(ui.mdT);ui.mdT=0;}if(ui.md){renderChatMd(ui.ans,ui.raw);if(ui.box)ui.box.scrollTop=ui.box.scrollHeight;else scroll();}}
 function routeToken(ui,t){
   if(t.includes('<think>')||t.includes('</think>')){for(const p of t.split(/(<\/?think>)/)){
     if(p==='<think>'){ui.inThink=true;startThink(ui);}else if(p==='</think>'){ui.inThink=false;endThink(ui);}
@@ -869,23 +929,30 @@ function routeToken(ui,t){
   else if(ui.inThink)ui.tb.append(t);
   else toAnswer(ui,t);
 }
-function stepRow(ui,d){if(d.state&&d.state!=='start'){const r=el('div','tl');r.append(el('span','st','⚠'),el('span','',' '+d.tool+': '+d.state));ui.tl.append(r);return;}
-  const r=el('div','tl');r.append(el('span','st','⋯'),el('code','',d.tool));ui.tl.append(r);ui.steps[d.n+':'+d.tool]=r;}
-function resolveRow(ui,d){const r=ui.steps[d.n+':'+d.tool]||(()=>{const x=el('div','tl');x.append(el('span','st','•'),el('code','',d.tool));ui.tl.append(x);return x;})();
-  r.querySelector('.st').textContent=d.ok?'✓':'✗';r.querySelector('.st').style.color=d.ok?'var(--ok)':'var(--bad)';if(!d.ok)r.append(el('span','',' — '+d.reason));}
-function approvalCard(ui,d){const c=el('div','approval');c.dataset.aid=d.id;const h=el('h4','','Freigabe nötig: '+d.tool+' ('+d.reason+')');h.prepend(ico('alert'));c.append(h);
-  c.append(el('div','args',Object.entries(d.args||{}).map(([k,v])=>k+': '+v).join('\n')));
+// one line per tool call: German label + the most telling argument; the raw tool name stays as tooltip
+function toolRow(d,mark){const r=el('div','tl');r.title=d.tool;r.append(el('span','st',mark),el('span','tn',toolLabel(d.tool)));
+  const det=toolDetail(d.tool,d.args);if(det)r.append(el('span','td',det));return r;}
+function stateDe(s){return /^injection-flagged/.test(s||'')?'enthält verdächtige Anweisungen – wird nur als Daten verwendet':String(s||'');}
+function stepRow(ui,d){if(d.state&&d.state!=='start'){const r=el('div','tl');r.title=d.tool;r.append(el('span','st','⚠'),el('span','tn',toolLabel(d.tool)+': '+stateDe(d.state)));ui.tl.append(r);return;}
+  const r=toolRow(d,'⋯');ui.tl.append(r);ui.steps[d.n+':'+d.tool]=r;}
+function resolveRow(ui,d){const r=ui.steps[d.n+':'+d.tool]||(()=>{const x=toolRow(d,'•');ui.tl.append(x);return x;})();
+  r.querySelector('.st').textContent=d.ok?'✓':'✗';r.querySelector('.st').style.color=d.ok?'var(--ok)':'var(--bad)';
+  const why=reasonDe(d.reason);if(!d.ok&&why)r.append(el('span','why',why));}
+function approvalCard(ui,d){const c=el('div','approval');c.dataset.aid=d.id;const h=el('h4','','Freigabe nötig: '+toolLabel(d.tool));h.title=d.tool;h.prepend(ico('alert'));c.append(h);
+  const why=approvalReasonDe(d.reason);if(why)c.append(el('div','meta',why));
+  c.append(el('div','args',argsText(d.args)));
   const ok=el('button','ok','Freigeben'),no=el('button','no','Ablehnen');
   ok.onclick=()=>decide(d.id,true);no.onclick=()=>decide(d.id,false);c.append(ok,no);ui.tl.append(c);scroll();}
 function markResolved(ui,d){const c=ui.tl.querySelector('.approval[data-aid="'+d.id+'"]');if(c){c.querySelectorAll('button').forEach(b=>b.remove());c.append(el('div','',d.ok?'✓ freigegeben':'✗ abgelehnt'));}}
 async function decide(id,ok){await jpost('/api/approve',{id,ok});refreshApprovals();}
-function send(){const t=taskEl.value.trim();if(!t)return;taskEl.value='';activate('chat');run(t);}
+function send(){if(chatBusy)return;const t=taskEl.value.trim();if(!t)return;taskEl.value='';activate('chat');run(t);}
+function sendOrStop(){if(chatBusy){if(chatRun){stopRun(chatRun);statusEl.textContent='wird gestoppt…';$('send').disabled=true;}return;}send();}
 
 /* ================= CONVERSATIONS ================= */
 async function loadConversations(sel){
   try{const d=await jget('/api/conversations');const s=$('convSel');s.innerHTML='';const list=d.conversations||[];
     if(!list.length){const o=el('option','','— noch keine früheren Chats —');o.value='';o.disabled=true;o.selected=true;s.append(o);return;}
-    list.forEach(c=>{const o=el('option','',(c.title||'Chat')+' · #'+c.id);o.value=String(c.id);s.append(o);});
+    list.forEach(c=>{const t=(c.title&&c.title!=='Chat')?c.title:'Neuer Chat';const o=el('option','',t+' · #'+c.id);o.title=t;o.value=String(c.id);s.append(o);});
     if(sel!=null)s.value=String(sel); if(!s.value)s.value=String(list[0].id);
   }catch(e){}
 }
@@ -922,7 +989,7 @@ function decisionCard(dec){
   // "eigener Weg": keinen der Vorschläge, sondern eine eigene Anweisung
   const custom=el('div','opt custom');
   custom.append(el('div','ol','Eigener Weg – mach stattdessen Folgendes:'));
-  const ta=el('textarea','ctext');ta.placeholder='z. B. „Nimm keine der Optionen, sondern verwende httpx und schreibe einen Retry-Mechanismus …"';
+  const ta=el('textarea','ctext');ta.placeholder='z. B. „Kürze Kapitel 4 nur leicht und streiche dafür den Exkurs in Kapitel 2 …“';
   ta.setAttribute('aria-label','Eigene Anweisung');
   const go=el('button','pick','Eigene Anweisung übernehmen');
   go.onclick=async()=>{const t=ta.value.trim();if(!t)return;await jpost('/api/decide',{id:dec.id,key:'__custom__',text:t});refreshApprovals();};
@@ -941,10 +1008,10 @@ async function refreshApprovals(){
     list.forEach(a=>{
       const outward=/post|publish|deploy|send|webhook|upload|schedule|cron|trigger|delete|push|install/i.test(a.tool||'');
       const c=el('div','apr'+(outward?' outward':''));
-      const h=el('div','h',(outward?'Aktion nach außen: ':'Freigabe nötig: ')+a.tool);h.prepend(ico('alert'));c.append(h);
+      const h=el('div','h',(outward?'Aktion nach außen: ':'Freigabe nötig: ')+toolLabel(a.tool));h.title=a.tool;h.prepend(ico('alert'));c.append(h);
       if(outward)c.append(el('div','warnbanner','Diese Aktion verlässt Mimir und ist möglicherweise nicht umkehrbar. Bitte genau prüfen.'));
-      c.append(el('div','meta',(a.reason||'')+' · '+(a.run_title||a.run_kind||a.run_id)));
-      c.append(el('div','args',Object.entries(a.args||{}).map(([k,v])=>k+': '+v).join('\n')));
+      c.append(el('div','meta',[approvalReasonDe(a.reason),(RUNKIND[a.run_kind]?RUNKIND[a.run_kind]+': ':'')+(a.run_title||a.run_id)].filter(Boolean).join(' · ')));
+      c.append(el('div','args',argsText(a.args)));
       const ok=el('button',outward?'no':'ok','Freigeben'),no=el('button',outward?'ok':'no','Ablehnen');
       ok.onclick=async()=>{await jpost('/api/approve',{id:a.id,ok:true});refreshApprovals();};
       no.onclick=async()=>{await jpost('/api/approve',{id:a.id,ok:false});refreshApprovals();};
@@ -975,7 +1042,8 @@ async function loadRuns(){
     d.runs.forEach(r=>{const row=kbd(el('div','runrow'));
       row.append(el('span','badge b-'+r.status,RUNSTATUS[r.status]||r.status.replace('_',' ')));
       row.append(el('span','rk',RUNKIND[r.kind]||r.kind));
-      row.append(el('span','rt',r.title||r.id));
+      const rt=el('span','rt',r.title||r.id);rt.title=(r.title||r.id)+(r.status==='failed'&&r.error?'\n'+errDe(r.error):'');row.append(rt);
+      const rd=el('span','rd',fmtTime(r.created));rd.title='gestartet '+fmtTime(r.created)+(r.updated?' · zuletzt aktiv '+fmtTime(r.updated):'');row.append(rd);
       row.append(ico('chevron','chev'));
       row.onclick=()=>openRunView(r);
       box.append(row);});
@@ -986,31 +1054,54 @@ function openRunView(r){
   const id='run_'+r.id;
   if(openTabs[id]){activate(id);attachRunStream(r.id,id);return;}
   const tab=kbd(el('div','tab'));tab.dataset.tab=id;tab.title=r.title||r.id;
-  tab.append(ico('runs'),el('span','tl-lbl',r.title||((RUNKIND[r.kind]||r.kind)+' '+r.id.slice(-6))));
+  tab.append(ico('runs'),el('span','tl-lbl',(r.kind&&r.kind!=='chat'?(RUNKIND[r.kind]||r.kind)+': ':'')+(r.title||r.id.slice(-6))));
   const x=tabX();x.onclick=ev=>{ev.stopPropagation();if(activeStreams[r.id])activeStreams[r.id].abort();tab.remove();$('view-'+id).remove();delete openTabs[id];activate('runs');};
   tab.append(x);tabsEl.append(tab);
   const view=el('div','view');view.id='view-'+id;
-  const head=el('div','run-head'),hi=el('div');
-  hi.append(el('div','kind',RUNKIND[r.kind]||r.kind),el('h2','',r.title||r.id),el('div','rid','Lauf '+r.id));head.append(hi);
+  const head=el('div','run-head'),wrap=el('div'),hi=el('div','rh-main'),acts=el('div','rh-acts');
+  hi.append(el('div','kind',RUNKIND[r.kind]||r.kind),el('h2','',r.title||r.id),el('div','rid',(r.created?'gestartet '+fmtTime(r.created)+' · ':'')+'Lauf '+r.id));
+  // status badge + stop button (a thesis can run for hours — it must be stoppable without quitting Mimir)
+  const badge=el('span','badge');badge.id='rst_'+id;badge.setAttribute('role','status');
+  const stop=el('button','btn btn-sm btn-danger');stop.type='button';stop.id='rstop_'+id;stop.append(ico('x'),'Lauf stoppen');
+  stop.onclick=async()=>{stop.disabled=true;stop.lastChild.textContent='wird gestoppt…';await stopRun(r.id);};
+  acts.append(badge,stop);wrap.append(hi,acts);head.append(wrap);
   const log=el('div','runlog');log.id='rlog_'+id;
   view.append(head,log);viewsEl.append(view);openTabs[id]=true;activate(id);
+  setRunState(id,r.status||'queued');
   attachRunStream(r.id,id);
 }
+const TERMINAL_RUN=['done','failed','stopped'];
+function setRunState(tabId,st){const b=$('rst_'+tabId),s=$('rstop_'+tabId);if(!b||!st)return;
+  b.className='badge b-'+st;b.textContent=RUNSTATUS[st]||st;
+  if(s)s.hidden=TERMINAL_RUN.includes(st);}
 function attachRunStream(runId,tabId){
   const log=$('rlog_'+tabId);log.innerHTML='';
-  const ui={think:el('details','think'),tb:el('div','body'),ans:el('div','answer'),tl:log,steps:{},inThink:false,sum:{textContent:''}};
-  const ansWrap=el('div','bubble');ansWrap.append(ui.ans);log.append(ansWrap);
+  // generated text renders as Markdown (same sanitizing chain as the chat) in a scrollable box that is
+  // inserted where the text starts in the timeline - not above "Lauf gestartet"
+  const box=el('div','bubble');
+  const ui={think:el('details','think'),tb:el('div','body'),ans:el('div','answer md'),tl:log,steps:{},inThink:false,sum:{textContent:''},md:true,raw:'',mdT:0,box};
+  box.append(ui.ans);const place=()=>{if(!box.isConnected)log.append(box);};
   streamRun(runId,(ev,d)=>{
-    if(ev==='token')routeToken(ui,d.t);
+    if(ev==='token'){place();routeToken(ui,d.t);}
     else if(ev==='reasoning'){/* keep runs board light */}
     else if(ev==='usage')setMeter(d.used,d.ctx);
     else if(ev==='approval'){approvalCard(ui,d);refreshApprovals();}
     else if(ev==='approval_resolved')markResolved(ui,d);
-    else if(ev==='document'){documentCard(log,d);}
-    else if(ev==='final'){if(d.text)ui.ans.append((ui.ans.textContent?'\n':'')+d.text);}
+    else if(ev==='document'){flushAnswer(ui);ui.hadDoc=true;documentCard(log,d);}
+    else if(ev==='final'){const t=finalDe(d.text||'');flushAnswer(ui);
+      if(!t.trim()){}
+      else if(!ui.raw.trim()){place();toAnswer(ui,t);flushAnswer(ui);}            // no streamed text (replay, short result)
+      else if(t.trim()!==ui.raw.trim()&&!(ui.hadDoc&&/^Fertige (Recherche|Zusammenfassung|Probeklausur):/.test(t)))
+        opEv(log,'check',esc(t),'');}                                                // a summary line, e.g. thesis statistics
     else if(ev==='ws_diff'){if((d.files||[]).length)opEv(log,'file',fmtEv(ev,d),'cp');}
     else if(ev==='decision'){opEv(log,'split',fmtEv('decision',d),'nh');refreshApprovals();}
-    else if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged','operator_note','repo_map','architect_start','architect_plan'].includes(ev))
+    else if(ev==='run_end'){setRunState(tabId,d.status);
+      opEv(log,d.status==='failed'?'alert':d.status==='done'?'check':'x',fmtEv(ev,d),d.status==='failed'?'fail':d.status==='done'?'done':'');}
+    else if(ev==='stream_end'){setRunState(tabId,d.status);}
+    else if(ev==='status'&&RUNSTATUS[d.status]){setRunState(tabId,d.status);}
+    else if(ev==='wiki_update'){opEv(log,'book',fmtEv(ev,d),'');}
+    if(ev==='run_start')setRunState(tabId,'running');
+    if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged','operator_note','repo_map','architect_start','architect_plan'].includes(ev))
       opEv(log,ICON[ev]||'dot',fmtEv(ev,d),ev==='quality'?'cp':ev==='needs_human'?'nh':'');
     log.scrollTop=log.scrollHeight;
   });
@@ -1049,6 +1140,7 @@ async function downloadFile(path){
 }
 
 /* ---------- shared event-log rendering (used by the Runs board) ---------- */
+function toolDet(d){const t=toolDetail(d.tool,d.args);return t?(' <span class="dim">'+esc(t)+'</span>'):'';}
 function argStr(args){const a=args||{};const parts=Object.keys(a).map(k=>k+'='+String(a[k]).slice(0,60));
   return parts.length?(' ('+esc(parts.join(', '))+')'):'';}
 function opEv(box,ic,html,cls){const e=el('div','ev'+(cls?' '+cls:''));const s=el('span','ic');s.append(ico(ic||'dot'));e.append(s);const tx=el('div','tx');tx.innerHTML=html;e.append(tx);box.append(e);box.scrollTop=box.scrollHeight;}
@@ -1068,15 +1160,17 @@ function fmtEv(ev,d){
   if(ev==='debug_fail')return 'Runde '+d.round+' fehlgeschlagen: '+esc((d.error||'').slice(0,160));
   if(ev==='debug_done')return d.passed?('bestanden nach '+d.rounds+' Runde(n)'):('nicht bestanden ('+d.reason+')');
   if(ev==='step'){
-    if(d.state&&d.state!=='start')return '⚠ '+esc(d.tool)+': '+esc(d.state);
-    return esc(d.tool)+argStr(d.args)+' …';
+    if(d.state&&d.state!=='start')return '⚠ '+esc(toolLabel(d.tool))+': '+esc(stateDe(d.state));
+    return esc(toolLabel(d.tool))+toolDet(d)+' …';
   }
-  if(ev==='tool_result')return esc(d.tool)+argStr(d.args)+(d.ok?' ✓':' ✗ '+esc(d.reason||''));
-  if(ev==='status')return 'Status: '+esc(d.status);
-  if(ev==='run_start')return '<b>Lauf gestartet</b> ('+esc(d.kind)+')';
+  if(ev==='tool_result')return esc(toolLabel(d.tool))+toolDet(d)+(d.ok?' ✓':' ✗ '+esc(reasonDe(d.reason)));
+  if(ev==='status')return RUNSTATUS[d.status]?('Status: '+esc(RUNSTATUS[d.status])):esc(d.status);
+  if(ev==='run_start')return '<b>Lauf gestartet</b> ('+esc(RUNKIND[d.kind]||d.kind)+')';
+  if(ev==='run_end')return '<b>'+esc(RUN_END[d.status]||('Lauf beendet ('+d.status+')'))+'</b>'+(d.status==='failed'?(' – '+esc(errDe(d.error))):'');
   if(ev==='thesis_start')return '<b>Thesis</b> zu „'+esc(d.topic)+'" — suche Quellen…';
   if(ev==='outline')return '<b>Gliederung:</b> '+esc(d.title)+'<br>'+(d.chapters||[]).map((c,i)=>(i+1)+'. '+esc(c)).join('<br>');
   if(ev==='quality')return '<b>Selbstprüfung:</b> Zitat-Beleg '+Math.round((d.citation_rate||0)*100)+'% ('+(d.checked||0)+' geprüft) · Note '+esc(d.grade||'?')+(d.flags?' · '+d.flags+' Warnung(en)':'');
+  if(ev==='continue')return 'Antwort war zu lang für einen Durchgang – Mimir schreibt weiter …';
   if(ev==='research_start')return '<b>Recherche</b> zu „'+esc(d.topic)+'"…';
   if(ev==='wiki_update')return '<b>Wissens-Wiki:</b> '+(d.pages||[]).length+' Seite(n) aktualisiert — '+esc((d.pages||[]).join(', '))
     +((d.low_confidence||[]).length?(' · ⚠ schwach belegt trotz Korrektur: '+esc(d.low_confidence.join(', '))):'')
@@ -1177,9 +1271,10 @@ async function uploadFiles(files){
       const d=await res.json();
       line.textContent=d.ok?('✓ '+f.name+' — '+d.pages+' Seiten, '+d.chunks+' Abschnitte indexiert'):('✗ '+f.name+' — '+(d.error||'Fehler'));
       line.style.color=d.ok?'var(--ok)':'var(--bad)';
+      if(d.ok)setTimeout(()=>line.remove(),10000);   // the document list below is the lasting confirmation
     }catch(e){line.textContent='✗ '+f.name+' — '+e;line.style.color='var(--bad)';}
   }
-  loadCorpus();
+  loadCorpus();loadTree();   // uploads land in in/ — keep the project tree in the sidebar current
 }
 $('dropzone').onclick=()=>$('fileInput').click();
 $('fileInput').onchange=e=>{uploadFiles([...e.target.files]);e.target.value='';};
@@ -1190,12 +1285,12 @@ async function startAcademic(kind,docName){
   const topic=prompt(kind==='exam'?'Thema für die Probeklausur (leer = ganzes Dokument):':'Thema für die Zusammenfassung (leer = ganzes Dokument):','')||'';
   const body={doc:docName,topic:topic||docName}; if(kind==='exam')body.n=8;
   const r=await jpost('/api/'+kind,body);
-  openRunView({id:r.run_id,kind:kind,title:(kind==='exam'?'Probeklausur — ':'Zusammenfassung — ')+docName});
+  openRunView({id:r.run_id,kind:kind,title:topic||docName,created:Date.now()/1000});
 }
 async function startTopic(kind,topic,label,extra){
   if(!topic.trim())return;
   const r=await jpost('/api/'+kind,{topic,...(extra||{})});
-  openRunView({id:r.run_id,kind:kind,title:label+' — '+topic});
+  openRunView({id:r.run_id,kind:kind,title:topic,created:Date.now()/1000});
 }
 $('btnResearch').onclick=()=>{startTopic('research',$('researchTopic').value,'Recherche');$('researchTopic').value='';};
 $('btnThesis').onclick=()=>{startTopic('thesis',$('thesisTopic').value,'Thesis',{target_words:Number($('thesisLen').value),csl_style:$('thesisCsl').value});$('thesisTopic').value='';};
@@ -1306,7 +1401,7 @@ function _dlStatusSet(h){$('dlStatus').innerHTML=h;}
 // the sprite disappears with the page body, so the shutdown screen carries its own logo markup
 const LOGO_SVG='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4c-6.5-.4-12 4.2-13 11.2L6.6 19l3.5-.5C17 17 20.6 11 20 4Z"/><path d="M4 21 14.5 9.5"/><path d="M9.6 14.6h4.6"/></svg>';
 async function shutdownMimir(){
-  if(!confirm('Mimir jetzt beenden?\n\nAlle Container werden gestoppt und der GPU-Speicher freigegeben. Deine Daten bleiben erhalten. Zum Neustart das Desktop-Icon „Mimir starten" nutzen.'))return;
+  if(!confirm('Mimir jetzt beenden?\n\nAlle Mimir-Dienste werden gestoppt und der Grafikspeicher freigegeben. Deine Daten bleiben erhalten. Zum Neustart das Desktop-Icon „Mimir starten" nutzen.'))return;
   statusEl.textContent='beende Mimir…';
   try{const r=await jpost('/api/shutdown',{});
     if(r.error){alert('Fehler: '+r.error);statusEl.textContent='bereit';}
@@ -1389,7 +1484,7 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- wire up ---------- */
-$('send').onclick=send;$('refresh').onclick=loadTree;
+$('send').onclick=sendOrStop;$('refresh').onclick=loadTree;
 taskEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
 loadTree();
 loadConversations().then(()=>{if($('convSel').value)openConversation($('convSel').value);});

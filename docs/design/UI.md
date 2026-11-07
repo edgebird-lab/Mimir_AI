@@ -112,15 +112,15 @@ Systemschrift-Stack). CSP bleibt unverändert (`font-src data:`). Lizenzen: OFL 
 | Felder | `input`, `select`, `textarea`, `.field > span` | Sichtbare Beschriftung über dem Feld; Platzhalter nur als Beispiel („z. B. …“). |
 | Karten / Seiten | `.page`, `.page-head`, `.card`, `.section`, `.grid2`, `.note` | Seite = Titel + ein Erklärsatz + Karten; Hinweise als `.note` mit Info-Icon. |
 | Status | `.badge.b-<status>` | Deutscher Text aus `RUNSTATUS`, Punkt davor, „läuft“ pulsiert. |
-| Chat | `.msg.user` (rechts, Karte), `.msg.assistant` (Feder-Avatar, kein Kasten) | Reihenfolge in der Antwort: Gedankengang → Arbeitsschritte/Freigaben → Antworttext. |
+| Chat | `.msg.user` (rechts, Karte), `.msg.assistant` (Feder-Avatar, kein Kasten), `button.send.stop` | Reihenfolge in der Antwort: Gedankengang → Arbeitsschritte/Freigaben → Antworttext. Während eine Antwort läuft, wird „Senden“ zu „Stoppen“. Bleibt die Antwort leer oder schlägt der Lauf fehl, steht ein Hinweis unter der Antwort statt einer leeren Blase. |
 | Gedankengang | `details.think` | Zugeklappt eine kompakte Pille „Gedankengang“, offen max. 320 px hoch. |
-| Arbeitsschritte | `.timeline .tl` | Werkzeugname als Code-Chip, ✓/✗ farbig. |
+| Arbeitsschritte | `.timeline .tl`, `.tn`, `.td`, `.why` | Deutsche Beschriftung aus `TOOLS` (z. B. „Suche in Fachliteratur (OpenAlex)“) plus wichtigstes Argument, Rohname nur als Tooltip; ✓/✗ farbig, Ablehnungsgrund auf Deutsch (`reasonDe`) in eigener Zeile. Unbekannte Werkzeuge: „Werkzeug „name““. |
 | Zitate | `blockquote` in `.answer.md`/`.md-body` | Akzentlinie links, leicht abgesetzte Fläche, normale Schrift. |
 | Freigabe | `.approval` (im Chat), `.apr` (Postfach) | Bernstein; „Freigeben“ primär, „Ablehnen“ rote Kontur. |
 | Nach außen | `.apr.outward` + `.warnbanner` | Roter 2-px-Rahmen, rote Warnleiste; „Ablehnen“ steht zuerst und ist primär. |
 | Entscheidung | `.apr.dec`, `.opt`, `.recbadge`, `.critbadge` | Empfohlene Option mit Akzentrahmen und primärem Knopf. |
 | Autonomie | `.autonomy` + `#autonomy` | Sicher: neutral + grünes Schild. Autonom: Bernstein. Voll autonom: roter 2-px-Rahmen + Warndreieck (per `:has(option:checked)`, ohne JS). |
-| Lauf-Protokoll | `.run-head`, `.runlog`, `.ev`, `.ev.cp`, `.ev.nh` | Kopf mit Art + Titel; Ergebnisse als Karte, „Mensch nötig“/Entscheidung als Bernstein-Karte. |
+| Lauf-Protokoll | `.run-head`, `.rh-acts`, `.runlog`, `.ev`, `.ev.cp`, `.ev.nh`, `.ev.fail` | Kopf mit Art, Titel (nur das Thema), Startzeit, Status-Plakette und „Lauf stoppen“ (solange der Lauf nicht beendet ist). Generierter Text als Markdown in einer scrollbaren Karte (max. 26 rem) an der Stelle im Verlauf, an der er beginnt. Ergebnisse als Karte, „Mensch nötig“/Entscheidung als Bernstein-Karte, Laufende „fehlgeschlagen“ als rote Karte mit verständlichem Fehlertext (`errDe`). |
 | Dokument | `.viewbar`, `.vseg`, `.md-body` | Papierfläche, Segment-Umschalter Ansicht/Quelltext, Download als Icon. |
 
 ## Icons
@@ -132,6 +132,11 @@ folder, file, refresh, plus, trash, send, x, chevron, download, upload, search, 
 split, list, user, book, dot, sidebar, sun, moon, monitor. Die Pfade sind eigens gezeichnet (keine
 Fremdlizenz). Der Beendet-Bildschirm trägt das Logo als eigenes SVG, weil der Sprite mit dem Body
 verschwindet.
+
+## Läufe-Liste
+
+Spalten: Status-Plakette, Art, Titel (Fehlertext eines fehlgeschlagenen Laufs als Tooltip), Startzeit
+(„heute, 14:05“, `fmtTime`), Pfeil. Schmal (< 620 px Container) nur Status, Titel, Pfeil.
 
 ## Responsiv
 
