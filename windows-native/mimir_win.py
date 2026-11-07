@@ -51,20 +51,24 @@ try:
     from mimir.control_daemon import CATALOG  # type: ignore
 except Exception:  # noqa: BLE001
     CATALOG = [
+        # Chosen for German academic writing + reliable tool calls (literature search), one per size class.
+        # min_vram = dedicated graphics memory that keeps it fully on the GPU; desc is shown to users as is.
         {"repo": "unsloth/Qwen3.6-35B-A3B-GGUF", "file": "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
-         "size_gb": 17.7, "min_vram": 22, "desc": "Standard: MoE 35B/3B aktiv, stark & sparsam."},
-        {"repo": "unsloth/Qwen3-30B-A3B-Thinking-2507-GGUF", "file": "Qwen3-30B-A3B-Thinking-2507-UD-Q4_K_XL.gguf",
-         "size_gb": 17.7, "min_vram": 22, "desc": "Schneller (~157 tok/s), sichtbares Reasoning."},
+         "size_gb": 17.7, "min_vram": 22, "desc": "Sehr gründlich und dank MoE trotzdem flott – für starke Grafikkarten (24 GB)."},
         {"repo": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF", "file": "Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf",
-         "size_gb": 17.7, "min_vram": 22, "desc": "Coding-fokussiert (Agenten-Tools, lange Kontexte)."},
-        {"repo": "unsloth/Qwen2.5-Coder-14B-Instruct-GGUF", "file": "Qwen2.5-Coder-14B-Instruct-Q4_K_M.gguf",
-         "size_gb": 9.0, "min_vram": 12, "desc": "Kompakt & stark im Coding; passt auf 12-GB-Karten."},
-        {"repo": "bartowski/Qwen2.5-7B-Instruct-GGUF", "file": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-         "size_gb": 4.7, "min_vram": 8, "desc": "Klein & schnell, guter Allrounder für 8 GB VRAM."},
-        {"repo": "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF", "file": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
-         "size_gb": 4.9, "min_vram": 8, "desc": "Llama 3.1 8B — breite Kompatibilität, 8 GB VRAM."},
-        {"repo": "bartowski/Qwen2.5-3B-Instruct-GGUF", "file": "Qwen2.5-3B-Instruct-Q4_K_M.gguf",
-         "size_gb": 2.0, "min_vram": 4, "desc": "Sehr klein — läuft überall, auch CPU/schwache GPU."},
+         "size_gb": 17.7, "min_vram": 22, "desc": "Bisheriger Linux-Standard (24 GB); stärker bei Code als bei Texten."},
+        {"repo": "unsloth/gemma-4-26B-A4B-it-GGUF", "file": "gemma-4-26B-A4B-it-UD-IQ4_XS.gguf",
+         "size_gb": 13.6, "min_vram": 16, "desc": "Gründlich, sehr gutes Deutsch, flott dank MoE – für 16 GB Grafikspeicher."},
+        {"repo": "unsloth/Qwen3-14B-GGUF", "file": "Qwen3-14B-Q4_K_M.gguf",
+         "size_gb": 9.0, "min_vram": 12, "desc": "Stark im Begründen, zeigt seinen Gedankengang – für 12 GB."},
+        {"repo": "unsloth/gemma-4-12b-it-GGUF", "file": "gemma-4-12b-it-Q4_K_M.gguf",
+         "size_gb": 7.1, "min_vram": 10, "desc": "Ausgewogen: gutes Deutsch, sorgfältige längere Texte – für 10–12 GB."},
+        {"repo": "unsloth/gemma-4-E4B-it-GGUF", "file": "gemma-4-E4B-it-Q4_K_M.gguf",
+         "size_gb": 5.0, "min_vram": 6, "desc": "Empfohlen für Laptops: gutes Deutsch, läuft auch auf Onboard-Grafik."},
+        {"repo": "unsloth/gemma-4-E2B-it-GGUF", "file": "gemma-4-E2B-it-Q4_K_M.gguf",
+         "size_gb": 3.1, "min_vram": 4, "desc": "Sehr schnell, für ältere Laptops – gut für Chat und Zusammenfassungen."},
+        {"repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF", "file": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+         "size_gb": 2.5, "min_vram": 4, "desc": "Klein und sparsam, zuverlässig bei der Literatursuche – auch ohne Grafikkarte."},
     ]
 
 _GGUF = re.compile(r"^[A-Za-z0-9._-]+\.gguf$")
@@ -79,6 +83,8 @@ _DEV_LINE = re.compile(r"^\s*\w+\d+:\s*(.+?)\s*\((\d+)\s*MiB,\s*(\d+)\s*MiB free
 # on a 31 GB machine (with WSL2's reserved memory or anything else running, that risks the whole system
 # stalling). 5 keeps the default at the 7-8B tier (~5 GB file -> ~9-10 GB peak), with real headroom.
 AUTOPICK_MAX_SIZE_GB = float(os.environ.get("MIMIR_AUTOPICK_MAX_SIZE_GB", "5"))
+# On shared memory (iGPU) nothing above this is marked "passt": it would fit, but answers get very slow.
+SHARED_MAX_SIZE_GB = float(os.environ.get("MIMIR_SHARED_MAX_SIZE_GB", "7.5"))
 
 # ---- config (all overridable; the launcher sets these) ---------------------------------------------------
 HOME = Path(os.environ.get("MIMIR_HOME", Path(__file__).resolve().parent.parent)).resolve()
@@ -126,6 +132,24 @@ def _devices() -> list[dict]:
 
 def _vram_gb() -> float:
     return round(max((d["total_mib"] for d in _devices()), default=0) / 1024, 1)
+
+
+_DISCRETE = re.compile(r"\b(RTX|GTX|Quadro|Tesla|RX\s?\d|Radeon Pro|Arc\(TM\) [AB]\d|Arc [AB]\d)", re.I)
+_INTEGRATED = re.compile(r"(UHD|Iris|HD Graphics|Arc\(TM\) Graphics|Radeon\(TM\) Graphics|Radeon \d{3}M|"
+                         r"Vega \d+ Graphics|Adreno|Apple)", re.I)
+
+
+def _shared_memory(name: str, vram_gb: float, ram_gb: float) -> bool:
+    """Integrated GPU (iGPU) = no own graphics memory: "VRAM" is borrowed system RAM (Windows lends up to
+    half of it). llama.cpp's device list does not say so, hence a name + size heuristic: known iGPU names,
+    or a device whose memory is about half the RAM and whose name is not a known discrete card."""
+    if not name or name.startswith("CPU"):
+        return False
+    if _DISCRETE.search(name):
+        return False
+    if _INTEGRATED.search(name):
+        return True
+    return ram_gb > 0 and abs(vram_gb - ram_gb / 2) <= 0.15 * ram_gb / 2
 
 
 def _gpu_name() -> str:
@@ -178,10 +202,20 @@ def _active_model() -> str:
     return os.environ.get("MIMIR_MODEL_FILE", "")
 
 
-def suggestions(vram: float | None = None) -> list[dict]:
+def _fits(c: dict, vram: float, shared: bool) -> bool:
+    if not shared:
+        return c["min_vram"] <= vram
+    # shared memory: the model competes with Windows and every open program for the same RAM, and peak use
+    # is well above the file size (weights + KV cache + compute buffers) — and every GB costs speed
+    return c["size_gb"] * 1.6 <= vram and c["size_gb"] <= SHARED_MAX_SIZE_GB
+
+
+def suggestions(vram: float | None = None, shared: bool | None = None) -> list[dict]:
     vram = _vram_gb() if vram is None else vram
+    if shared is None:
+        shared = _shared_memory(_gpu_name(), vram, _ram_gb())
     have = {m["file"] for m in _installed_ggufs()}
-    sug = [{**c, "fits": c["min_vram"] <= vram, "installed": c["file"] in have} for c in CATALOG]
+    sug = [{**c, "fits": _fits(c, vram, shared), "installed": c["file"] in have} for c in CATALOG]
     sug.sort(key=lambda c: (not c["fits"], -c["size_gb"]))   # fitting first, largest first
     return sug
 
@@ -190,16 +224,19 @@ def recommended(vram: float | None = None) -> dict:
     """The lightweight default to auto-install: the largest catalog model that fits the VRAM but stays
     small/fast on first run (<= AUTOPICK_MAX_SIZE_GB). Never returns nothing — falls back to the smallest."""
     vram = _vram_gb() if vram is None else vram
-    fitting = [c for c in CATALOG if c["min_vram"] <= max(vram, 4) and c["size_gb"] <= AUTOPICK_MAX_SIZE_GB]
+    shared = _shared_memory(_gpu_name(), vram, _ram_gb())
+    fitting = [c for c in CATALOG if _fits(c, max(vram, 4), shared) and c["size_gb"] <= AUTOPICK_MAX_SIZE_GB]
     if fitting:
         return max(fitting, key=lambda c: c["size_gb"])
     return min(CATALOG, key=lambda c: c["size_gb"])
 
 
 def system_specs(_req: dict) -> dict:
-    return {"vram_gb": _vram_gb(), "ram_gb": _ram_gb(), "gpu": _gpu_name(),
+    vram, ram, gpu = _vram_gb(), _ram_gb(), _gpu_name()
+    shared = _shared_memory(gpu, vram, ram)
+    return {"vram_gb": vram, "ram_gb": ram, "gpu": gpu, "shared_memory": shared,
             "disk_free_gb": _disk_free_gb(), "gpu_backend": "Vulkan" if _has_gpu() else "CPU",
-            "suggestions": suggestions()}
+            "suggestions": suggestions(vram, shared)}
 
 
 def list_models(_req: dict) -> dict:

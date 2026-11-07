@@ -50,20 +50,24 @@ _dl = {"state": "idle", "file": "", "repo": "", "pct": 0, "log": ""}   # single 
 
 # ---- curated GGUF catalog for the "what fits my box" suggestions (min_vram = comfortable full-offload)
 CATALOG = [
+    # Chosen for German academic writing + reliable tool calls (literature search), one per size class.
+    # min_vram = dedicated graphics memory that keeps it fully on the GPU; desc is shown to users as is.
     {"repo": "unsloth/Qwen3.6-35B-A3B-GGUF", "file": "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
-     "size_gb": 17.7, "min_vram": 22, "desc": "Standard: MoE 35B/3B aktiv, SWE-bench ~73, stark & sparsam."},
-    {"repo": "unsloth/Qwen3-30B-A3B-Thinking-2507-GGUF", "file": "Qwen3-30B-A3B-Thinking-2507-UD-Q4_K_XL.gguf",
-     "size_gb": 17.7, "min_vram": 22, "desc": "Schneller (~157 tok/s), sichtbares Reasoning."},
+     "size_gb": 17.7, "min_vram": 22, "desc": "Sehr gründlich und dank MoE trotzdem flott – für starke Grafikkarten (24 GB)."},
     {"repo": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF", "file": "Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf",
-     "size_gb": 17.7, "min_vram": 22, "desc": "Coding-fokussiert (Agenten-Tools, lange Kontexte)."},
-    {"repo": "unsloth/Qwen2.5-Coder-14B-Instruct-GGUF", "file": "Qwen2.5-Coder-14B-Instruct-Q4_K_M.gguf",
-     "size_gb": 9.0, "min_vram": 12, "desc": "Kompakt & stark im Coding; passt auf 12-GB-Karten."},
-    {"repo": "bartowski/Qwen2.5-7B-Instruct-GGUF", "file": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-     "size_gb": 4.7, "min_vram": 8, "desc": "Klein & schnell, guter Allrounder für 8 GB VRAM."},
-    {"repo": "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF", "file": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
-     "size_gb": 4.9, "min_vram": 8, "desc": "Llama 3.1 8B — breite Kompatibilität, 8 GB VRAM."},
-    {"repo": "bartowski/Qwen2.5-3B-Instruct-GGUF", "file": "Qwen2.5-3B-Instruct-Q4_K_M.gguf",
-     "size_gb": 2.0, "min_vram": 4, "desc": "Sehr klein — läuft auf schwacher/älterer GPU oder viel CPU-RAM."},
+     "size_gb": 17.7, "min_vram": 22, "desc": "Bisheriger Linux-Standard (24 GB); stärker bei Code als bei Texten."},
+    {"repo": "unsloth/gemma-4-26B-A4B-it-GGUF", "file": "gemma-4-26B-A4B-it-UD-IQ4_XS.gguf",
+     "size_gb": 13.6, "min_vram": 16, "desc": "Gründlich, sehr gutes Deutsch, flott dank MoE – für 16 GB Grafikspeicher."},
+    {"repo": "unsloth/Qwen3-14B-GGUF", "file": "Qwen3-14B-Q4_K_M.gguf",
+     "size_gb": 9.0, "min_vram": 12, "desc": "Stark im Begründen, zeigt seinen Gedankengang – für 12 GB."},
+    {"repo": "unsloth/gemma-4-12b-it-GGUF", "file": "gemma-4-12b-it-Q4_K_M.gguf",
+     "size_gb": 7.1, "min_vram": 10, "desc": "Ausgewogen: gutes Deutsch, sorgfältige längere Texte – für 10–12 GB."},
+    {"repo": "unsloth/gemma-4-E4B-it-GGUF", "file": "gemma-4-E4B-it-Q4_K_M.gguf",
+     "size_gb": 5.0, "min_vram": 6, "desc": "Empfohlen für Laptops: gutes Deutsch, läuft auch auf Onboard-Grafik."},
+    {"repo": "unsloth/gemma-4-E2B-it-GGUF", "file": "gemma-4-E2B-it-Q4_K_M.gguf",
+     "size_gb": 3.1, "min_vram": 4, "desc": "Sehr schnell, für ältere Laptops – gut für Chat und Zusammenfassungen."},
+    {"repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF", "file": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+     "size_gb": 2.5, "min_vram": 4, "desc": "Klein und sparsam, zuverlässig bei der Literatursuche – auch ohne Grafikkarte."},
 ]
 
 
