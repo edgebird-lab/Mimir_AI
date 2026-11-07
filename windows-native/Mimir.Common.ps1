@@ -159,8 +159,11 @@ function Set-MimirProcessEnv {
     Remove-Item Env:HTTP_PROXY  -ErrorAction SilentlyContinue
     Remove-Item Env:HTTPS_PROXY -ErrorAction SilentlyContinue
 
-    # Make bundled pandoc.exe (docproc import/export) discoverable to child processes.
-    if (Test-Path $MimirBinPandoc) { $env:PATH = "$MimirBinPandoc;$env:PATH" }
+    # Make bundled pandoc.exe (docproc import/export) discoverable to child processes. The release zip
+    # unpacks into a versioned subfolder (bin\pandoc\pandoc-3.5\pandoc.exe), so put the folder that really
+    # holds pandoc.exe on PATH - bin\pandoc alone made every DOCX export and document import fail silently.
+    $pandocExe = Get-ChildItem -Path $MimirBinPandoc -Filter "pandoc.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($pandocExe) { $env:PATH = "$($pandocExe.DirectoryName);$env:PATH" }
 }
 
 function Wait-MimirPort([int]$Port,[int]$TimeoutSec = 180) {
