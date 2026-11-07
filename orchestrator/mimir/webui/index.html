@@ -346,11 +346,11 @@ async function run(task){
   const r=await jpost('/api/run',{task, conversation_id: convId});
   convId=r.conversation_id; $('convInfo').textContent='Unterhaltung #'+convId;
   await streamRun(r.run_id,(ev,d)=>handleChat(ev,d,ui));
-  ui.caret.remove(); statusEl.textContent='bereit'; $('send').disabled=false;
+  endThink(ui); ui.caret.remove(); statusEl.textContent='bereit'; $('send').disabled=false;
   loadConversations(convId);
 }
 function handleChat(ev,d,ui){
-  if(ev==='reasoning'){showThink(ui);ui.tb.append(d.t);}
+  if(ev==='reasoning'){startThink(ui);ui.tb.append(d.t);}
   else if(ev==='token'){routeToken(ui,d.t);}
   else if(ev==='usage'){setMeter(d.used,d.ctx);}
   else if(ev==='compaction'){chat.append(el('div','divider','⤺ Kontext automatisch verdichtet'+(d.tainted?' (Daten)':'')));}
@@ -361,17 +361,25 @@ function handleChat(ev,d,ui){
   else if(ev==='approval_resolved'){markResolved(ui,d);}
   else if(ev==='decision'){chat.append(el('div','divider','🔀 Entscheidung nötig — im 🔔-Postfach wählen'));refreshApprovals();}
   else if(ev==='decision_made'){chat.append(el('div','divider','🔀 '+(d.label||d.chosen||'gewählt')));}
-  else if(ev==='final'){if(d.text&&!ui.ans.textContent.trim())ui.ans.append(d.text);}
+  else if(ev==='final'){if(d.text&&!ui.ans.textContent.trim())toAnswer(ui,d.text);endThink(ui);}
   else if(ev==='error'){ui.ans.append(el('span','err','\n'+d.msg));}
   else if(ev==='stream_end'){/* done */}
   scroll();
 }
 function showThink(ui){if(ui.think.style.display==='none'){ui.think.style.display='block';ui.think.open=true;}}
+// Thinking (re)starts — via `reasoning` events or a <think> tag. If an earlier thought was already
+// finished (the next agent step thinks again), only the label returns to "Denkt…"; a folded pane stays folded.
+function startThink(ui){showThink(ui);if(ui.thinkDone){ui.thinkDone=false;ui.sum.textContent='🧠 Denkt…';}}
+// Thinking is over — the real answer begins or the run ends: fold the pane and relabel it. The same for
+// both ways a thought arrives (`reasoning` events, or <think>…</think> inside the token stream).
+function endThink(ui){if(ui.think.style.display!=='none'&&!ui.thinkDone){ui.thinkDone=true;ui.think.open=false;ui.sum.textContent='🧠 Gedankengang';}}
+function toAnswer(ui,t){if(t.trim())endThink(ui);ui.ans.append(t);}
 function routeToken(ui,t){
   if(t.includes('<think>')||t.includes('</think>')){for(const p of t.split(/(<\/?think>)/)){
-    if(p==='<think>'){ui.inThink=true;showThink(ui);}else if(p==='</think>'){ui.inThink=false;ui.think.open=false;ui.sum.textContent='🧠 Gedankengang';}
-    else if(p){(ui.inThink?ui.tb:ui.ans).append(p);}}}
-  else{(ui.inThink?ui.tb:ui.ans).append(t);}
+    if(p==='<think>'){ui.inThink=true;startThink(ui);}else if(p==='</think>'){ui.inThink=false;endThink(ui);}
+    else if(p){if(ui.inThink)ui.tb.append(p);else toAnswer(ui,p);}}}
+  else if(ui.inThink)ui.tb.append(t);
+  else toAnswer(ui,t);
 }
 function stepRow(ui,d){if(d.state&&d.state!=='start'){const r=el('div','tl');r.append(el('span','st','⚠'),el('span','',' '+d.tool+': '+d.state));ui.tl.append(r);return;}
   const r=el('div','tl');r.append(el('span','st','⋯'),el('code','',d.tool));ui.tl.append(r);ui.steps[d.n+':'+d.tool]=r;}
