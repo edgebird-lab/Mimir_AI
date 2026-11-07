@@ -109,6 +109,8 @@ header.top{height:58px;flex:0 0 58px;display:flex;align-items:center;gap:10px;pa
 .brand h1{font:700 18px/1 var(--font-head);letter-spacing:-.015em;margin:0}
 #status{font-size:12.5px;color:var(--txt-2);padding:3px 10px;border:1px solid var(--line);border-radius:var(--r-pill);white-space:nowrap;
   max-width:280px;overflow:hidden;text-overflow:ellipsis}
+#status.st-warn{color:var(--warn);background:var(--warn-tint);border-color:var(--warn-line)}
+#status.st-bad{color:var(--bad);background:var(--bad-tint);border-color:var(--bad-line)}
 .top-right{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:0}
 .meter{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt-2);font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:4px}
 .meter .bar{width:90px;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
@@ -290,6 +292,26 @@ button.send .ico{width:17px;height:17px;stroke-width:2.1}
 button.send.stop{background:var(--surface);color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad-line)}
 button.send.stop:hover{background:var(--bad-tint)}
 .composer-hint{max-width:calc(var(--measure) + 44px);margin:7px auto 0;font-size:12px;color:var(--txt-3);text-align:center}
+.composer-opts{max-width:calc(var(--measure) + 44px);margin:0 auto 8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--txt-2)}
+.composer-opts label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.composer-opts input{accent-color:var(--accent);width:15px;height:15px;margin:0}
+.composer-opts label:has(input:disabled){opacity:.55;cursor:not-allowed}
+/* Quellen unter einer Antwort: aus den Suchergebnissen, nicht vom Modell geschrieben */
+.srcs{margin:14px 0 0;padding:10px 14px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:13px;line-height:1.5}
+.srcs:empty{display:none}
+.srcs .srch{display:flex;align-items:baseline;gap:8px;font-weight:650;color:var(--txt);margin-bottom:4px}
+.srcs .srch span{font-weight:400;font-size:12px;color:var(--txt-3)}
+.srcs ol{margin:0;padding-left:0;list-style:none}
+.srcs li{display:flex;gap:8px;padding:3px 0;color:var(--txt-2);overflow-wrap:anywhere}
+.srcs li .sn{flex:0 0 auto;min-width:26px;color:var(--accent-strong);font-weight:650;font-variant-numeric:tabular-nums}
+.srcs li i{color:var(--txt)}
+/* eigener Dialog statt Browser-prompt() */
+dialog.dlg{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);color:var(--txt);padding:22px 24px 18px;width:min(460px,calc(100vw - 32px));box-shadow:var(--shadow-lg)}
+dialog.dlg::backdrop{background:rgba(20,22,25,.45)}
+dialog.dlg h3{font:650 17px/1.3 var(--font-head);margin:0 0 6px}
+dialog.dlg .desc{margin-bottom:14px}
+dialog.dlg .field{margin-bottom:12px}
+dialog.dlg .dlg-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 
 /* ---------- Freigaben (im Chat und im Postfach) ---------- */
 .approval,.apr{border:1px solid var(--warn-line);background:var(--warn-tint);border-radius:var(--r-lg);padding:14px 16px;color:var(--txt)}
@@ -350,7 +372,7 @@ button.send.stop:hover{background:var(--bad-tint)}
 
 /* ---------- Läufe ---------- */
 #runsList{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
-.runrow{display:grid;grid-template-columns:176px 120px minmax(0,1fr) auto 18px;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.runrow{display:grid;grid-template-columns:176px 120px minmax(0,1fr) auto 28px 18px;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}
 .runrow .rd{font-size:12.5px;color:var(--txt-3);white-space:nowrap;font-variant-numeric:tabular-nums}
 .runrow:last-child{border-bottom:0}
 .runrow:hover{background:var(--surface-2)}
@@ -358,7 +380,17 @@ button.send.stop:hover{background:var(--bad-tint)}
 .runrow .rk{font-size:13px;color:var(--txt-2)}
 .runrow .rt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:550}
 .runrow .chev{width:16px;height:16px;color:var(--txt-3)}
-@container (max-width:620px){.runrow{grid-template-columns:auto minmax(0,1fr) 18px}.runrow .rk,.runrow .rd{display:none}}
+.runrow .rm{display:inline-grid;place-items:center;width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:var(--txt-3);cursor:pointer;padding:0}
+.runrow .rm:hover{background:var(--bad-tint);color:var(--bad)}
+.runrow .rm .ico{width:15px;height:15px}
+.runs-tools{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:0 0 12px;font-size:13px;color:var(--txt-2)}
+.runs-tools label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.runs-tools input{accent-color:var(--accent);width:15px;height:15px;margin:0}
+.runs-tools .sp{margin-left:auto}
+.runs-more{display:flex;justify-content:center;padding:12px}
+.run-head .eta{font-size:12.5px;color:var(--accent-strong);margin-top:6px;font-weight:550}
+.run-head .eta:empty{display:none}
+@container (max-width:620px){.runrow{grid-template-columns:auto minmax(0,1fr) 28px 18px}.runrow .rk,.runrow .rd{display:none}}
 /* Lauf-Detail (Live-Protokoll) */
 .run-head{flex:0 0 auto;padding:22px 40px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
 .run-head>div{max-width:880px;margin:0 auto;display:flex;align-items:flex-start;gap:16px}
@@ -539,6 +571,15 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
   .page{padding:22px 18px 56px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* Drucken / „Als PDF speichern“ aus der Dokumentansicht: nur die Dokumentseite, hell */
+@media print{
+  body.printing{display:block;height:auto;overflow:visible;background:#fff;color:#000}
+  body.printing header.top,body.printing .sidebar,body.printing .tabs,body.printing .viewbar,body.printing .inbox,
+  body.printing .md-src,body.printing .view:not(.active){display:none!important}
+  body.printing .app,body.printing .main,body.printing .views,body.printing .view.active,body.printing .fileview{display:block;position:static;overflow:visible;height:auto;background:#fff}
+  body.printing .md-body{max-width:none;padding:0;color:#000;font-size:11.5pt}
+  body.printing .md-body a{color:#000}
+}
 </style>
 <!--__VENDOR__-->
 </head>
@@ -577,6 +618,7 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/></symbol>
+  <symbol id="i-printer" viewBox="0 0 24 24"><path d="M7 8.5V4h10v4.5"/><rect x="3.5" y="8.5" width="17" height="8" rx="2"/><path d="M7 14h10v6H7z"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M9 20h6M12 16.5V20"/></symbol>
 </svg>
 <header class="top">
@@ -621,11 +663,17 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
           <span class="sp" id="convInfo">neue Unterhaltung</span>
           <div class="cb-actions">
             <button id="newChat" class="btn btn-sm" type="button"><svg class="ico"><use href="#i-plus"/></svg>Neuer Chat</button>
-            <button id="clearChat" class="btn btn-sm btn-ghost" type="button" title="Diese Unterhaltung leeren"><svg class="ico"><use href="#i-trash"/></svg>Leeren</button>
+            <button id="renameChat" class="icon-btn" type="button" title="Unterhaltung umbenennen" aria-label="Unterhaltung umbenennen"><svg class="ico"><use href="#i-pen"/></svg></button>
+            <button id="clearChat" class="btn btn-sm btn-ghost" type="button" title="Nachrichten dieser Unterhaltung leeren"><svg class="ico"><use href="#i-list"/></svg>Leeren</button>
+            <button id="deleteChat" class="icon-btn" type="button" title="Unterhaltung löschen" aria-label="Unterhaltung löschen"><svg class="ico"><use href="#i-trash"/></svg></button>
           </div>
         </div>
         <div id="chat"><div class="hint empty-state"><span class="es-ico"><svg class="ico"><use href="#i-feather"/></svg></span><h2>Womit fangen wir an?</h2><p>Stell eine Frage, lass ein Thema mit Quellen recherchieren oder gib Mimir eine Aufgabe. Ein Lauf arbeitet im Hintergrund weiter, auch wenn du dieses Fenster schließt.</p><p>Rückfragen sammelt <b>Freigaben</b> oben rechts, alle Aufgaben stehen unter <b>Läufe</b>.</p></div></div>
         <div class="composer">
+          <div class="composer-opts">
+            <label title="Mimir sucht vor jeder Antwort in deinen hochgeladenen Dokumenten und nennt die Seiten"><input type="checkbox" id="optDocs">Meine Dokumente einbeziehen</label>
+            <label title="Ohne sichtbaren Gedankengang – deutlich schneller, bei schwierigen Fragen etwas weniger gründlich"><input type="checkbox" id="optFast">Schnell antworten</label>
+          </div>
           <div class="composer-box">
             <textarea id="task" rows="1" aria-label="Nachricht an Mimir" placeholder="Frage oder Aufgabe für Mimir …"></textarea>
             <button class="send" id="send" type="button"><svg class="ico"><use href="#i-send"/></svg>Senden</button>
@@ -738,7 +786,13 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
           <div class="page-head"><div><h2>Läufe</h2>
             <p class="desc">Alle Aufgaben, die Mimir bearbeitet oder bearbeitet hat. Ein Klick öffnet den Live-Verlauf.</p></div>
             <button id="runsRefresh" class="btn btn-sm sec" type="button"><svg class="ico"><use href="#i-refresh"/></svg>Aktualisieren</button></div>
+          <div class="runs-tools">
+            <label><input type="checkbox" id="runsHideChat" checked>Chats ausblenden</label>
+            <label><input type="checkbox" id="runsActive">Nur laufende</label>
+            <button id="runsCleanup" class="btn btn-sm btn-ghost sp" type="button" title="Fertige Läufe löschen, die älter als 30 Tage sind"><svg class="ico"><use href="#i-trash"/></svg>Alte Läufe aufräumen</button>
+          </div>
           <div id="runsList"><div class="hint">Noch keine Läufe.</div></div>
+          <div class="runs-more" id="runsMore" hidden><button id="runsMoreBtn" class="btn btn-sm" type="button">Mehr anzeigen</button></div>
         </div>
       </div>
     </div>
@@ -748,6 +802,10 @@ a.wl{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
         <button class="icon-btn close" id="inboxClose" type="button" aria-label="Postfach schließen" title="Schließen"><svg class="ico"><use href="#i-x"/></svg></button></div>
       <div id="inboxList"><div class="hint">Keine offenen Freigaben.</div></div>
     </aside>
+    <dialog class="dlg" id="dlg" aria-labelledby="dlgTitle"><form method="dialog" id="dlgForm">
+      <h3 id="dlgTitle"></h3><p class="desc" id="dlgDesc"></p><div id="dlgFields"></div>
+      <div class="dlg-acts"><button class="btn" type="button" id="dlgCancel">Abbrechen</button><button class="btn btn-primary" type="submit" id="dlgOk">OK</button></div>
+    </form></dialog>
   </div>
 </div>
 <script>
@@ -807,6 +865,12 @@ function toolDetail(n,args){const k=(TOOLS[n]||[])[1];let v=k&&args?args[k]:'';i
   v=String(v).replace(/\s+/g,' ').trim();if(k==='url')v=v.replace(/^https?:\/\//i,'');
   if(v.length>72)v=v.slice(0,71)+'…';return (k==='query'||k==='text')?'„'+v+'“':v;}
 function argsText(args){return Object.entries(args||{}).map(([k,v])=>(ARGKEY[k]||k)+': '+v).join('\n');}
+// what exactly will be approved: for "Datei speichern" the target file plus the start of the content,
+// for everything else the arguments with German field names
+function approvalBody(tool,args){const a=args||{};
+  if(tool==='project_write_out'&&a.content!=null){const box=el('div','args');const lines=String(a.content).split('\n');
+    box.append(el('b','','Datei: '+(a.path||'?')));box.append('\n'+lines.slice(0,12).join('\n')+(lines.length>12||String(a.content).length>=300?'\n…':''));return box;}
+  return el('div','args',argsText(a));}
 // Gründe aus Broker/Policy (englisch, technisch) -> kurzer deutscher Satz
 function reasonDe(r){r=String(r||'').trim();let m;
   if(!r||r==='ok')return '';
@@ -831,6 +895,48 @@ function fmtTime(ts){if(!ts)return '';const d=new Date(ts*1000),now=new Date();
   const y=new Date(now);y.setDate(now.getDate()-1);if(d.toDateString()===y.toDateString())return 'gestern, '+hm;
   const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+(d.getFullYear()!==now.getFullYear()?d.getFullYear():'')+' '+hm;}
 
+/* ---------- eigener Dialog für Eingaben (statt Browser-prompt) ---------- */
+// fields: [{name,label,placeholder?,value?,options?:[[wert,text],…]}] → Promise<{name:wert}|null>
+function askDialog({title,desc,fields,ok}){return new Promise(res=>{const d=$('dlg');$('dlgTitle').textContent=title;$('dlgDesc').textContent=desc||'';
+  const box=$('dlgFields');box.innerHTML='';const inputs={};
+  (fields||[]).forEach(f=>{const lab=el('label','field');lab.append(el('span','',f.label));let inp;
+    if(f.options){inp=el('select');f.options.forEach(([v,t])=>{const o=el('option','',t);o.value=v;inp.append(o);});}
+    else{inp=el('input');inp.type='text';if(f.placeholder)inp.placeholder=f.placeholder;}
+    if(f.value!=null)inp.value=f.value;inputs[f.name]=inp;lab.append(inp);box.append(lab);});
+  $('dlgOk').textContent=ok||'OK';
+  const done=v=>{if(d.open)d.close();res(v);};
+  $('dlgCancel').onclick=()=>done(null);
+  $('dlgForm').onsubmit=e=>{e.preventDefault();const out={};Object.entries(inputs).forEach(([k,i])=>out[k]=i.value);done(out);};
+  d.oncancel=e=>{e.preventDefault();done(null);};
+  d.showModal();const first=box.querySelector('input,select');if(first)first.focus();});}
+
+/* ---------- Bereitschaft: „bereit“ erst, wenn das Sprachmodell wirklich geladen ist ---------- */
+let modelState='unknown';           // unknown | ready | loading | down  (aus /api/health)
+function setStatus(text,cls){statusEl.textContent=text;statusEl.className='sub'+(cls?' '+cls:'');}
+function applyReadyState(){if(chatBusy)return;const sb=$('send'),st=modelState;
+  if(st==='loading'){setStatus('Modell wird geladen …','st-warn');sb.disabled=true;sb.title='Das Sprachmodell wird noch geladen – gleich geht es los.';}
+  else if(st==='down'){setStatus('Sprachmodell nicht erreichbar','st-bad');sb.disabled=true;sb.title='Das Sprachmodell antwortet nicht. Mimir neu starten oder in den Einstellungen ein anderes Modell aktivieren.';}
+  else{setStatus('bereit');sb.disabled=false;sb.title='';}}
+async function refreshHealth(){let st='ready';
+  try{const d=await jget('/api/health');st=d.model||'ready';}catch(e){st='down';}
+  modelState=st;applyReadyState();
+  clearTimeout(refreshHealth.t);refreshHealth.t=setTimeout(refreshHealth,st==='ready'?20000:3000);}
+
+/* ---------- Quellen unter einer Antwort (Metadaten aus der Suche, nicht vom Modell) ---------- */
+function sourceItem(it){const li=el('li');li.append(el('span','sn','['+it.n+']'));const t=el('span');
+  if(it.kind==='paper'){const au=it.authors||[];t.append((au.length?au.slice(0,3).join(', ')+(au.length>3?' u. a.':''):'o. A.')+' ('+(it.year||'o. J.')+'): ');
+    t.append(el('i','',it.title||''));t.append((it.venue?'. '+it.venue:'')+(it.doi?' · doi:'+it.doi:''));}
+  else if(it.kind==='doc'){t.append(el('i','',it.doc||'Dokument'));if(it.page!=null)t.append(', S. '+it.page);}
+  else{t.append(el('i','',it.title||''));if(it.url)t.append(' – '+it.url);}     // Adresse nur als Text (wie Links im Chat)
+  li.append(t);return li;}
+// answer: if it cites [n], show only those (plus a count of the rest); otherwise everything that was found
+function renderSources(box,items,answer){box.innerHTML='';if(!items||!items.length)return;
+  const cited=new Set();String(answer||'').replace(/\[(\d+(?:\s*[,–-]\s*\d+)*)\]/g,(m,g)=>{g.split(/\s*,\s*/).forEach(p=>{const r=p.split(/\s*[–-]\s*/).map(Number);
+    for(let i=r[0];i<=(r[1]||r[0])&&i-r[0]<50;i++)cited.add(i);});return m;});
+  const shown=cited.size?items.filter(it=>cited.has(it.n)):items;if(!shown.length)return;
+  const h=el('div','srch','Quellen');h.append(el('span','',cited.size&&shown.length<items.length?('zitiert · '+(items.length-shown.length)+' weitere gefunden'):'aus der Suche, nicht vom Modell geschrieben'));
+  const ol=el('ol');shown.forEach(it=>ol.append(sourceItem(it)));box.append(h,ol);}
+
 /* ================= CHAT ================= */
 function whoMimir(){const w=el('div','who');w.append(ico('feather'));return w;}
 function addUser(t){const m=el('div','msg user');m.append(el('div','who'));const b=el('div','bubble');b.append(el('div','answer',t));m.append(b);chat.append(m);scroll();}
@@ -853,44 +959,56 @@ function mathEl(tex,display){
   if(h){const s=el('span');s.innerHTML=h;return s;}      // KaTeX markup (trust:false: no \href/\url/raw HTML)
   return el('code',display?'math-src block':'math-src',tex.trim());   // no KaTeX: readable source, no dollars
 }
-function renderChatMd(target,src){
-  src=String(src||'');
+// opts.md: markdown-it instance (default: the chat's); opts.doi: keep bare https://doi.org/10.… links clickable
+// (document viewer — bibliography entries come from the search metadata; every other link stays text)
+function renderChatMd(target,src,opts){
+  src=String(src||'');opts=opts||{};
   if(!window.markdownit||!window.DOMPurify){target.classList.remove('md');target.textContent=src;return;}
   const math=[];
   const prot=src.replace(/[]/g,'').replace(CHAT_MATH_RE,(m,nl,fence,tick,dd,br,pa,inl)=>{
     if(fence||tick)return m;
     math.push([dd??br??pa??inl,dd!==undefined||br!==undefined]);return ''+(math.length-1)+'';});
-  const frag=window.DOMPurify.sanitize(chatMd().render(prot),{USE_PROFILES:{html:true},FORBID_TAGS:['img'],RETURN_DOM_FRAGMENT:true});
+  const frag=window.DOMPurify.sanitize((opts.md||chatMd()).render(prot),{USE_PROFILES:{html:true},FORBID_TAGS:['img'],RETURN_DOM_FRAGMENT:true});
   // Links are NOT clickable: a prompt-injected answer could otherwise smuggle data out in a URL on one click.
   // The text keeps the full address visible, so the user can still copy it deliberately.
   frag.querySelectorAll('a').forEach(a=>{const h=a.getAttribute('href')||'',t=a.textContent;
+    if(opts.doi&&/^https:\/\/doi\.org\/10\.[^\s?#]+$/i.test(h)&&t===h){a.rel='noopener noreferrer';a.target='_blank';return;}
     a.replaceWith(/^https?:\/\//i.test(h)&&h!==t&&h!==('http://'+t)&&h!==('https://'+t)?t+' ('+h+')':t);});
   if(math.length){const w=document.createTreeWalker(frag,NodeFilter.SHOW_TEXT),hits=[];
     while(w.nextNode())if(w.currentNode.nodeValue.includes(''))hits.push(w.currentNode);
     hits.forEach(n=>n.replaceWith(...n.nodeValue.split(/(\d+)/).map((p,i)=>i%2?(math[+p]?mathEl(...math[+p]):''):p)));}
   target.replaceChildren(frag);
 }
-function addStaticAssistant(t){const m=el('div','msg assistant');m.append(whoMimir());const b=el('div','bubble');const a=el('div','answer md');renderChatMd(a,t);b.append(a);m.append(b);chat.append(m);scroll();}
-// order inside the bubble follows the run: thought -> tool steps / approvals -> answer
+// a reopened answer shows the work behind it again: tool steps and the source list (stored with the message)
+function addStaticAssistant(t,meta){const m=el('div','msg assistant');m.append(whoMimir());const b=el('div','bubble');
+  const tl=el('div','timeline');((meta&&meta.steps)||[]).forEach(s=>{const r=toolRow(s,s.ok?'✓':'✗');r.querySelector('.st').style.color=s.ok?'var(--ok)':'var(--bad)';
+    const why=reasonDe(s.reason);if(!s.ok&&why)r.append(el('span','why',why));tl.append(r);});
+  const a=el('div','answer md');renderChatMd(a,t);const sb=el('div','srcs');renderSources(sb,(meta&&meta.sources)||[],t);
+  b.append(tl,a,sb);m.append(b);chat.append(m);scroll();}
+// order inside the bubble follows the run: thought -> tool steps / approvals -> answer -> sources
 function addAssistant(){const m=el('div','msg assistant');m.append(whoMimir());const b=el('div','bubble');
   const think=el('details','think');const sum=el('summary','','Denkt…');const tb=el('div','body');think.append(sum,tb);think.style.display='none';
-  const ans=el('div','answer md');const caret=el('span','caret');const tl=el('div','timeline');
-  b.append(think,tl,ans,caret);m.append(b);chat.append(m);scroll();return{think,sum,tb,ans,caret,tl,steps:{},inThink:false,md:true,raw:'',mdT:0};}
+  const ans=el('div','answer md');const caret=el('span','caret');const tl=el('div','timeline');const srcBox=el('div','srcs');
+  b.append(think,tl,ans,caret,srcBox);m.append(b);chat.append(m);scroll();
+  return{think,sum,tb,ans,caret,tl,srcBox,sources:[],steps:{},inThink:false,md:true,raw:'',mdT:0};}
 // while a chat run streams, the send button becomes "Stoppen" (the worker honours /api/stop between tokens)
 let chatBusy=false, chatRun=null;
 function setSendMode(busy){const b=$('send');chatBusy=busy;b.disabled=false;b.classList.toggle('stop',busy);
-  b.replaceChildren(ico(busy?'x':'send'),busy?'Stoppen':'Senden');b.title=busy?'Antwort abbrechen':'';}
+  b.replaceChildren(ico(busy?'x':'send'),busy?'Stoppen':'Senden');b.title=busy?'Antwort abbrechen':'';
+  if(!busy)applyReadyState();}
 async function run(task){
-  addUser(task); const ui=addAssistant(); statusEl.textContent='Mimir arbeitet…'; setSendMode(true);
+  addUser(task); const ui=addAssistant(); setStatus('Mimir arbeitet…'); setSendMode(true);
+  const useDocs=$('optDocs').checked&&!$('optDocs').disabled, fast=$('optFast').checked;
   try{
-    const r=await jpost('/api/run',{task, conversation_id: convId});
+    const r=await jpost('/api/run',{task, conversation_id: convId, fast, use_docs: useDocs});
     convId=r.conversation_id; chatRun=r.run_id; $('convInfo').textContent='Unterhaltung #'+convId;
     await streamRun(r.run_id,(ev,d)=>handleChat(ev,d,ui));
   }catch(e){const x=el('div','err','Mimir ist gerade nicht erreichbar. Läuft Mimir noch? Seite neu laden oder Mimir neu starten.');ui.ans.after(x);ui.lastErr=x;}
   flushAnswer(ui); endThink(ui); ui.caret.remove();
+  renderSources(ui.srcBox,ui.sources,ui.raw);       // final list: only the sources the answer cites (if it cites)
   // nothing came back (no text, no error): say so instead of leaving an empty bubble
   if(!ui.raw.trim()&&!ui.lastErr&&!ui.tl.querySelector('.approval')){const x=el('div','err','Keine Antwort erhalten. Kleine Modelle bleiben nach einem Werkzeugfehler manchmal stumm – stell die Frage bitte noch einmal, gern etwas genauer.');ui.ans.after(x);ui.lastErr=x;}
-  chatRun=null; statusEl.textContent='bereit'; setSendMode(false);
+  chatRun=null; setSendMode(false);
   loadConversations(convId);
 }
 function handleChat(ev,d,ui){
@@ -901,6 +1019,10 @@ function handleChat(ev,d,ui){
   else if(ev==='continue'){/* silent: model is finishing a long thought */}
   else if(ev==='step'){stepRow(ui,d);}
   else if(ev==='tool_result'){resolveRow(ui,d);}
+  else if(ev==='sources'){(d.items||[]).forEach(it=>{if(!ui.sources.some(x=>x.n===it.n))ui.sources.push(it);});renderSources(ui.srcBox,ui.sources,'');}
+  else if(ev==='timings'){if(!ui.slowNote&&d.best_tps&&d.gen_tps&&d.gen_tps<0.6*d.best_tps){ui.slowNote=true;
+    const n=el('div','divider','Mimir antwortet gerade langsamer als sonst (etwa '+Math.round(d.gen_tps)+' statt '+Math.round(d.best_tps)+' Tokens pro Sekunde). Nutzt ein anderes Programm die Grafikkarte?');
+    chat.append(n);}}
   else if(ev==='approval'){approvalCard(ui,d);refreshApprovals();}
   else if(ev==='approval_resolved'){markResolved(ui,d);}
   else if(ev==='decision'){chat.append(el('div','divider','Entscheidung nötig – bitte unter „Freigaben“ oben rechts wählen'));refreshApprovals();}
@@ -908,8 +1030,8 @@ function handleChat(ev,d,ui){
   else if(ev==='final'){if(d.text&&!(ui.md?ui.raw:ui.ans.textContent).trim())toAnswer(ui,finalDe(d.text));endThink(ui);}
   else if(ev==='error'){const e=el('div','err',d.msg);(ui.lastErr||ui.ans).after(e);ui.lastErr=e;}   // outside .answer: survives re-renders
   else if(ev==='run_end'&&d.status==='failed'){const e=el('div','err','Das hat nicht geklappt: '+errDe(d.error));(ui.lastErr||ui.ans).after(e);ui.lastErr=e;}
-  else if(ev==='status'&&d.status==='waiting_approval'){statusEl.textContent='wartet auf Freigabe';}
-  else if(ev==='status'&&d.status==='running'){statusEl.textContent='Mimir arbeitet…';}
+  else if(ev==='status'&&d.status==='waiting_approval'){setStatus('wartet auf Freigabe','st-warn');}
+  else if(ev==='status'&&d.status==='running'){setStatus('Mimir arbeitet…');}
   else if(ev==='stream_end'){/* done */}
   scroll();
 }
@@ -942,13 +1064,13 @@ function resolveRow(ui,d){const r=ui.steps[d.n+':'+d.tool]||(()=>{const x=toolRo
   const why=reasonDe(d.reason);if(!d.ok&&why)r.append(el('span','why',why));}
 function approvalCard(ui,d){const c=el('div','approval');c.dataset.aid=d.id;const h=el('h4','','Freigabe nötig: '+toolLabel(d.tool));h.title=d.tool;h.prepend(ico('alert'));c.append(h);
   const why=approvalReasonDe(d.reason);if(why)c.append(el('div','meta',why));
-  c.append(el('div','args',argsText(d.args)));
+  c.append(approvalBody(d.tool,d.args));
   const ok=el('button','ok','Freigeben'),no=el('button','no','Ablehnen');
   ok.onclick=()=>decide(d.id,true);no.onclick=()=>decide(d.id,false);c.append(ok,no);ui.tl.append(c);scroll();}
 function markResolved(ui,d){const c=ui.tl.querySelector('.approval[data-aid="'+d.id+'"]');if(c){c.querySelectorAll('button').forEach(b=>b.remove());c.append(el('div','',d.ok?'✓ freigegeben':'✗ abgelehnt'));}}
 async function decide(id,ok){await jpost('/api/approve',{id,ok});refreshApprovals();}
 function send(){if(chatBusy)return;const t=taskEl.value.trim();if(!t)return;taskEl.value='';activate('chat');run(t);}
-function sendOrStop(){if(chatBusy){if(chatRun){stopRun(chatRun);statusEl.textContent='wird gestoppt…';$('send').disabled=true;}return;}send();}
+function sendOrStop(){if(chatBusy){if(chatRun){stopRun(chatRun);setStatus('wird gestoppt…');$('send').disabled=true;}return;}send();}
 
 /* ================= CONVERSATIONS ================= */
 async function loadConversations(sel){
@@ -961,13 +1083,25 @@ async function loadConversations(sel){
 async function openConversation(id){convId=Number(id);$('convInfo').textContent='Unterhaltung #'+convId;chat.innerHTML='';
   try{const d=await jget('/api/conversation?id='+convId);
     if(d.summary)chat.append(el('div','divider','Frühere Unterhaltung verdichtet'+(d.summary_tainted?' (Daten)':'')));
-    (d.messages||[]).forEach(m=>{if(m.role==='user')addUser(m.content);else addStaticAssistant(m.content);});
+    (d.messages||[]).forEach(m=>{if(m.role==='user')addUser(m.content);else addStaticAssistant(m.content,m.meta);});
     if(!(d.messages||[]).length&&!d.summary)chat.append(el('div','hint','Neue Unterhaltung — leg los.'));
   }catch(e){} scroll();
 }
 $('convSel').onchange=e=>openConversation(e.target.value);
 $('newChat').onclick=async()=>{const c=await jpost('/api/conversations',{});await loadConversations(c.id);await openConversation(c.id);};
 $('clearChat').onclick=async()=>{if(convId==null){chat.innerHTML='';return;}await jpost('/api/clear',{conversation_id:convId});chat.innerHTML='';chat.append(el('div','hint','Unterhaltung geleert.'));};
+$('renameChat').onclick=async()=>{if(convId==null)return;const cur=($('convSel').selectedOptions[0]||{}).title||'';
+  const v=await askDialog({title:'Unterhaltung umbenennen',fields:[{name:'title',label:'Name',value:cur==='Neuer Chat'?'':cur,placeholder:'z. B. Fragen zur Kostenrechnung'}],ok:'Umbenennen'});
+  if(v&&v.title.trim()){await jpost('/api/conversation/rename',{id:convId,title:v.title.trim()});loadConversations(convId);}};
+$('deleteChat').onclick=async()=>{if(convId==null)return;
+  if(!confirm('Diese Unterhaltung mit allen Nachrichten löschen?'))return;
+  await jpost('/api/conversation/delete',{id:convId});convId=null;chat.innerHTML='';$('convInfo').textContent='neue Unterhaltung';
+  await loadConversations();if($('convSel').value)openConversation($('convSel').value);};
+/* Chat-Optionen: Dokumente einbeziehen / schnell antworten (gemerkt im Browser) */
+['optDocs','optFast'].forEach(id=>{const c=$(id);try{c.checked=localStorage.getItem('mimir-'+id)==='1';}catch(e){}
+  c.onchange=()=>{try{localStorage.setItem('mimir-'+id,c.checked?'1':'0');}catch(e){}};});
+async function refreshDocsOption(){try{const d=await jget('/api/corpus');const n=(d.documents||[]).length;const c=$('optDocs');c.disabled=!n;
+  c.parentNode.title=n?('Mimir sucht vor jeder Antwort in deinen '+n+' Dokument(en) und nennt die Seiten'):'Noch keine Dokumente hochgeladen (Recherche & Bibliothek)';}catch(e){}}
 
 /* ================= APPROVALS INBOX ================= */
 function decisionCard(dec){
@@ -1013,7 +1147,7 @@ async function refreshApprovals(){
       const h=el('div','h',(outward?'Aktion nach außen: ':'Freigabe nötig: ')+toolLabel(a.tool));h.title=a.tool;h.prepend(ico('alert'));c.append(h);
       if(outward)c.append(el('div','warnbanner','Diese Aktion verlässt Mimir und ist möglicherweise nicht umkehrbar. Bitte genau prüfen.'));
       c.append(el('div','meta',[approvalReasonDe(a.reason),(RUNKIND[a.run_kind]?RUNKIND[a.run_kind]+': ':'')+(a.run_title||a.run_id)].filter(Boolean).join(' · ')));
-      c.append(el('div','args',argsText(a.args)));
+      c.append(approvalBody(a.tool,a.args));
       const ok=el('button',outward?'no':'ok','Freigeben'),no=el('button',outward?'ok':'no','Ablehnen');
       ok.onclick=async()=>{await jpost('/api/approve',{id:a.id,ok:true});refreshApprovals();};
       no.onclick=async()=>{await jpost('/api/approve',{id:a.id,ok:false});refreshApprovals();};
@@ -1021,7 +1155,10 @@ async function refreshApprovals(){
       c.append(outward?no:ok, outward?ok:no);box.append(c);});
   }catch(e){}
 }
-async function loadAutonomy(){try{const d=await jget('/api/autonomy');$('autonomy').value=String(d.level);}catch(e){}}
+async function loadAutonomy(){try{const d=await jget('/api/autonomy');const sel=$('autonomy');
+  if(d.levels&&d.levels['2']&&!sel.querySelector('option[value="2"]')){const o=el('option','','Autonom+ – wählt sichere Wege selbst');o.value='2';
+    sel.insertBefore(o,sel.querySelector('option[value="3"]'));}
+  sel.value=String(d.level);}catch(e){}}
 $('autonomy').onchange=async e=>{
   const lvl=Number(e.target.value);
   if(lvl>=3 && !confirm('Voll autonom: Mimir arbeitet dann komplett ohne Rückfragen – AUCH Aktionen, die nach außen wirken oder sich nicht rückgängig machen lassen (z. B. E-Mails senden, etwas veröffentlichen, Software installieren, Dateien überschreiben), und wichtige Entscheidungen laufen OHNE deine Freigabe.\n\nDas schaltet die zentrale Sicherheitsbremse ab. Nur wählen, wenn du das wirklich willst.\n\nFortfahren?')){e.target.value=String(await jget('/api/autonomy').then(d=>d.level));return;}
@@ -1038,19 +1175,31 @@ setInterval(()=>{const n=Number($('bellcnt').textContent||0);document.title=(n>0
 /* ================= RUNS BOARD ================= */
 const RUNKIND={chat:'Chat',plan:'Plan',autopilot:'Autopilot',debug:'Debug',exam:'Probeklausur',notes:'Zusammenfassung',research:'Recherche',thesis:'Thesis',code:'Coding',merge:'Merge-back'};
 const RUNSTATUS={queued:'in Warteschlange',pending:'wartet',running:'läuft',active:'aktiv',waiting_approval:'wartet auf Freigabe',done:'fertig',blocked:'blockiert',failed:'fehlgeschlagen',stopped:'gestoppt'};
+let runsLimit=60;
 async function loadRuns(){
-  try{const d=await jget('/api/runs');const box=$('runsList');box.innerHTML='';
-    if(!(d.runs||[]).length){box.append(el('div','hint','Noch keine Läufe.'));return;}
-    d.runs.forEach(r=>{const row=kbd(el('div','runrow'));
+  try{const q='/api/runs?limit='+runsLimit+($('runsHideChat').checked?'&hide_chat=1':'')+($('runsActive').checked?'&active=1':'');
+    const d=await jget(q);const box=$('runsList');box.innerHTML='';
+    const runs=d.runs||[];
+    $('runsMore').hidden=!(d.total>runs.length&&runs.length>=runsLimit);
+    if(!runs.length){box.append(el('div','hint',$('runsActive').checked?'Gerade läuft nichts.':'Noch keine Läufe.'));return;}
+    runs.forEach(r=>{const row=kbd(el('div','runrow'));
       row.append(el('span','badge b-'+r.status,RUNSTATUS[r.status]||r.status.replace('_',' ')));
       row.append(el('span','rk',RUNKIND[r.kind]||r.kind));
       const rt=el('span','rt',r.title||r.id);rt.title=(r.title||r.id)+(r.status==='failed'&&r.error?'\n'+errDe(r.error):'');row.append(rt);
       const rd=el('span','rd',fmtTime(r.created));rd.title='gestartet '+fmtTime(r.created)+(r.updated?' · zuletzt aktiv '+fmtTime(r.updated):'');row.append(rd);
+      if(TERMINAL_RUN.includes(r.status)){const rm=el('button','rm');rm.type='button';rm.title='Lauf aus der Liste löschen';rm.setAttribute('aria-label','Lauf „'+(r.title||r.id)+'“ löschen');
+        rm.append(ico('trash'));rm.onclick=async ev=>{ev.stopPropagation();await jpost('/api/runs/delete',{ids:[r.id]});loadRuns();};row.append(rm);}
+      else row.append(el('span'));
       row.append(ico('chevron','chev'));
       row.onclick=()=>openRunView(r);
       box.append(row);});
   }catch(e){}
 }
+$('runsHideChat').onchange=()=>{runsLimit=60;loadRuns();};
+$('runsActive').onchange=()=>{runsLimit=60;loadRuns();};
+$('runsMoreBtn').onclick=()=>{runsLimit+=100;loadRuns();};
+$('runsCleanup').onclick=async()=>{if(!confirm('Alle fertigen, gestoppten und fehlgeschlagenen Läufe löschen, die älter als 30 Tage sind?\n\nDokumente in „out“ bleiben erhalten.'))return;
+  const d=await jpost('/api/runs/delete',{older_than_days:30});loadRuns();if(d&&d.deleted!=null)setTimeout(()=>alert(d.deleted+' Lauf/Läufe gelöscht.'),50);};
 function openRunView(r){
   // open a transient tab that live-streams (or replays) this run
   const id='run_'+r.id;
@@ -1061,12 +1210,19 @@ function openRunView(r){
   tab.append(x);tabsEl.append(tab);
   const view=el('div','view');view.id='view-'+id;
   const head=el('div','run-head'),wrap=el('div'),hi=el('div','rh-main'),acts=el('div','rh-acts');
-  hi.append(el('div','kind',RUNKIND[r.kind]||r.kind),el('h2','',r.title||r.id),el('div','rid',(r.created?'gestartet '+fmtTime(r.created)+' · ':'')+'Lauf '+r.id));
+  const eta=el('div','eta');eta.id='reta_'+id;
+  hi.append(el('div','kind',RUNKIND[r.kind]||r.kind),el('h2','',r.title||r.id),el('div','rid',(r.created?'gestartet '+fmtTime(r.created)+' · ':'')+'Lauf '+r.id),eta);
   // status badge + stop button (a thesis can run for hours — it must be stoppable without quitting Mimir)
   const badge=el('span','badge');badge.id='rst_'+id;badge.setAttribute('role','status');
   const stop=el('button','btn btn-sm btn-danger');stop.type='button';stop.id='rstop_'+id;stop.append(ico('x'),'Lauf stoppen');
   stop.onclick=async()=>{stop.disabled=true;stop.lastChild.textContent='wird gestoppt…';await stopRun(r.id);};
-  acts.append(badge,stop);wrap.append(hi,acts);head.append(wrap);
+  // stopped/failed thesis, research, summary or exam: start again with the same settings — a thesis resumes
+  const resume=el('button','btn btn-sm btn-primary');resume.type='button';resume.id='rresume_'+id;resume.hidden=true;
+  resume.append(ico('play'),r.kind==='thesis'?'Fortsetzen':'Erneut starten');
+  resume.onclick=async()=>{resume.disabled=true;const d=await jpost('/api/run/restart',{run_id:r.id});
+    if(d&&d.ok)openRunView({id:d.run_id,kind:d.kind,title:d.title,created:d.created,status:'queued'});else{alert((d&&d.error)||'Fortsetzen nicht möglich.');resume.disabled=false;}};
+  resume.dataset.kind=r.kind||'';
+  acts.append(badge,stop,resume);wrap.append(hi,acts);head.append(wrap);
   const log=el('div','runlog');log.id='rlog_'+id;
   view.append(head,log);viewsEl.append(view);openTabs[id]=true;activate(id);
   setRunState(id,r.status||'queued');
@@ -1075,7 +1231,17 @@ function openRunView(r){
 const TERMINAL_RUN=['done','failed','stopped'];
 function setRunState(tabId,st){const b=$('rst_'+tabId),s=$('rstop_'+tabId);if(!b||!st)return;
   b.className='badge b-'+st;b.textContent=RUNSTATUS[st]||st;
-  if(s)s.hidden=TERMINAL_RUN.includes(st);}
+  if(s)s.hidden=TERMINAL_RUN.includes(st);
+  const rb=$('rresume_'+tabId);if(rb)rb.hidden=!(['stopped','failed'].includes(st)&&['thesis','research','notes','exam'].includes(rb.dataset.kind));
+  if(TERMINAL_RUN.includes(st)){const e=$('reta_'+tabId);if(e)e.textContent='';}}
+// progress + remaining time for long runs ("Abschnitt 7/22: …" status lines; Redis stream ids are ms timestamps)
+function updateEta(tabId,ui,d){const m=/^Abschnitt (\d+)\/(\d+)/.exec(String(d.status||''));const e=$('reta_'+tabId);if(!m||!e)return;
+  const k=Number(m[1]),n=Number(m[2]),t=Number(String(d.sid||'').split('-')[0])||Date.now();
+  if(!ui.eta)ui.eta={first:t,firstK:k};
+  const done=k-ui.eta.firstK,el_=t-ui.eta.first;let txt='Abschnitt '+k+' von '+n;
+  if(done>=1&&el_>0){const per=el_/done,left=Math.max(0,Math.round(per*(n-k+1)/60000));
+    txt+=' · noch ca. '+(left>=90?(Math.round(left/6)/10).toString().replace('.',',')+' Std.':left+' Min.');}
+  e.textContent=txt;}
 function attachRunStream(runId,tabId){
   const log=$('rlog_'+tabId);log.innerHTML='';
   // generated text renders as Markdown (same sanitizing chain as the chat) in a scrollable box that is
@@ -1101,6 +1267,7 @@ function attachRunStream(runId,tabId){
       opEv(log,d.status==='failed'?'alert':d.status==='done'?'check':'x',fmtEv(ev,d),d.status==='failed'?'fail':d.status==='done'?'done':'');}
     else if(ev==='stream_end'){setRunState(tabId,d.status);}
     else if(ev==='status'&&RUNSTATUS[d.status]){setRunState(tabId,d.status);}
+    else if(ev==='status'){updateEta(tabId,ui,d);}
     else if(ev==='wiki_update'){opEv(log,'book',fmtEv(ev,d),'');}
     if(ev==='run_start')setRunState(tabId,'running');
     if(['run_start','step','tool_result','verify','checkpoint','task_start','task_done','plan_task','plan_done','autopilot_done','needs_human','debug_run','debug_fail','debug_done','continue','status','exam_start','notes_start','research_start','thesis_start','outline','quality','ws_open','ws_list','round','edit','edit_failed','snapshot','ws_exec','coder_start','coder_done','merge_start','merge_done','decision_made','decision_resolved','capability_gap','learn_spawn','learn_skip','learn_result','teach_start','teach_round','teach_test','teach_done','skill_staged','operator_note','repo_map','architect_start','architect_plan'].includes(ev))
@@ -1111,7 +1278,7 @@ function attachRunStream(runId,tabId){
 async function exportDoc(path,to,sel){
   if(!to)return;const old=sel?sel.value:'';if(sel){sel.disabled=true;sel.selectedIndex=0;}
   try{const d=await jpost('/api/convert',{path,to});
-    if(d.error){alert('Export fehlgeschlagen: '+d.error);}
+    if(d.error){alert('Export fehlgeschlagen: '+(/pdf export not available/i.test(d.error)?'PDF kann diese Installation nicht direkt erzeugen. Öffne das Dokument und wähle „Drucken“ → „Als PDF speichern“.':d.error));}
     else{loadTree();if(d.path)downloadFile(d.path);}
   }catch(e){alert('Export fehlgeschlagen');}
   if(sel)sel.disabled=false;
@@ -1129,7 +1296,8 @@ function documentCard(box,d){
     const sel=el('select');sel.title='In anderes Format exportieren';sel.setAttribute('aria-label','In anderes Format exportieren');
     sel.append(el('option','','Exportieren als …'));
     EXPORT_TARGETS.forEach(t=>{const o=el('option','',t.toUpperCase());o.value=t;sel.append(o);});
-    sel.onchange=()=>exportDoc(mainMd,sel.value,sel);acts.append(sel);
+    if(!EXPORT_TARGETS.includes('pdf')){const o=el('option','','PDF – Dokument öffnen und „Drucken“ wählen');o.value='__print';sel.append(o);}
+    sel.onchange=()=>{if(sel.value==='__print'){sel.selectedIndex=0;activate('chat');openFile(mainMd,null).then(()=>printDoc(mainMd));return;}exportDoc(mainMd,sel.value,sel);};acts.append(sel);
   }
   tx.append(t,acts);c.append(ic,tx);box.append(c);box.scrollTop=box.scrollHeight;
 }
@@ -1221,7 +1389,7 @@ async function loadCorpus(){
       acts.append(mk('Probeklausur','pen',()=>startAcademic('exam',doc.name)));
       acts.append(mk('Zusammenfassung','list',()=>startAcademic('notes',doc.name)));
       const rm=el('button','rm');rm.type='button';rm.title='Entfernen';rm.setAttribute('aria-label',doc.name+' aus der Bibliothek entfernen');rm.append(ico('trash'));
-      rm.onclick=async()=>{await jpost('/api/corpus/remove',{name:doc.name});loadCorpus();};
+      rm.onclick=async()=>{await jpost('/api/corpus/remove',{name:doc.name});loadCorpus();refreshDocsOption();};
       acts.append(rm);r.append(acts);box.append(r);});
   }catch(e){}
 }
@@ -1276,7 +1444,7 @@ async function uploadFiles(files){
       if(d.ok)setTimeout(()=>line.remove(),10000);   // the document list below is the lasting confirmation
     }catch(e){line.textContent='✗ '+f.name+' — '+e;line.style.color='var(--bad)';}
   }
-  loadCorpus();loadTree();   // uploads land in in/ — keep the project tree in the sidebar current
+  loadCorpus();loadTree();refreshDocsOption();   // uploads land in in/ — keep the project tree in the sidebar current
 }
 $('dropzone').onclick=()=>$('fileInput').click();
 $('fileInput').onchange=e=>{uploadFiles([...e.target.files]);e.target.value='';};
@@ -1284,8 +1452,17 @@ $('fileInput').onchange=e=>{uploadFiles([...e.target.files]);e.target.value='';}
 ['dragleave','drop'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{e.preventDefault();$('dropzone').classList.remove('drag');}));
 $('dropzone').addEventListener('drop',e=>{if(e.dataTransfer.files.length)uploadFiles([...e.dataTransfer.files]);});
 async function startAcademic(kind,docName){
-  const topic=prompt(kind==='exam'?'Thema für die Probeklausur (leer = ganzes Dokument):':'Thema für die Zusammenfassung (leer = ganzes Dokument):','')||'';
-  const body={doc:docName,topic:topic||docName}; if(kind==='exam')body.n=8;
+  const exam=kind==='exam';
+  const v=await askDialog({title:(exam?'Probeklausur':'Zusammenfassung')+' zu „'+docName+'“',
+    desc:exam?'Mimir erstellt Aufgaben mit Lösungen und Seitenangaben aus deinem Dokument.':'Mimir fasst dein Dokument mit Seitenangaben zusammen.',
+    fields:[{name:'topic',label:'Thema (optional)',placeholder:'leer = das ganze Dokument'}].concat(exam?[
+      {name:'n',label:'Anzahl Aufgaben',options:[['6','6 Aufgaben'],['8','8 Aufgaben'],['12','12 Aufgaben'],['16','16 Aufgaben']],value:'8'},
+      {name:'difficulty',label:'Schwierigkeit',options:[['leicht','leicht – Begriffe und Wiedergabe'],['mittel','mittel – anwenden und rechnen'],['schwer','anspruchsvoll – Transfer und Bewertung']],value:'mittel'}]:[
+      {name:'detail',label:'Umfang',options:[['kompakt','kompakt – das Wichtigste'],['normal','normal'],['ausfuehrlich','ausführlich – mit allen Beispielen']],value:'normal'}]),
+    ok:exam?'Probeklausur erstellen':'Zusammenfassen'});
+  if(!v)return;
+  const topic=v.topic.trim();
+  const body={doc:docName,topic:topic||docName}; if(exam){body.n=Number(v.n);body.difficulty=v.difficulty;}else body.detail=v.detail;
   const r=await jpost('/api/'+kind,body);
   openRunView({id:r.run_id,kind:kind,title:topic||docName,created:Date.now()/1000});
 }
@@ -1326,28 +1503,34 @@ tabsEl.addEventListener('click',onTabClick);
 $('nav').addEventListener('click',onTabClick);
 
 /* ===== Einstellungen: Modell wechseln / herunterladen / System beenden ===== */
-let _specs=null, _dlTimer=null;
+let _specs=null, _dlTimer=null, _models=[];
 async function loadSettings(){
+  await loadModels();
   try{
     const s=await jget('/api/system/specs'); _specs=s;
     if(s.error){$('specsBox').innerHTML='<div class="err">'+esc(s.error)+'</div>';}
     else{
       $('specsBox').innerHTML=`<dl class="specs">
         <div><dt>Grafikkarte</dt><dd>${esc(s.gpu||'–')}</dd></div>
-        <div><dt>Grafikspeicher (VRAM)</dt><dd>${esc(s.vram_gb||'?')} GB</dd></div>
+        <div><dt>${s.shared_memory?'Grafikspeicher (geteilt)':'Grafikspeicher (VRAM)'}</dt><dd>${esc(s.vram_gb||'?')} GB</dd></div>
         <div><dt>Arbeitsspeicher</dt><dd>${esc(s.ram_gb||'?')} GB</dd></div>
         <div><dt>Frei für Modelle</dt><dd>${esc(s.disk_free_gb||'?')} GB</dd></div></dl>`;
-      renderSuggestions(s.suggestions||[]);
+      const box=$('specsBox');
+      if(s.shared_memory)box.append(noteEl('Onboard-Grafik: Der Grafikspeicher ist geliehener Arbeitsspeicher. Kleine Modelle (bis etwa 5 GB) laufen gut, größere laden zwar, antworten aber sehr langsam. Andere Programme, die die Grafikkarte nutzen, bremsen Mimir zusätzlich.'));
+      const sp=(s.speed||{}),last=sp.last||{},best=sp.best||{};
+      if(best.tps){const lines=['Gemessen mit '+modelLabel(best.model)+': bis zu '+fmtNum(best.tps)+' Tokens pro Sekunde'+(last.tps&&Math.abs(last.tps-best.tps)>0.5?' (zuletzt '+fmtNum(last.tps)+')':'')+' – eine mittellange Antwort (≈600 Tokens) dauert damit etwa '+fmtDur(600/best.tps)+'.'];
+        box.append(noteEl(lines[0]));}
+      box.append(capsEl());
+      renderSuggestions(s.suggestions||[],best);
     }
-  }catch(e){$('specsBox').innerHTML='<div class="err">Control-Dienst nicht erreichbar.</div>';}
-  loadModels();
+  }catch(e){$('specsBox').innerHTML='<div class="err">Der Mimir-Hostdienst ist nicht erreichbar.</div>';}
 }
 async function loadModels(){
   const box=$('modelList');
   try{
     const d=await jget('/api/models');
     if(d.error){box.innerHTML='<div class="err">'+esc(d.error)+'</div>';return;}
-    const chat=(d.models||[]).filter(m=>m.kind==='chat');
+    const chat=(d.models||[]).filter(m=>m.kind==='chat');_models=chat;
     box.innerHTML='';
     if(!chat.length)box.append(el('div','hint','Keine Chat-Modelle im Volume.'));
     chat.forEach(m=>{
@@ -1361,13 +1544,28 @@ async function loadModels(){
     });
   }catch(e){box.innerHTML='<div class="err">Fehler beim Laden.</div>';}
 }
-function renderSuggestions(sug){
+function noteEl(text){const n=el('p','note');n.append(ico('info'),el('span','',text));return n;}
+function fmtNum(x){return (Math.round(x*10)/10).toLocaleString('de-DE');}
+function fmtDur(sec){return sec<90?Math.max(5,Math.round(sec/5)*5)+' Sekunden':Math.round(sec/60)+' Minuten';}
+function modelLabel(f){return String(f||'dem aktiven Modell').replace(/\.gguf$/i,'');}
+// what this installation can and cannot do — so nobody wonders why a feature is missing
+function capsEl(){const c=CAPS||{},items=[];
+  const sk=c.skills||{};
+  items.push('Fähigkeiten (Skills): '+(sk.signed_by?(sk.verified+' geprüft und geladen'):'nicht geladen – das Skill-Register ist nicht signiert'));
+  items.push('Sandbox für selbstgeschriebenen Code: '+(c.sandbox?'verfügbar':'nicht eingerichtet (Linux oder WSL2-Modus nötig)'));
+  if(Array.isArray(c.export)&&c.export.length)items.push('Export: '+c.export.filter(x=>['docx','pdf','html','odt','epub','pptx'].includes(x)).map(x=>x.toUpperCase()).join(', ')+(c.export.includes('pdf')?'':' · PDF über „Drucken“ in der Dokumentansicht'));
+  items.push('Experimentelle Funktionen (Coding, Autopilot): '+(c.labs?'eingeschaltet (MIMIR_LABS=1, nur API)':'aus'));
+  const n=el('div','note');n.append(ico('shield'));const ul=el('div');items.forEach(t=>ul.append(el('div','',t)));n.append(ul);return n;}
+function renderSuggestions(sug,best){
   const box=$('suggestList'); box.innerHTML='';
+  const act=(_models.find(m=>m.file===(best&&best.model))||{}).size_gb;
   sug.forEach(c=>{
     const row=el('div','sug'+(c.fits?'':' nofit'));
     row.append(el('span','fit '+(c.fits?'yes':'no'),c.fits?'passt':'zu groß'));
     const info=el('div','si');
-    info.innerHTML='<div class="sn">'+esc(c.file)+'</div><div class="sm">'+esc(c.size_gb)+' GB · ab '+esc(c.min_vram)+' GB VRAM · '+esc(c.desc)+'</div>';
+    // rough speed estimate from the measured speed of the active model (scales ~ with model size)
+    const est=best&&best.tps&&act?' · Antwort ca. '+fmtDur(600/(best.tps*act/Math.max(0.5,c.size_gb)))+' (geschätzt)':'';
+    info.innerHTML='<div class="sn">'+esc(c.file)+'</div><div class="sm">'+esc(c.size_gb)+' GB · ab '+esc(c.min_vram)+' GB Grafikspeicher'+esc(est)+' · '+esc(c.desc)+'</div>';
     row.append(info);
     if(c.installed){const s=el('span','inst');s.append(ico('check'),'installiert');row.append(s);}
     else{const b=el('button','btn btn-sm'+(c.fits?' btn-primary':''));b.type='button';b.append(ico('download'),c.fits?'Laden':'Trotzdem laden');b.onclick=()=>{$('dlRepo').value=c.repo;$('dlFile').value=c.file;downloadModel();};row.append(b);}
@@ -1379,7 +1577,7 @@ async function switchModel(file,btn){
   if(btn){btn.disabled=true;btn.textContent='…';}
   const r=await jpost('/api/models/switch',{file});
   if(r.error){alert('Fehler: '+r.error);if(btn){btn.disabled=false;btn.textContent='Aktivieren';}}
-  else{statusEl.textContent='Modell umgestellt: '+file;loadModels();}
+  else{loadModels();modelState='loading';applyReadyState();setTimeout(refreshHealth,2000);}
 }
 async function downloadModel(){
   const repo=$('dlRepo').value.trim(), file=$('dlFile').value.trim();
@@ -1404,9 +1602,9 @@ function _dlStatusSet(h){$('dlStatus').innerHTML=h;}
 const LOGO_SVG='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4c-6.5-.4-12 4.2-13 11.2L6.6 19l3.5-.5C17 17 20.6 11 20 4Z"/><path d="M4 21 14.5 9.5"/><path d="M9.6 14.6h4.6"/></svg>';
 async function shutdownMimir(){
   if(!confirm('Mimir jetzt beenden?\n\nAlle Mimir-Dienste werden gestoppt und der Grafikspeicher freigegeben. Deine Daten bleiben erhalten. Zum Neustart das Desktop-Icon „Mimir starten" nutzen.'))return;
-  statusEl.textContent='beende Mimir…';
+  setStatus('beende Mimir…','st-warn');clearTimeout(refreshHealth.t);
   try{const r=await jpost('/api/shutdown',{});
-    if(r.error){alert('Fehler: '+r.error);statusEl.textContent='bereit';}
+    if(r.error){alert('Fehler: '+r.error);refreshHealth();}
     else{document.body.innerHTML='<div class="bye"><span class="logo">'+LOGO_SVG+'</span><h2>Mimir wurde beendet</h2><p>Der Grafikspeicher (VRAM) ist wieder frei. Dieses Fenster kann geschlossen werden.</p><p>Neustart über das Desktop-Icon <b>„Mimir starten“</b>.</p></div>';}
   }catch(e){/* der Server stirbt evtl. mitten in der Antwort — das ist ok */
     document.body.innerHTML='<div class="bye"><span class="logo">'+LOGO_SVG+'</span><h2>Mimir wird beendet …</h2></div>';}
@@ -1419,15 +1617,26 @@ const BINARY_EXT=['docx','pdf','pptx','xlsx','zip','png','jpg','jpeg','gif','odt
 const MD_EXT=['md','markdown'];
 // documents docproc can import → Markdown for in-app preview (rendered readably, not raw bytes)
 const VIEW_EXT=['docx','odt','epub','rtf','html','htm','rst','org','pptx','pdf','tex','latex','csv'];
-const EXPORT_TARGETS=['docx','pdf','html','odt','epub','pptx','rst'];
+// export formats offered; replaced by what this installation can really produce (/api/capabilities —
+// e.g. no PDF on Windows, where printing the document view to PDF is the way)
+let EXPORT_TARGETS=['docx','pdf','html','odt','epub','pptx','rst'];
+let CAPS={};
+async function loadCapabilities(){try{const d=await jget('/api/capabilities');CAPS=d||{};
+  if(Array.isArray(d.export)&&d.export.length)EXPORT_TARGETS=['docx','pdf','html','odt','epub','pptx','rst'].filter(t=>d.export.includes(t));
+  else if(d.pending)setTimeout(loadCapabilities,5000);}catch(e){}}
 let _MD=null;
 function mdParser(){if(!_MD)_MD=window.markdownit({html:false,linkify:true,typographer:true,breaks:false});return _MD;}
 function typesetMath(elm){try{window.renderMathInElement(elm,{delimiters:[
   {left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},
   {left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}],
   throwOnError:false,ignoredTags:['script','noscript','style','textarea','pre','code']});}catch(e){}}
-// Render markdown → sanitized HTML → typeset math. Content may come from untrusted documents,
-// so DOMPurify runs BEFORE KaTeX (KaTeX only parses math source, never HTML).
+// Render markdown → sanitized HTML → math, with the SAME chain as chat answers (renderChatMd): formulas are
+// cut out BEFORE markdown-it (which ate "\(", "\\", "\," and "_" inside them) and put back as KaTeX after
+// DOMPurify. Links stay text like in the chat (documents can carry model- or web-written URLs); only bare
+// DOI links (bibliography) remain clickable.
+function printDoc(path){const old=document.title;document.title=(path.split('/').pop()||'Dokument').replace(/\.[^.]+$/,'');
+  document.body.classList.add('printing');const done=()=>{document.body.classList.remove('printing');document.title=old;window.removeEventListener('afterprint',done);};
+  window.addEventListener('afterprint',done);window.print();setTimeout(done,1500);}
 function renderMarkdownView(fv,path,content,opts){
   opts=opts||{};fv.innerHTML='';
   const bar=el('div','viewbar');const t=el('span','vt',path.split('/').pop());t.title=path;
@@ -1435,10 +1644,10 @@ function renderMarkdownView(fv,path,content,opts){
   const bR=el('button','on','Ansicht');const bS=el('button','',opts.imported?'Markdown':'Quelltext');
   bR.setAttribute('aria-pressed','true');bS.setAttribute('aria-pressed','false');seg.append(bR,bS);
   bar.append(t,seg);
+  const pr=el('button','icon-btn');pr.title='Drucken oder als PDF speichern';pr.setAttribute('aria-label','Drucken oder als PDF speichern');pr.append(ico('printer'));pr.onclick=()=>printDoc(path);bar.append(pr);
   const dl=el('button','icon-btn');dl.title='Herunterladen';dl.setAttribute('aria-label','Herunterladen');dl.append(ico('download'));dl.onclick=()=>downloadFile(path);bar.append(dl);
   const body=el('div','md-body');
-  body.innerHTML=window.DOMPurify.sanitize(mdParser().render(content||''),{USE_PROFILES:{html:true}});
-  typesetMath(body);
+  renderChatMd(body,content||'',{md:mdParser(),doi:true});
   const src=el('div','md-src');src.style.display='none';
   const tbl=el('table');(content||'').split('\n').forEach((ln,i)=>{const tr=el('tr');tr.append(el('td','ln',String(i+1)),el('td','code',ln));tbl.append(tr);});src.append(tbl);
   fv.append(bar,body,src);
@@ -1489,6 +1698,9 @@ document.addEventListener('keydown',e=>{
 $('send').onclick=sendOrStop;$('refresh').onclick=loadTree;
 taskEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
 loadTree();
+refreshHealth();
+refreshDocsOption();
+loadCapabilities();
 loadConversations().then(()=>{if($('convSel').value)openConversation($('convSel').value);});
 refreshApprovals();
 loadAutonomy();
