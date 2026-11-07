@@ -20,7 +20,7 @@ the machine** — by running everything as normal Windows processes:
 Everything binds to **127.0.0.1 only**. Model management stays an *operator* control surface (loopback +
 token), never a model capability — the agent still cannot switch the model or stop the stack.
 
-**What runs natively (no WSL):** chat, model management, goals/plan, **document RAG** (docproc runs
+**What runs natively (no WSL):** chat, model management, **document RAG** (docproc runs
 natively — see below), and **web research / thesis** (webfetch runs natively; `academic_search` uses
 OpenAlex directly; general `web_search` is best-effort unless you point `MIMIR_SEARXNG_URL` at a SearXNG
 instance).
@@ -28,7 +28,8 @@ instance).
 **Self-improvement + Zone-W coding** run untrusted model-written code, which Mimir contains only with a
 Firecracker microVM (Linux + KVM). Rather than weaken that on Windows, they are available as an **optional
 WSL2 mode** that runs the *real* sandbox code — see **[WSL_SANDBOX.md](WSL_SANDBOX.md)**. Without it, those
-two features report "nicht verfügbar" and everything else works.
+two features report "nicht verfügbar" and everything else works. The web UI currently has no Coding tab (the product
+focuses on research and writing); Zone-W coding is only reachable through the API.
 
 ## Files
 
@@ -49,7 +50,7 @@ two features report "nicht verfügbar" and everything else works.
 `mimir_win.py` asks llama.cpp itself which GPU it sees (`llama-cli --list-devices`, vendor-neutral) and
 picks the largest model from the catalog that fits, capped small on first run for a fast start
 (override with `MIMIR_AUTOPICK_MAX_SIZE_GB`). You can pick any other model afterwards in
-**⚙ Einstellungen → Modell**.
+**Einstellungen** → *Modell herunterladen*.
 
 ## Build the installer
 

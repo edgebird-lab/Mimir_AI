@@ -1,7 +1,7 @@
 # Installing Mimir
 
-This guide walks you through installing and running Mimir on **Linux** (the fully supported
-platform) and on **Windows** (experimental). If you just want the short version, see the
+This guide walks you through installing and running Mimir on **Linux** (the full product, including
+the Firecracker sandbox) and on **Windows** (native, no Docker or WSL). If you just want the short version, see the
 Install section of the [README](README.md).
 
 Mimir runs entirely on your own machine. The web interface is in German; the code and this
@@ -55,8 +55,10 @@ The Windows build runs **natively**: no Docker and no WSL. Requirements:
 - **~10-20 GB free disk** for the model and runtime; **16 GB+ RAM** recommended.
 - Everything else (a Python runtime, llama.cpp Vulkan, Redis, and a model sized to your VRAM) is
   installed for you.
-- Limitation: the **Firecracker microVM sandbox** (self-improvement and Zone W coding) is
-  **Linux-only** and unavailable on Windows. Chat, model management, goals/plan and document RAG work.
+- Limitation: the **Firecracker microVM sandbox** (self-improvement) does not run natively on
+  Windows; it is only available through the optional WSL2 mode (see
+  [windows-native/WSL_SANDBOX.md](windows-native/WSL_SANDBOX.md)). Chat, model management, research,
+  thesis writing and document RAG work natively.
 
 ---
 
@@ -90,8 +92,8 @@ The installer performs the full setup for you:
 6. **Starts the stack.**
 
 > **First model download is large.** The default model is roughly **18 GB**. You can let the
-> installer fetch it, or skip it and download a model later from the UI (⚙ Einstellungen →
-> Modell), where Mimir suggests models that fit your VRAM.
+> installer fetch it, or skip it and download a model later from the UI (**Einstellungen** in the
+> left sidebar → *Modell herunterladen*), where Mimir suggests models that fit your VRAM.
 
 ---
 
@@ -102,12 +104,13 @@ Download and run **`MimirInstaller.exe`** from the Releases page. It installs pe
 
 1. Detects your **GPU and VRAM** (AMD / NVIDIA / Intel, via Vulkan) and **RAM**.
 2. Downloads **llama.cpp (Vulkan)**, **Redis**, and a **chat model sized to your machine** (a smaller,
-   fast model by default — you can pick a larger one later in ⚙ Einstellungen → Modell).
+   fast model by default — you can pick a larger one later under **Einstellungen** → *Modell
+   herunterladen*).
 3. Starts the stack on native processes and opens **<http://127.0.0.1:8082>**.
 
 No Docker and no WSL are involved. Manage it with the **Mimir starten / Mimir beenden** shortcuts, or the
 **Beenden** button in the UI. To run from source without the installer, or to build the installer
-yourself, see [windows-native/README.md](../windows-native/README.md).
+yourself, see [windows-native/README.md](windows-native/README.md).
 
 > **Antivirus / SmartScreen note.** The Windows installer and the `.exe` are **not
 > code-signed** (code-signing certificates cost money). Windows Defender SmartScreen will
@@ -116,8 +119,8 @@ yourself, see [windows-native/README.md](../windows-native/README.md).
 > allow the file in your antivirus). The full source is open, so you can inspect exactly what
 > the installer does.
 
-Remember: the Firecracker microVM sandbox is **not available on Windows** — self-improvement
-and Zone W coding are disabled there.
+Remember: the Firecracker microVM sandbox does **not run natively on Windows** — self-improvement
+needs the optional WSL2 mode (installer option *Erweiterte Features*).
 
 ---
 
@@ -125,11 +128,13 @@ and Zone W coding are disabled there.
 
 1. Open **<http://127.0.0.1:8082>** in your browser (the "Mimir starten" launcher opens it
    for you on Linux).
-2. Go to the **⚙ Einstellungen** tab. Here you can see your system specs (GPU / VRAM / RAM).
+2. Open **Einstellungen** (settings) in the left sidebar. Here you can see your system specs
+   (GPU / VRAM / RAM) and switch between light and dark mode (*Darstellung*).
 3. If no model is installed, or you want a different one, **download a model** from
-   HuggingFace directly in the Settings tab. Mimir recommends models that fit your VRAM —
-   pick one and wait for the download to finish.
-4. Return to the **Chat** tab and start using Mimir.
+   HuggingFace directly on that page (*Modell herunterladen*). Mimir recommends models that fit
+   your VRAM — pick one and wait for the download to finish.
+4. Go back to **Chat** and start using Mimir. Research, thesis writing and your own documents live
+   under **Recherche & Bibliothek**; every job shows up under **Läufe** (runs).
 
 ---
 
@@ -137,13 +142,16 @@ and Zone W coding are disabled there.
 
 - **Start / stop (Linux):** use the desktop icons **"Mimir starten"** and **"Mimir
   beenden."**
-- **Stop from the app:** the ⚙ Einstellungen tab has a one-click **Beenden** (shutdown)
-  button that frees GPU memory.
-- **Switch models:** open ⚙ Einstellungen → Modell and select any installed GGUF model, or
-  download a new one. Switching happens at runtime.
+- **Stop from the app:** the **Beenden** button in the top right corner (also at the bottom of
+  **Einstellungen**) shuts Mimir down and frees GPU memory.
+- **Switch models:** open **Einstellungen** → *Installierte Modelle* and activate any installed
+  GGUF model, or download a new one. Switching happens at runtime.
+- **Autonomy:** the selector in the top bar sets how much Mimir may do without asking
+  (*Sicher – alles fragen*, *Autonom – Dateien ohne Fragen*, *Voll autonom – keine Rückfragen*).
 
 Because runs are persistent, you can close the browser tab while a long task continues in the
-background, then reconnect later from the runs board and approvals inbox.
+background, then reconnect later under **Läufe** (runs) and answer pending questions under
+**Freigaben** (approvals, top right). A running job can be stopped from its run view.
 
 ---
 
@@ -156,13 +164,14 @@ your user is in the `docker`, `render`, and `video` groups (log out and back in 
 changing group membership).
 
 **"Model won't load."**
-The model is likely too large for your VRAM. Open **⚙ Einstellungen → Modell** and pick a
-**smaller model** — Mimir marks the ones that fit your card. On 8–12 GB of VRAM, choose one
+The model is likely too large for your VRAM. Open **Einstellungen** → *Modell herunterladen* and
+pick a **smaller model** — Mimir marks the ones that fit your card (*passt*). On 8–12 GB of VRAM, choose one
 of the smaller options rather than the default 30–35B model.
 
 **"Sandbox unavailable" on Windows.**
-This is expected. The Firecracker microVM sandbox is **Linux-only**, so self-improvement and
-Zone W coding do not run on Windows. Use Linux for the full, hardened experience.
+This is expected unless you set up the optional WSL2 mode. The Firecracker microVM sandbox does not
+run natively on Windows, so self-improvement is unavailable there. Use the installer option
+*Erweiterte Features* (WSL2) or Linux for the full, hardened experience.
 
 **KVM problems on Linux.**
 If the sandbox fails to start, check that `/dev/kvm` exists and is accessible, that hardware
@@ -185,8 +194,10 @@ virtualization is enabled in your BIOS/UEFI, and that your user is in the `kvm` 
    systemd units named `mimir-*`), and the desktop launchers.
 4. Delete the cloned repository directory.
 
-On Windows, stop the stack in Docker Desktop, remove the Mimir images and volumes, and delete
-the installed files.
+On Windows (native installer): uninstall **Mimir** via *Settings → Apps* or the uninstaller in
+the Start menu; it stops Mimir first. Downloaded models and your data (`models\`, `data\`, `.env`
+in `%LOCALAPPDATA%\Mimir`) are kept on purpose — delete that folder afterwards to remove them
+too.
 
 ---
 

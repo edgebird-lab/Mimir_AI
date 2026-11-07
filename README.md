@@ -15,7 +15,9 @@ Die Weboberfläche ist auf Deutsch (das Produkt richtet sich an deutsche Nutzer)
 Dokumentation sind auf Englisch.
 
 ![Mimir Chat-Oberfläche](docs/img/01-chat.png)
-*Chat mit einem lokalen Modell — Streaming-Antworten und sichtbares Denken bei Reasoning-Modellen.*
+*Chat mit einem lokalen Modell — Antworten mit Formeln und Quellen, die Arbeitsschritte (z. B. die
+Suche in der Fachliteratur) stehen verständlich über der Antwort. Die Oberfläche gibt es hell und
+dunkel.*
 
 ---
 
@@ -46,8 +48,8 @@ Weil **kein Zahlungs-Primitiv existiert**, ist eine Finanztransaktion nicht *zus
 egal welcher Text ins Modell injiziert wird, es kann keine zusammenbauen. Nach außen wirkende
 oder unumkehrbare Aktionen — Posten, Deployen, Installieren, E-Mail senden — erfordern auf jeder
 Autonomiestufe unterhalb der höchsten eine menschliche Freigabe. Auf der höchsten Stufe
-(**🚀 Voll autonom**) kann der Betreiber dieses Sicherheitsnetz explizit abwählen — eine bewusste,
-bestätigte Entscheidung, kein Standard.
+(**Voll autonom**, oben rechts in der Kopfzeile wählbar) kann der Betreiber dieses Sicherheitsnetz
+explizit abwählen — eine bewusste, bestätigte Entscheidung, kein Standard.
 
 ---
 
@@ -68,23 +70,27 @@ Die zentrale Design-Entscheidung: das Literaturverzeichnis wird **niemals dem Mo
 Erfinden überlassen**. Jeder Eintrag wird aus strukturierten Metadaten (Autor, Jahr, Titel,
 Venue, DOI) zusammengesetzt, die von den Such-APIs selbst geliefert werden, und die
 Zitat-Marker, die das Modell schreibt, werden gegen genau diese Quellenliste geprüft. Dokumente
-werden nach Markdown, DOCX, PDF, HTML, ODT, EPUB und PPTX exportiert. Beide Werkzeuge leben im
-Tab **📚 Bibliothek**, direkt neben deinen hochgeladenen Dokumenten (auf die sie ebenfalls
-zugreifen können).
+werden nach Markdown, DOCX, PDF, HTML, ODT, EPUB und PPTX exportiert. Beide Werkzeuge stehen in
+der Seitenleiste unter **Recherche & Bibliothek**, direkt über deinen hochgeladenen Dokumenten (auf
+die sie ebenfalls zugreifen können). Jeder Auftrag läuft als eigener Lauf im Hintergrund weiter und
+lässt sich unter **Läufe** live verfolgen oder stoppen.
 
 ![Recherche und wissenschaftliches Schreiben](docs/img/07-research.png)
-*Ausgabe des Recherche-Werkzeugs — eine fundierte Zusammenfassung mit Zitat-Markern im Text und
-einem echten, aus OpenAlex stammenden Literaturverzeichnis, nicht vom Modell erfunden.*
+*Ergebnis einer Recherche — ein Bericht mit Zitat-Markern im Text und einem echten, aus OpenAlex
+stammenden Literaturverzeichnis, nicht vom Modell erfunden.*
 
 ---
 
 ## Funktionen
 
-- **Chat** mit einem lokalen Modell: Streaming-Ausgabe und sichtbares Denken bei
-  Reasoning-Modellen.
-- **Dokumentbibliothek (RAG):** PDFs, DOCX und PPTX hochladen und Fragen stellen, die in deinen
-  eigenen Dokumenten verankert sind, mit Seitenangaben. Mimir kann daraus auch fundierte
-  Lernzusammenfassungen und Übungsklausuren erzeugen.
+- **Chat** mit einem lokalen Modell: Streaming-Ausgabe, Markdown mit Formeln (KaTeX) und
+  sichtbares Denken bei Reasoning-Modellen. Frühere Unterhaltungen lassen sich wieder aufrufen.
+- **Dokumentbibliothek (RAG):** PDFs, DOCX, PPTX, TXT und Markdown unter **Recherche &
+  Bibliothek → Eigene Dokumente** hochladen und Fragen stellen, die in deinen eigenen Dokumenten
+  verankert sind, mit Seitenangaben. Pro Dokument erzeugt Mimir auf Knopfdruck eine
+  **Zusammenfassung** oder eine **Probeklausur**.
+- **Wissens-Wiki:** jede Recherche und Thesis ergänzt ein lokales Wiki mit geprüften Aussagen, auf
+  dem spätere Recherchen aufbauen.
 - **Recherche & Thesis-Schreiben:** ein Thema recherchieren oder eine komplette
   wissenschaftliche Arbeit mit echtem, nicht erfundenem Literaturverzeichnis aus OpenAlex und
   Websuche entwerfen — siehe [Recherche & wissenschaftliches Schreiben](#recherche--wissenschaftliches-schreiben)
@@ -94,31 +100,29 @@ einem echten, aus OpenAlex stammenden Literaturverzeichnis, nicht vom Modell erf
   und zur Prüfung bereitstellen. Ein Mensch muss den Skill prüfen und kryptographisch
   **signieren (ed25519)**, bevor er wiederverwendbar wird. Der Agent kann eigene Skills niemals
   selbst signieren oder freigeben.
-- **Modellverwaltung (Tab ⚙ Einstellungen):** Systemspezifikationen einsehen (GPU/VRAM/RAM),
+- **Modellverwaltung (Bereich Einstellungen):** Systemspezifikationen einsehen (GPU/VRAM/RAM),
   zwischen installierten GGUF-Modellen wechseln, und neue von HuggingFace herunterladen — mit
-  Empfehlungen passend zu deinem VRAM. Ein Ein-Klick-**Beenden**-Button gibt den GPU-Speicher frei.
-- **Persistente, wiederverbindbare Runs:** Aufgaben laufen im Hintergrund weiter, auch wenn du
-  den Tab schließt. Ein Runs-Board und ein Freigabe-Postfach lassen dich wieder andocken und
-  ausstehende Aktionen freigeben.
+  Empfehlungen passend zu deinem VRAM. Dort stellst du auch die **Darstellung** (hell, dunkel oder
+  automatisch) ein. Der Knopf **Beenden** oben rechts gibt den GPU-Speicher mit einem Klick frei.
+- **Läufe, die weiterlaufen:** Aufgaben laufen im Hintergrund weiter, auch wenn du das
+  Browserfenster schließt. Unter **Läufe** dockst du wieder an, unter **Freigaben** (oben rechts)
+  entscheidest du über ausstehende Aktionen. Die **Autonomie-Stufe** daneben legt fest, wie viel
+  Mimir ohne Nachfrage tun darf.
 
 ---
 
 ## Screenshots
 
-![Modell- und Systemeinstellungen](docs/img/02-settings.png)
-*Einstellungen — Systemspezifikationen einsehen, Modelle wechseln und neue passend zu deinem VRAM
-herunterladen.*
+![Recherche & Bibliothek](docs/img/05-library.png)
+*Recherche & Bibliothek — Thema recherchieren, Thesis schreiben lassen und eigene Dokumente
+hochladen; pro Dokument gibt es Zusammenfassung und Probeklausur auf Knopfdruck.*
 
-![Dokumentbibliothek](docs/img/05-library.png)
-*Dokumentbibliothek (RAG) — Fragen stellen, die in deinen eigenen PDFs, DOCX und PPTX verankert
-sind, mit Zitaten.*
+![Läufe](docs/img/06-runs.png)
+*Läufe — alle Aufträge mit Status und Startzeit; ein Klick öffnet den Live-Verlauf.*
 
-![Runs-Board](docs/img/06-runs.png)
-*Runs-Board — zu Hintergrundaufgaben wieder andocken und ausstehende Aktionen freigeben.*
-
-![Recherche und wissenschaftliches Schreiben](docs/img/07-research.png)
-*Recherche & Thesis-Schreiben — fundierte Ausgabe mit echten Zitaten aus OpenAlex, nicht vom
-Modell erfunden.*
+![Einstellungen](docs/img/02-settings.png)
+*Einstellungen — Darstellung wählen, Systemspezifikationen einsehen, Modelle wechseln und neue
+passend zu deinem Grafikspeicher herunterladen.*
 
 ---
 
@@ -173,8 +177,9 @@ wird — **kein Docker, kein WSL, keine CUDA/ROCm-Installation**. Siehe
 [windows-native/README.md](windows-native/README.md) für die Architektur und den Bau des
 Installers.
 
-Die Firecracker-microVM-Sandbox (Selbstverbesserung) bleibt **nur unter Linux** verfügbar; Chat,
-Modellverwaltung, Recherche und Dokument-RAG funktionieren unter Windows vollständig. Das ältere
+Die Firecracker-microVM-Sandbox (Selbstverbesserung) läuft nativ **nur unter Linux**; unter Windows
+gibt es sie nur über den optionalen WSL2-Modus (siehe oben). Chat, Modellverwaltung, Recherche,
+Thesis und Dokument-RAG funktionieren unter Windows vollständig. Das ältere
 Docker-basierte `install.ps1` (unter `windows/`) bleibt nur für Nutzer erhalten, die bewusst den
 WSL2/Docker-Weg wollen.
 
