@@ -114,11 +114,17 @@ def web_search(query: str, k: int = 8) -> list[dict]:
             return _web_search_fallback(query, k)
         except Exception:  # noqa: BLE001 — fall through to SearXNG if webfetch is unreachable
             pass
-    r = httpx.get(f"{SEARXNG_URL}/search", params={"q": query, "format": "json"},
-                  timeout=40, headers={"User-Agent": "Mimir"})
-    r.raise_for_status()
-    res = r.json().get("results", [])[:max(1, min(int(k), 20))]
-    return [{"title": x.get("title"), "url": x.get("url"), "snippet": x.get("content", "")} for x in res]
+    try:
+        r = httpx.get(f"{SEARXNG_URL}/search", params={"q": query, "format": "json"},
+                      timeout=40, headers={"User-Agent": "Mimir"})
+        r.raise_for_status()
+        res = r.json().get("results", [])[:max(1, min(int(k), 20))]
+        if res:
+            return [{"title": x.get("title"), "url": x.get("url"), "snippet": x.get("content", ""),
+                     "source": "SearXNG"} for x in res]
+    except Exception:  # noqa: BLE001 — SearXNG down or empty: the webfetch sources are the fallback
+        pass
+    return _web_search_fallback(query, k)    # raises if that is unreachable too → the tool reports a failure
 
 
 def research_primitives() -> dict:
@@ -134,7 +140,7 @@ def research_primitives() -> dict:
 
     def _websearch(args):
         res = web_search(str(_uw(args.get("query", ""))), int(args.get("k", 8) or 8))
-        return [{"title": r.get("title"), "url": r.get("url"),
+        return [{"title": r.get("title"), "url": r.get("url"), "source": r.get("source") or "",
                  "snippet": Tainted(r.get("snippet") or "", "web")} for r in res]
 
     def _webfetch(args):

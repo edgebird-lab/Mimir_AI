@@ -1295,7 +1295,11 @@ class Academic:
         kept_webhits = [h for j, h in enumerate(webhits) if (n_src + j) not in drop]
         if kept_sources or kept_webhits:            # never drop everything
             sources, webhits = kept_sources, kept_webhits
-        yield {"event": "status", "status": f"{len(sources)} wissenschaftliche + {len(webhits)} Web-Quellen gefunden"}
+        web_from = sorted({str(h.get("source") or "") for h in webhits} - {""})
+        web_note = (f" ({', '.join(web_from)})" if web_from else "") if webhits else (
+            "" if wr.ok else " – Websuche gerade nicht erreichbar, der Bericht stützt sich auf die Fachliteratur")
+        yield {"event": "status",
+               "status": f"{len(sources)} wissenschaftliche + {len(webhits)} Web-Quellen gefunden{web_note}"}
         lines = []
         wiki_sources = []
         for i, s in enumerate(sources, 1):
