@@ -122,6 +122,7 @@ Systemschrift-Stack). CSP bleibt unverändert (`font-src data:`). Lizenzen: OFL 
 | Autonomie | `.autonomy` + `#autonomy` | Sicher: neutral + grünes Schild. Autonom: Bernstein. Voll autonom: roter 2-px-Rahmen + Warndreieck (per `:has(option:checked)`, ohne JS). |
 | Lauf-Protokoll | `.run-head`, `.rh-acts`, `.runlog`, `.ev`, `.ev.cp`, `.ev.nh`, `.ev.fail` | Kopf mit Art, Titel (nur das Thema), Startzeit, Status-Plakette und „Lauf stoppen“ (solange der Lauf nicht beendet ist). Generierter Text als Markdown in einer scrollbaren Karte (max. 26 rem) an der Stelle im Verlauf, an der er beginnt. Ergebnisse als Karte, „Mensch nötig“/Entscheidung als Bernstein-Karte, Laufende „fehlgeschlagen“ als rote Karte mit verständlichem Fehlertext (`errDe`). |
 | Dokument | `.viewbar`, `.vseg`, `.md-body` | Papierfläche, Segment-Umschalter Ansicht/Quelltext, Download als Icon. |
+| Wissens-Wiki | `.wiki`, `.wp`, `#wikiPage` | Seitenliste mit Beleg-Genauigkeit (`.acc-hi/mid/lo`); Seite als Markdown wie eine Chat-Antwort (`renderChatMd`), `[[Titel]]` wird danach zu `a.wl`, wenn die Seite existiert. |
 
 ## Icons
 
