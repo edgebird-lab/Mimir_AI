@@ -355,8 +355,8 @@ function setMeter(used,ctx){ if(!ctx)return; const p=Math.min(100,Math.round(use
 function addUser(t){const m=el('div','msg user');m.append(el('div','who','🧑'));const b=el('div','bubble');b.append(el('div','answer',t));m.append(b);chat.append(m);scroll();}
 /* Assistant answers render as Markdown with the same vendored stack as the document viewer
    (markdown-it -> DOMPurify -> KaTeX, no CDN). Model output is untrusted: markdown-it runs with html:false,
-   DOMPurify sanitizes, images are dropped (auto-fetch sink, cf. sanitizer.strip_exfil_markup), links stay
-   clickable only for http(s), open in a new tab with rel=noopener and show the URL as tooltip. Math is cut
+   DOMPurify sanitizes, images are dropped (auto-fetch sink, cf. sanitizer.strip_exfil_markup), links become
+   plain text with the address spelled out (no one-click exfiltration via crafted URLs). Math is cut
    out BEFORE markdown-it (which would eat "\(", "\\", "\," and "_" inside formulas) and put back as KaTeX
    after sanitizing; code blocks/spans are skipped so "$HOME" in code stays code. */
 let _CMD=null;   // own instance: breaks:true keeps the model's single line breaks, no typographer rewrites
@@ -380,9 +380,10 @@ function renderChatMd(target,src){
     if(fence||tick)return m;
     math.push([dd??br??pa??inl,dd!==undefined||br!==undefined]);return '\uE000'+(math.length-1)+'\uE001';});
   const frag=window.DOMPurify.sanitize(chatMd().render(prot),{USE_PROFILES:{html:true},FORBID_TAGS:['img'],RETURN_DOM_FRAGMENT:true});
-  frag.querySelectorAll('a').forEach(a=>{const h=a.getAttribute('href')||'';
-    if(/^https?:\/\//i.test(h)){a.target='_blank';a.rel='noopener noreferrer nofollow';a.title=h;}
-    else a.replaceWith(a.textContent);});
+  // Links are NOT clickable: a prompt-injected answer could otherwise smuggle data out in a URL on one click.
+  // The text keeps the full address visible, so the user can still copy it deliberately.
+  frag.querySelectorAll('a').forEach(a=>{const h=a.getAttribute('href')||'',t=a.textContent;
+    a.replaceWith(/^https?:\/\//i.test(h)&&h!==t&&h!==('http://'+t)&&h!==('https://'+t)?t+' ('+h+')':t);});
   if(math.length){const w=document.createTreeWalker(frag,NodeFilter.SHOW_TEXT),hits=[];
     while(w.nextNode())if(w.currentNode.nodeValue.includes('\uE000'))hits.push(w.currentNode);
     hits.forEach(n=>n.replaceWith(...n.nodeValue.split(/\uE000(\d+)\uE001/).map((p,i)=>i%2?(math[+p]?mathEl(...math[+p]):''):p)));}
