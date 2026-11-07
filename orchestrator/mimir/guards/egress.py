@@ -34,7 +34,7 @@ def _load_list(name: str) -> list[str]:
     p = _CFG / name
     if not p.exists():
         return []
-    return [ln.strip().lower() for ln in p.read_text().splitlines()
+    return [ln.strip().lower() for ln in p.read_text(encoding="utf-8").splitlines()
             if ln.strip() and not ln.startswith("#")]
 
 

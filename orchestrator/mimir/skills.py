@@ -65,7 +65,7 @@ class SkillLibrary:
                 # refuse-to-load on mismatch (tamper / unsigned edit)
                 self.skills[name] = {"error": "hash mismatch — refusing to load", "verified": False}
                 continue
-            self.skills[name] = {"code": code_path.read_text(), "meta": meta, "verified": True}
+            self.skills[name] = {"code": code_path.read_text(encoding="utf-8"), "meta": meta, "verified": True}
 
     def list(self) -> list[dict]:
         return [{"name": n, "verified": s.get("verified", False),

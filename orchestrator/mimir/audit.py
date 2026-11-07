@@ -28,7 +28,7 @@ class AuditLog:
         if not self.path.exists():
             return GENESIS
         last = GENESIS
-        for line in self.path.read_text().splitlines():
+        for line in self.path.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 last = json.loads(line)["hash"]
         return last
@@ -37,13 +37,13 @@ class AuditLog:
         prev = self._last_hash()
         payload = json.dumps({"ts": ts, "event": event, "data": data}, sort_keys=True)
         h = _digest(prev, payload)
-        with self.path.open("a") as f:
+        with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": ts, "event": event, "data": data, "prev": prev, "hash": h}) + "\n")
         return h
 
     def verify(self) -> bool:
         prev = GENESIS
-        for line in self.path.read_text().splitlines():
+        for line in self.path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             rec = json.loads(line)

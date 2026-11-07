@@ -248,7 +248,7 @@ class Academic:
 
     def _write(self, filename, content) -> str:
         os.makedirs(OUT_DIR, exist_ok=True)
-        with open(os.path.join(OUT_DIR, os.path.basename(filename)), "w") as f:
+        with open(os.path.join(OUT_DIR, os.path.basename(filename)), "w", encoding="utf-8") as f:
             f.write(content)
         return f"out/{os.path.basename(filename)}"
 

@@ -150,7 +150,7 @@ def from_markdown(content: str, to: str, bibliography=None, csl: str = "apa",
         csl_path = os.path.join(os.environ.get("MIMIR_CSL_DIR", "/app/csl"), f"{os.path.basename(csl)}.csl")
         if os.path.exists(csl_path):
             bibp = tempfile.mktemp(suffix=".json", dir=_TMP)
-            with open(bibp, "w") as bf:
+            with open(bibp, "w", encoding="utf-8") as bf:
                 json.dump(bibliography, bf)
             cmd += ["--citeproc", "--bibliography=" + bibp, "--csl=" + csl_path]
     try:

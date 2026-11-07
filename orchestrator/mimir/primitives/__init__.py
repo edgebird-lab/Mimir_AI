@@ -80,7 +80,7 @@ def _project_read(args: dict[str, Any]) -> str:
     if not p.is_file():
         raise FileNotFoundError(str(p))
     cap = min(int(args.get("max_bytes", 200_000)), 1_000_000)
-    with p.open(errors="replace") as f:        # P1-6: bounded read (don't slurp a multi-GB file)
+    with p.open(encoding="utf-8", errors="replace") as f:        # P1-6: bounded read (don't slurp a multi-GB file)
         return f.read(cap)
 
 
@@ -97,7 +97,7 @@ def _project_write_out(args: dict[str, Any]) -> str:
     if any(frag in low for frag in FILE_DENY):
         raise PermissionError(f"denylisted output name: {p.name}")
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(str(unwrap(args["content"])))
+    p.write_text(str(unwrap(args["content"])), encoding="utf-8")
     return f"wrote {p}"
 
 
@@ -232,7 +232,7 @@ def _workspace_export_patch(args: dict[str, Any]) -> Any:
     p = (outdir / (name + ".diff")).resolve()
     if outdir not in p.parents:
         raise PermissionError("export name escapes out/workspace-export")
-    p.write_text(diff)
+    p.write_text(diff, encoding="utf-8")
     return {"exported": f"out/workspace-export/{p.name}", "files": rep.get("files", []),
             "bytes": len(diff), "note": "review the diff, then apply by hand — nothing was applied automatically"}
 
@@ -286,9 +286,9 @@ def _stage_skill_candidate(args: dict[str, Any]) -> Any:
     if OUT_DIR not in stagedir.parents:
         raise PermissionError("staging escapes out/skills-staging")
     stagedir.mkdir(parents=True, exist_ok=True)
-    (stagedir / "skill.py").write_text(code)
+    (stagedir / "skill.py").write_text(code, encoding="utf-8")
     if tests:
-        (stagedir / "tests.py").write_text(tests)
+        (stagedir / "tests.py").write_text(tests, encoding="utf-8")
     sha = hashlib.sha256(code.encode()).hexdigest()
     passed = bool(meta.get("tests_passed"))
     (stagedir / "PASSED.json").write_text(json.dumps({

@@ -82,7 +82,7 @@ class Policy:
 
 
 def load(path: str | Path = "config/policy.yaml") -> Policy:
-    data = yaml.safe_load(Path(path).read_text())
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     prim = data.get("primitives", {})
     allow = tuple(prim.get("allow", []))
     deny = tuple(prim.get("deny_always", [])) + HARD_FORBIDDEN
