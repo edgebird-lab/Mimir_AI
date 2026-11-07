@@ -33,7 +33,7 @@ if (-not $wslOk) {
     }
     Write-Say "enabling WSL2 (a REBOOT may be required) ..."
     wsl.exe --install --no-distribution
-    Write-Warn "If Windows asks you to REBOOT, do it, then re-run: Start menu -> 'Mimir: Erweiterte Features einrichten'"
+    Write-Warn "If Windows asks you to REBOOT, do it, then re-run: Start menu -> 'Mimir - Erweiterte Features einrichten'"
     return
 }
 

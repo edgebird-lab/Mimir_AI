@@ -61,7 +61,7 @@ report "nicht verfügbar" and everything else keeps working natively.
 ## Automatic setup (recommended)
 
 You do not need to run the steps above by hand. Tick **"Erweiterte Features"** in the installer, or run
-**Start menu -> "Mimir: Erweiterte Features einrichten"** (`Setup-WSLSandbox.ps1`). It creates a
+**Start menu -> "Mimir - Erweiterte Features einrichten"** (`Setup-WSLSandbox.ps1`). It creates a
 **dedicated, isolated WSL2 distro `Mimir`** via `wsl --import` (your existing distros and their data are
 **never** touched), enables systemd (so `/dev/kvm` + Docker come up), provisions the real sandbox, and
 writes `MIMIR_SANDBOX_ADDR` / `MIMIR_WORKSPACE_ADDR` into your `.env`. The daemons then start with

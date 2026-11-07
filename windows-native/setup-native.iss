@@ -72,13 +72,22 @@ Name: "{group}\Mimir beenden"; Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\windows-native\Stop-Mimir.ps1"""; \
   WorkingDir: "{app}"; IconFilename: "{app}\assets\mimir.ico"
 Name: "{group}\Mimir-Ordner oeffnen"; Filename: "{app}"
-Name: "{group}\Mimir: Erweiterte Features einrichten"; Filename: "powershell.exe"; \
+; No ":" in shortcut names - on NTFS "Mimir: X.lnk" becomes an alternate data stream on an empty file "Mimir".
+Name: "{group}\Mimir - Erweiterte Features einrichten"; Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\windows-native\Setup-WSLSandbox.ps1"""; \
   WorkingDir: "{app}"; IconFilename: "{app}\assets\mimir.ico"
 Name: "{group}\{cm:UninstallProgram,Mimir}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Mimir"; Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\windows-native\Start-Mimir.ps1"""; \
   WorkingDir: "{app}"; IconFilename: "{app}\assets\mimir.ico"; Tasks: desktopicon
+
+[InstallDelete]
+; Clean up after older installers: their "Mimir: Erweiterte Features einrichten" shortcut landed as an
+; alternate data stream on an empty file named "Mimir" in the Start menu group (unusable, never removed).
+Type: files; Name: "{group}\Mimir"
+
+[UninstallDelete]
+Type: files; Name: "{group}\Mimir"
 
 [Run]
 ; Optional advanced features (only if the task was ticked): sets up WSL2 + the Firecracker sandbox.
