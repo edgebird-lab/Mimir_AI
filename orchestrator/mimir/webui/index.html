@@ -1225,13 +1225,13 @@ async function loadCorpus(){
 }
 /* ================= WISSENS-WIKI (read-only browser; pflegt sich selbst beim Recherchieren/Thesis) ================= */
 let wikiPages=[];
-function wikiRenderContent(md){
-  // [[Wikilink]] -> klickbar, wenn eine Seite mit dem Titel existiert; sonst normaler Text
-  return esc(md).replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{
-    const hit=wikiPages.find(p=>p.title.toLowerCase()===name.trim().toLowerCase());
-    return hit?('<a href="#" class="wl" data-slug="'+esc(hit.slug)+'">'+esc(name)+'</a>'):('[['+esc(name)+']]');
-  });
-}
+// Wiki pages are Markdown written by the model: render them like a chat answer (sanitized, links as text),
+// then turn [[Seitentitel]] into a link when such a page exists (otherwise just the title as text).
+function wikiLinkify(root){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),hits=[];
+  while(w.nextNode())if(w.currentNode.nodeValue.includes('[['))hits.push(w.currentNode);
+  hits.forEach(n=>{const parts=n.nodeValue.split(/\[\[([^\]]+)\]\]/);if(parts.length<2)return;
+    n.replaceWith(...parts.map((p,k)=>{if(k%2===0)return p;const hit=wikiPages.find(x=>x.title.toLowerCase()===p.trim().toLowerCase());
+      if(!hit)return p;const a=el('a','wl',p);a.href='#';a.dataset.slug=hit.slug;a.onclick=e=>{e.preventDefault();openWikiPage(hit.slug);};return a;}));});}
 function wikiAccBadge(acc){
   if(acc===null||acc===undefined)return '';
   const pct=Math.round(acc*100);
@@ -1242,8 +1242,8 @@ async function openWikiPage(slug){
   const d=await jget('/api/wiki/page?slug='+encodeURIComponent(slug));
   const box=$('wikiPage');
   if(d.error){box.innerHTML='<span class="hint">Seite nicht gefunden.</span>';return;}
-  box.innerHTML='<h4 class="wiki-title">'+esc(d.title)+wikiAccBadge(d.accuracy)+'</h4>'+wikiRenderContent(d.content);
-  box.querySelectorAll('a.wl').forEach(a=>a.onclick=e=>{e.preventDefault();openWikiPage(a.dataset.slug);});
+  box.innerHTML='<h4 class="wiki-title">'+esc(d.title)+wikiAccBadge(d.accuracy)+'</h4>';
+  const body=el('div','answer md');renderChatMd(body,d.content||'');wikiLinkify(body);box.append(body);
   document.querySelectorAll('#wikiList .wp').forEach(n=>n.classList.toggle('active',n.dataset.slug===slug));
 }
 async function loadWiki(){
