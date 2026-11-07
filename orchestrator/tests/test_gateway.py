@@ -73,4 +73,10 @@ def _tcp_open(port):
 
 
 if __name__ == "__main__":
+    # The gateway is a Unix-domain socket (Linux deployment only). Windows' Python has no AF_UNIX, and the
+    # native Windows build never starts this gateway (the web UI talks to the worker via Redis), so the
+    # test is skipped there instead of failing.
+    if not hasattr(socket, "AF_UNIX"):
+        print("SKIPPED: no AF_UNIX on this platform (the Unix-socket gateway is Linux-only)")
+        sys.exit(0)
     main()

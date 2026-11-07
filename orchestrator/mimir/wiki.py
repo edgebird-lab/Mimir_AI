@@ -43,6 +43,12 @@ class WikiStore:
             self.db.execute("ALTER TABLE wiki_pages ADD COLUMN accuracy REAL")
         except Exception:  # noqa: BLE001 — column already exists (older db)
             pass
+        try:
+            # Write counter for the optimistic concurrency check in upsert_page. A timestamp is not enough:
+            # time.time() ticks only every 15.6 ms on Windows, so two writes can share one `updated` value.
+            self.db.execute("ALTER TABLE wiki_pages ADD COLUMN version INTEGER NOT NULL DEFAULT 0")
+        except Exception:  # noqa: BLE001 — column already exists
+            pass
         self.db.commit()
 
     def close(self):
@@ -51,7 +57,7 @@ class WikiStore:
     # ---------------------------------------------------------------- read
     def list_pages(self) -> list[dict]:
         return [dict(r) for r in self.db.execute(
-            "SELECT slug, title, updated, accuracy, length(content) AS chars "
+            "SELECT slug, title, updated, version, accuracy, length(content) AS chars "
             "FROM wiki_pages ORDER BY updated DESC")]
 
     def get_page(self, slug: str) -> dict | None:
@@ -66,7 +72,7 @@ class WikiStore:
         if not q:
             return []
         terms = [t for t in re.split(r"\s+", q.lower()) if len(t) > 2][:6] or [q.lower()]
-        rows = self.db.execute("SELECT slug, title, content, updated FROM wiki_pages").fetchall()
+        rows = self.db.execute("SELECT slug, title, content, updated, version FROM wiki_pages").fetchall()
         scored = []
         for r in rows:
             hay = (r["title"] + " " + r["content"]).lower()
@@ -82,8 +88,8 @@ class WikiStore:
 
     # ---------------------------------------------------------------- write
     def upsert_page(self, title: str, content: str, slug: str | None = None,
-                    accuracy: float | None = None, expected_updated: float | None = None) -> str | None:
-        """Create or update a page. If `expected_updated` is given (the `updated` timestamp the
+                    accuracy: float | None = None, expected_version: int | None = None) -> str | None:
+        """Create or update a page. If `expected_version` is given (the `version` counter the
         caller last READ this page at), the write is refused — returns None — when the row has been
         modified by someone else since that read, instead of silently overwriting their update with
         a merge that was computed from stale content. This is the SQLite-native answer to the
@@ -94,12 +100,17 @@ class WikiStore:
         just written by another run — it'll be reconsidered next time this topic is ingested"."""
         slug = (slug or slugify(title))[:80]
         now = time.time()
-        existing = self.db.execute("SELECT id, updated FROM wiki_pages WHERE slug=?", (slug,)).fetchone()
+        existing = self.db.execute("SELECT id, version FROM wiki_pages WHERE slug=?", (slug,)).fetchone()
         if existing:
-            if expected_updated is not None and abs(existing["updated"] - expected_updated) > 1e-6:
+            if expected_version is not None and int(existing["version"] or 0) != int(expected_version):
                 return None
-            self.db.execute("UPDATE wiki_pages SET title=?, content=?, updated=?, accuracy=? WHERE slug=?",
-                            (title[:300], content, now, accuracy, slug))
+            # the version guard in the WHERE clause makes check + write one atomic step
+            cur = self.db.execute(
+                "UPDATE wiki_pages SET title=?, content=?, updated=?, accuracy=?, version=version+1 "
+                "WHERE slug=? AND version=?", (title[:300], content, now, accuracy, slug, int(existing["version"] or 0)))
+            if cur.rowcount == 0:
+                self.db.commit()
+                return None
         else:
             self.db.execute(
                 "INSERT INTO wiki_pages(slug, title, content, created, updated, accuracy) VALUES(?,?,?,?,?,?)",

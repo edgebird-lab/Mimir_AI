@@ -66,18 +66,22 @@ with tempfile.TemporaryDirectory() as d:
     check("new page with no accuracy -> None", store.get_page("halluzination")["accuracy"] is None)
 
     print("test: optimistic concurrency — the race two overlapping ingests would hit")
-    before = store.get_page("rag")["updated"]
-    # simulates run A: reads 'rag' at `before`, then (after some delay representing its LLM call) writes
-    # back successfully because nothing else touched the page meanwhile
-    ok = store.upsert_page("RAG", "Version von Lauf A.", expected_updated=before)
-    check("first writer with correct expected_updated succeeds", ok == "rag")
+    before = store.get_page("rag")["version"]
+    # simulates run A: reads 'rag' at version `before`, then (after some delay representing its LLM call)
+    # writes back successfully because nothing else touched the page meanwhile. No sleep on purpose: the
+    # check must hold even when both writes land in the same clock tick (15.6 ms on Windows).
+    ok = store.upsert_page("RAG", "Version von Lauf A.", expected_version=before)
+    check("first writer with correct expected_version succeeds", ok == "rag")
+    check("a successful write bumps the version", store.get_page("rag")["version"] == before + 1)
     # simulates run B: had read the SAME 'rag' snapshot at `before` (now stale — A already wrote), tries
     # to write its own independently-computed merge back — must be REFUSED, not silently clobber A's write
-    stale_write = store.upsert_page("RAG", "Version von Lauf B (veraltete Grundlage).", expected_updated=before)
-    check("second writer with now-stale expected_updated is refused", stale_write is None)
+    stale_write = store.upsert_page("RAG", "Version von Lauf B (veraltete Grundlage).", expected_version=before)
+    check("second writer with now-stale expected_version is refused", stale_write is None)
     check("A's content survived, B's did not overwrite it", store.get_page("rag")["content"] == "Version von Lauf A.")
+    check("search results carry the version for the next writer",
+          all("version" in p for p in store.search("Lauf")))
     # a write with no expectation at all (the "new page" / no-conflict-check path) always succeeds
-    check("write without expected_updated always succeeds", store.upsert_page("RAG", "Version C.") == "rag")
+    check("write without expected_version always succeeds", store.upsert_page("RAG", "Version C.") == "rag")
 
     print("test: delete_page removes it")
     check("delete existing -> True", store.delete_page("halluzination") is True)

@@ -562,7 +562,7 @@ class Academic:
         page is written either way (even if still weak after its one fix attempt) with its honest,
         possibly-low accuracy score attached, so a persistent gap stays VISIBLE in the browser rather
         than silently hidden. Writes go through WikiStore.upsert_page's optimistic concurrency check
-        (expected_updated) so a page another concurrent run touched in the meantime is skipped, not
+        (expected_version) so a page another concurrent run touched in the meantime is skipped, not
         silently clobbered — the race a naive read-merge-write cycle would otherwise hit if two
         research/thesis runs happen to update the same topic at once.
         Best-effort overall — a broken/empty model response must never fail the research/thesis run
@@ -571,7 +571,7 @@ class Academic:
             return
         try:
             existing = self.wiki.search(topic, k=6)
-            existing_updated = {p["slug"]: p["updated"] for p in existing}
+            existing_version = {p["slug"]: p.get("version", 0) for p in existing}
             existing_md = ("\n\n".join(f"### {p['title']}\n{p['content']}" for p in existing)
                           or "(noch keine passenden Seiten vorhanden)")
             numbered = []
@@ -621,9 +621,9 @@ class Academic:
 
             written, skipped, low = [], [], []
             for i, cand in enumerate(candidates):
-                expected = existing_updated.get(_wiki_slugify(cand["title"]))
+                expected = existing_version.get(_wiki_slugify(cand["title"]))
                 slug = self.wiki.upsert_page(cand["title"], cand["content_md"], accuracy=scores[i],
-                                             expected_updated=expected)
+                                             expected_version=expected)
                 if slug is None:
                     skipped.append(cand["title"])
                     continue
