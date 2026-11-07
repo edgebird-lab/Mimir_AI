@@ -440,6 +440,8 @@ class Agent:
                 while finish == "length" and cont < MAX_CONTINUE and not should_cancel():
                     cont += 1
                     yield {"event": "continue", "n": cont, "reason": "length"}
+                    if cont == 1:
+                        history.append({"role": "user", "content": prompt})   # what the partial answer answers
                     history.append({"role": "assistant", "content": pending})
                     seg: list[str] = []
                     finish = None
@@ -471,6 +473,11 @@ class Agent:
                 yield {"event": "final", "text": answer}
                 return
 
+            # Keep the request that led to these tool calls in the history. Before, the user's question was only
+            # ever the `user` argument of the first call and vanished afterwards: every later call saw tool
+            # results plus "now answer the original question" without the question — small models then
+            # asked back ("Bitte stellen Sie mir die ursprüngliche Frage") or answered with nothing.
+            history.append({"role": "user", "content": prompt})
             history.append({"role": "assistant", "content": answer,
                             "tool_calls": [{"id": f"c{step}_{i}", "type": "function",
                                             "function": {"name": n, "arguments": json.dumps(a)}}

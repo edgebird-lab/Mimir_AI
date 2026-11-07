@@ -141,6 +141,13 @@ evs = run(Agent(llm, broker, REGISTRY, max_steps=3))
 finals = [e["text"] for e in evs if e["event"] == "final"]
 check("final answer instead of (max steps reached)", finals == ["Zusammenfassung der Funde."], finals)
 
+print("test: the original question stays in the history after a tool step")
+llm = ScriptLLM([("tool", "academic_search", '{"query": "ERP"}'), ("text", "Antwort.")])
+run(Agent(llm, FakeBroker({"academic_search": BrokerResult(ok=True, value=PAPERS)}), REGISTRY), task="Was ist ERP?")
+h = llm.calls[1]["history"]
+check("question precedes the tool call", [m["role"] for m in h[-3:]] == ["user", "assistant", "tool"] and h[-3]["content"] == "Was ist ERP?",
+      [(m["role"], str(m.get("content"))[:20]) for m in h])
+
 print("test: German questions get a German follow-up (small models switch language otherwise)")
 llm = ScriptLLM([("tool", "academic_search", '{"query": "ERP"}'), ("text", "Antwort.")])
 run(Agent(llm, FakeBroker({"academic_search": BrokerResult(ok=True, value=PAPERS)}), REGISTRY),
