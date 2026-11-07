@@ -750,7 +750,9 @@ class Academic:
             au = ", ".join([a for a in (s.get("authors") or []) if a][:8]) or "o. A."
             doi = f" https://doi.org/{s['doi']}" if s.get("doi") else ""
             bib.append(f"[{i}] {au} ({s.get('year')}): *{s.get('title')}*. {s.get('venue') or ''}.{doi}")
-        return "\n".join(bib)
+        # one paragraph per entry: a single newline is only a soft break in Markdown, so "\n" ran all
+        # entries together into one block in the document viewer and in the pandoc exports
+        return "\n\n".join(bib)
 
     def _abstract(self, topic, running, should_cancel):
         text = ""
@@ -1300,7 +1302,7 @@ class Academic:
             bib.append(f"[{i}] {au} ({s.get('year')}): *{s.get('title')}*. {s.get('venue') or ''}.{doi}")
         for j, h in enumerate(webhits, len(sources) + 1):
             bib.append(f"[{j}] {h.get('title')}. {h.get('url')} (abgerufen online)")
-        full = final + "\n".join(bib)
+        full = final + "\n\n".join(bib)               # one paragraph per entry (see _bibliography)
         name = f"recherche-{self._slug(topic)}.md"
         files = [self._write(name, full)] + self._export(name, full)
         yield {"event": "document", "files": files, "main": files[0]}
