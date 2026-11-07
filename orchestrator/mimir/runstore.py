@@ -140,6 +140,31 @@ class RunStore:
                 failed += 1
         return {"requeued": requeued, "failed": failed}
 
+    def find_stale_running(self, threshold_seconds: float = 3600.0) -> list[dict]:
+        """Runs stuck in status='running' with no new durable event in over `threshold_seconds` — the
+        watchdog's signal that THIS SPECIFIC run has stalled while the process itself is still alive and
+        able to run this very check (a full process crash is instead caught by recover_orphans, which
+        runs once at startup — this complements it for the "process fine, one run hung" case, e.g. an
+        inference call that never returns).
+
+        The threshold is deliberately generous (default 1h): high-frequency deltas (token/reasoning) are
+        EPHEMERAL and live only in Redis (see _EPHEMERAL), never written here, so a single long chapter
+        streaming for 20-30+ minutes on slow hardware produces ZERO new SQLite events the whole time —
+        that is healthy, not stale. A tight threshold would misfire on exactly the slow-but-working runs
+        this store exists to support. Compares against the newest of (last event ts, `updated` column) so
+        a run with literally zero events yet (just claimed) isn't flagged before its first event lands."""
+        now = _now()
+        rows = self.db.execute("SELECT id, kind, updated FROM runs WHERE status='running'").fetchall()
+        stale = []
+        for r in rows:
+            last_ev = self.db.execute(
+                "SELECT ts FROM run_events WHERE run_id=? ORDER BY seq DESC LIMIT 1", (r["id"],)).fetchone()
+            last_ts = max(last_ev["ts"] if last_ev else 0.0, r["updated"])
+            idle = now - last_ts
+            if idle > threshold_seconds:
+                stale.append({"id": r["id"], "kind": r["kind"], "idle_seconds": idle})
+        return stale
+
     def get_run(self, run_id: str) -> dict | None:
         r = self.db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         return dict(r) if r else None

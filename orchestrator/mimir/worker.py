@@ -193,6 +193,30 @@ def worker_thread(idx: int) -> None:
             time.sleep(1.0)
 
 
+WATCHDOG_STALE_S = float(os.environ.get("MIMIR_WATCHDOG_STALE_S", "3600"))
+WATCHDOG_INTERVAL_S = float(os.environ.get("MIMIR_WATCHDOG_INTERVAL_S", "300"))
+
+
+def _watchdog_pass(rs: RunStore) -> None:
+    """Periodic companion to recover_orphans (which only runs once, at startup): catches a run that
+    stalled WHILE the process stayed alive and healthy (e.g. a hung inference call) — the case that
+    otherwise sits as a silent 'running' zombie indefinitely, discovered only if/when a human happens to
+    look. Never crashes the process on a bad check (best-effort, runs forever)."""
+    try:
+        for stale in rs.find_stale_running(WATCHDOG_STALE_S):
+            mins = int(stale["idle_seconds"] // 60)
+            msg = (f"Automatisch beendet: seit {mins} Minuten keine Aktivität mehr (vermutlich "
+                   f"hängengeblieben, oder der Prozess ist zwischenzeitlich abgestürzt). Bei Thesis/"
+                   f"Recherche kann derselbe Auftrag erneut gestartet werden — dank Wiederaufnahme-Logik "
+                   f"setzt er beim letzten gesicherten Stand fort, statt neu zu beginnen.")
+            rs.set_status(stale["id"], "failed", error=msg)
+            rs.append_event(stale["id"], {"event": "run_end", "status": "failed", "error": msg})
+            print(f"[watchdog] {stale['id']} ({stale['kind']}) marked failed after {mins} min idle",
+                  flush=True)
+    except Exception as e:  # noqa: BLE001 — the watchdog itself must never take the process down
+        print(f"[watchdog] pass failed: {type(e).__name__}: {e}", flush=True)
+
+
 def main() -> None:
     # Crash recovery FIRST: re-queue resumable runs / fail zombies left non-terminal by a prior process,
     # before any worker thread starts claiming (so we never race a recovered run against a live claim).
@@ -207,10 +231,12 @@ def main() -> None:
     threads = [threading.Thread(target=worker_thread, args=(i,), daemon=True) for i in range(CONCURRENCY)]
     for t in threads:
         t.start()
-    print(f"[worker] {CONCURRENCY} threads running", flush=True)
+    print(f"[worker] {CONCURRENCY} threads running, watchdog every {int(WATCHDOG_INTERVAL_S)}s "
+          f"(stale threshold {int(WATCHDOG_STALE_S)}s)", flush=True)
     try:
         while True:
-            time.sleep(3600)
+            time.sleep(WATCHDOG_INTERVAL_S)
+            _watchdog_pass(rs)
     except KeyboardInterrupt:
         _STOP.set()
 

@@ -90,6 +90,19 @@ ABSTRACT_SYS = ("Schreibe ein wissenschaftliches Abstract (150–250 Wörter, De
 SEARCH_Q_SYS = ("Gib 3 prägnante ENGLISCHE wissenschaftliche Suchbegriffe (Schlüsselwörter) für dieses "
                 "Thema, damit eine englischsprachige Literaturdatenbank passende Paper findet. Output "
                 "STRICT JSON: {\"queries\":[\"…\",\"…\",\"…\"]}. Kurz, nur Kernbegriffe, keine Sätze.")
+SOURCE_RELEVANCE_SYS = ("Du bewertest, ob jede nummerierte Quelle (Titel + kurzer Abstract) WIRKLICH "
+                        "inhaltlich zum gegebenen THEMA passt — nicht nur, ob sie ähnliche Begriffe "
+                        "enthält. 'relevant': false NUR, wenn die Quelle klar ein ANDERES Kernthema "
+                        "behandelt und nur entfernt verwandte Begriffe teilt (z. B. eine völlig andere "
+                        "Anwendungsdomäne); 'relevant': true, wenn sie tatsächlich zum Kern des Themas "
+                        "beiträgt, auch wenn nur ein Teilaspekt. Im Zweifel true — es geht nur darum, "
+                        "klar themenfremde Treffer auszusortieren, nicht um strenge Auswahl. Output "
+                        "STRICT JSON: {\"results\":[{\"i\":0,\"relevant\":true}]}. EIN Eintrag pro Quelle.")
+SOURCE_RELEVANCE_SCHEMA = {"type": "object", "properties": {
+    "results": {"type": "array", "items": {"type": "object", "properties": {
+        "i": {"type": "integer"}, "relevant": {"type": "boolean"}},
+        "required": ["i", "relevant"]}}},
+    "required": ["results"]}
 
 # JSON schemas for grammar-constrained decoding (llama-server response_format) — malformed JSON becomes
 # structurally impossible at sampling time, replacing silent json.loads→{} fallbacks. See llm.complete_json.
@@ -147,7 +160,7 @@ WIKI_INGEST_SYS = ("Du pflegst eine dauerhafte Wissens-Wiki (kurze, wiederverwen
                    "verwandte Themen/Seiten, am Ende eine Zeile 'Quellen: [1], [3]' mit den Nummern der "
                    "Quellen, aus denen sie gespeist wurde. Lege NUR Seiten an/aktualisiere NUR Seiten, für die "
                    "die neuen Quellen wirklich belastbare, neue Information beitragen — nicht jede Kleinigkeit "
-                   "braucht eine Seite (maximal 6 Seiten pro Durchgang). Widerspricht eine neue Quelle einer "
+                   "braucht eine Seite (maximal 4 Seiten pro Durchgang). Widerspricht eine neue Quelle einer "
                    "bestehenden Seite, aktualisiere die Seite trotzdem (gib den aktuellen Diskussionsstand "
                    "wieder) und trage den Widerspruch zusätzlich in 'contradictions' ein. Output STRICT JSON: "
                    "{\"pages\":[{\"title\":\"…\",\"content_md\":\"…\"}],\"contradictions\":[\"…\"]}. Deutsch. "
@@ -416,10 +429,45 @@ class Academic:
                     s["target_words"] = max(floor, int(s["target_words"] * g))
         return out
 
+    def _relevance_drop_set(self, topic: str, items: list[dict]) -> set[int]:
+        """Judge each numbered {title, abstract} item for genuine topical relevance to `topic` — a real,
+        observed failure mode of keyword-ranked search on a niche/compound topic: OpenAlex/web search
+        return sources that mention similar terms ("large language model", "RAG") in passing while their
+        actual subject is something else entirely (grid maintenance, therapy transcription, ...). ONE
+        small-output judge call (a boolean per item, not generated prose) — cheap and fast regardless of
+        hardware speed, unlike the batched content-generation calls elsewhere in this file. Returns the
+        SET of indices to DROP (only those explicitly marked irrelevant; anything the judge didn't render
+        an opinion on — partial/malformed response — is kept). Empty set on any failure: a quality nicety
+        must never cost a run its sources entirely."""
+        if not items:
+            return set()
+        try:
+            text = "\n".join(f"{i}: {it.get('title')}. {str(it.get('abstract') or '')[:200]}"
+                            for i, it in enumerate(items))
+            res = self.llm.complete_json(SOURCE_RELEVANCE_SYS, f"THEMA: {topic}\n\nQUELLEN:\n{text}"[:12000],
+                                         temperature=0.1, max_tokens=1200, schema=SOURCE_RELEVANCE_SCHEMA)
+            raw = res.get("results") if isinstance(res, dict) else None
+            if not isinstance(raw, list) or not raw:
+                return set()
+            return {r.get("i") for r in raw if isinstance(r, dict) and r.get("relevant") is False}
+        except Exception:  # noqa: BLE001 — relevance filtering is a quality nicety, never load-bearing
+            return set()
+
+    def _filter_relevant_sources(self, topic: str, sources: list[dict]) -> list[dict]:
+        """Thin wrapper around _relevance_drop_set for the common case of one homogeneous source list
+        (see _gather_sources). Never drops everything — an all-irrelevant verdict just keeps the
+        original list, since that's far more likely a judge-call hiccup than a genuinely empty result."""
+        if not sources:
+            return sources
+        drop = self._relevance_drop_set(topic, sources)
+        filtered = [s for i, s in enumerate(sources) if i not in drop]
+        return filtered if filtered else sources
+
     def _gather_sources(self, topic, k=22):
         """Robust source finding: derive English academic queries (OpenAlex is English-biased, so a
         German topic alone finds nothing), search each + the topic, dedupe, then supplement with broad
-        web results (SearXNG handles German). Every source stays untrusted (abstract/snippet)."""
+        web results (SearXNG handles German). Every source stays untrusted (abstract/snippet). The final
+        list is passed through _filter_relevant_sources before being capped to k."""
         qj = self.llm.complete_json(SEARCH_Q_SYS, f"Thema: {topic}", temperature=0.2, max_tokens=300,
                                     schema=QUERIES_SCHEMA)
         queries = qj.get("queries") if isinstance(qj, dict) else None
@@ -440,7 +488,7 @@ class Academic:
                 sources.append({"title": h.get("title") or url, "authors": [], "year": None,
                                 "venue": url, "doi": None, "citations": None,
                                 "abstract": getattr(h.get("snippet"), "value", h.get("snippet", ""))})
-        return sources[:k]
+        return self._filter_relevant_sources(topic, sources)[:k]
 
     # ---------------------------------------------------------------- WISSENS-WIKI (persistent, cross-run)
     def _wiki_consult(self, topic: str) -> str:
@@ -528,13 +576,15 @@ class Academic:
                     f"NEUE QUELLEN:\n{sanitizer.wrap_untrusted(chr(10).join(numbered)[:12000], 'src')}")
             if should_cancel():
                 return
-            res = self.llm.complete_json(WIKI_INGEST_SYS, user, temperature=0.3, max_tokens=3000,
+            # max_tokens kept modest (see the BRIEF_BATCH comment above for why): 4 pages of ~250 words
+            # comfortably fits under the 300s complete_json timeout even on slow/CPU-bound hardware.
+            res = self.llm.complete_json(WIKI_INGEST_SYS, user, temperature=0.3, max_tokens=1800,
                                          schema=WIKI_SCHEMA)
             pages = res.get("pages") if isinstance(res, dict) else None
             if not isinstance(pages, list) or not pages:
                 return
             candidates = []
-            for p in pages[:6]:
+            for p in pages[:4]:
                 if not isinstance(p, dict):
                     continue
                 title = str(p.get("title", "")).strip()
@@ -1021,22 +1071,45 @@ class Academic:
         total = len(all_secs)
 
         # 2b) per-section writing briefs (once; persisted). Turns each section's thin outline main_point
-        # into a concrete ~4-sentence assignment (what to cover + which source numbers to use), with
-        # non-overlapping scope decided upfront ACROSS THE WHOLE OUTLINE in one pass. This is what then
-        # lets each section be written in ISOLATION below (no running summary of prior prose needed) —
-        # repetition is prevented structurally (a section can't restate what it never saw), and every
-        # per-section writing prompt stays small regardless of how long the thesis grows.
+        # into a concrete ~4-sentence assignment (what to cover + which source numbers to use). Batched
+        # (BRIEF_BATCH sections per LLM call, each call still SEES the full outline for non-overlap
+        # context, but only WRITES briefs for its own batch) rather than one giant call for the whole
+        # outline: a 22-26 section thesis in one shot needs ~4000 output tokens, which on slow/CPU-bound
+        # hardware (this pipeline measured ~7 tok/s live) takes longer than the 300s complete_json
+        # timeout — the call then times out, retry() silently re-sends the identical too-slow request up
+        # to 3x, and the UI shows nothing new for up to ~15 minutes (looks hung, isn't-yet-technically,
+        # but might as well be). Small batches keep every call comfortably under the timeout regardless
+        # of hardware speed AND give the user a visible per-batch progress line instead of one long gap.
+        # This is what then lets each section be written in ISOLATION below (no running summary of prior
+        # prose needed) — repetition is prevented structurally, and every per-section writing prompt
+        # stays small regardless of how long the thesis grows.
+        BRIEF_BATCH = 5
         if not ts.has_briefs(run_id):
-            yield {"event": "status", "status": "Erstelle konkrete Schreib-Aufträge je Abschnitt…"}
-            heads = [f"{i + 1}. {s['heading']} (Ziel: {s['target_words']} W.)" for i, s in enumerate(all_secs)]
-            bj = self.llm.complete_json(
-                THESIS_BRIEF_SYS,
-                f"THEMA: {topic}\n\nGLIEDERUNG:\n" + "\n".join(heads) + "\n\nQUELLEN:\n" + "\n".join(numbered)[:16000],
-                temperature=0.3, max_tokens=4000, schema=BRIEF_SCHEMA)
-            briefs = bj.get("briefs") if isinstance(bj, dict) else None
-            matched = self._match_briefs(all_secs, briefs if isinstance(briefs, list) else [])
-            for s in all_secs:
-                ts.set_section_brief(run_id, s["section_id"], matched[s["section_id"]])
+            heads_all = "\n".join(f"{i + 1}. {s['heading']} (Ziel: {s['target_words']} W.)"
+                                  for i, s in enumerate(all_secs))
+            for start in range(0, len(all_secs), BRIEF_BATCH):
+                if should_cancel():
+                    break
+                batch = all_secs[start:start + BRIEF_BATCH]
+                end = min(start + BRIEF_BATCH, len(all_secs))
+                yield {"event": "status",
+                       "status": f"Erstelle Schreib-Aufträge: Abschnitt {start + 1}–{end}/{len(all_secs)}…"}
+                batch_heads = "\n".join(f"{start + i + 1}. {s['heading']} (Ziel: {s['target_words']} W.)"
+                                        for i, s in enumerate(batch))
+                bj = self.llm.complete_json(
+                    THESIS_BRIEF_SYS,
+                    f"THEMA: {topic}\n\nGESAMTE GLIEDERUNG (nur zur Einordnung, NICHT alle beauftragen):\n"
+                    f"{heads_all}\n\nERSTELLE EINEN AUFTRAG NUR FÜR DIESE ABSCHNITTE:\n{batch_heads}\n\n"
+                    f"QUELLEN:\n" + "\n".join(numbered)[:16000],
+                    temperature=0.3, max_tokens=1200, schema=BRIEF_SCHEMA)
+                briefs = bj.get("briefs") if isinstance(bj, dict) else None
+                matched = self._match_briefs(batch, briefs if isinstance(briefs, list) else [])
+                for s in batch:
+                    ts.set_section_brief(run_id, s["section_id"], matched[s["section_id"]])
+            if should_cancel():
+                yield {"event": "final", "text": "(gestoppt — Fortschritt gespeichert; erneuter Start setzt fort)"}
+                yield {"event": "thesis_done", "ok": False, "resumable": True}
+                return
             ts.mark_briefs_done(run_id)
             all_secs = ts.sections(run_id)          # reload with the fresh briefs now in main_point
 
@@ -1178,6 +1251,19 @@ class Academic:
             yield {"event": "final", "text": "Keine Quellen gefunden."}
             yield {"event": "research_done", "ok": False}
             return
+        # drop sources that only share vocabulary with the topic but are really about something else
+        # (see _relevance_drop_set) — judge academic + web hits together in one call, then split the
+        # drop-set back by the original offset since they're two separate lists.
+        n_src = len(sources)
+        plain = [{"title": s.get("title"), "abstract": getattr(s.get("abstract"), "value", s.get("abstract", ""))}
+                for s in sources] + [{"title": h.get("title"),
+                                      "abstract": getattr(h.get("snippet"), "value", h.get("snippet", ""))}
+                                     for h in webhits]
+        drop = self._relevance_drop_set(topic, plain)
+        kept_sources = [s for i, s in enumerate(sources) if i not in drop]
+        kept_webhits = [h for j, h in enumerate(webhits) if (n_src + j) not in drop]
+        if kept_sources or kept_webhits:            # never drop everything
+            sources, webhits = kept_sources, kept_webhits
         yield {"event": "status", "status": f"{len(sources)} wissenschaftliche + {len(webhits)} Web-Quellen gefunden"}
         lines = []
         wiki_sources = []
