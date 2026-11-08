@@ -23,7 +23,7 @@ Live-Prüfung mit der Testinstallation (gemma-4-E2B für Funktionstests, gemma-4
 | M8 Erster Start | erledigt | `/api/health`; Kopfzeile „Modell wird geladen …“ bis das Modell bereit ist; Einrichtungsassistent im Browser (L1); Downloads geprüft, bevor ein Modell eingetragen wird | test_webserver_api; Assistent mit Testkopie (Modellwahl, .env, Fehleransicht) |
 | M9 PDF unter Windows | erledigt | `/api/capabilities` (docproc meldet, was es wirklich kann), Export ohne PDF + „Drucken“, Druckknopf mit Druckansicht | live: Exportliste ohne PDF, Hinweis „Drucken“ |
 | S1 Lange Läufe | erledigt | Restzeit „Abschnitt k von n · noch ca. …“, „Fortsetzen“/„Erneut starten“ (`/api/run/restart`), Filter, Löschen, Aufräumen, „Mehr anzeigen“ | test_webserver_api; live: Filter/Löschen; Thesis (~22 Seiten, gemma-4-E2B): 22 Quellen, Gliederung mit 17 Abschnitten und Schreibaufträge nach ~8 min, Abschnitt 1 nach ~1 min; „Lauf stoppen“ nach 13 s wirksam, „Fortsetzen“ setzte mit „Wiederaufnahme“ bei Abschnitt 2/17 fort |
-| S2 Dialoge | erledigt | eigener Dialog mit Thema, Umfang bzw. Anzahl/Schwierigkeit | live: Zusammenfassung „kompakt“ mit DOCX |
+| S2 Dialoge | erledigt | eigener Dialog mit Thema, Umfang bzw. Anzahl/Schwierigkeit | live: Zusammenfassung „kompakt“ mit DOCX; Probeklausur (6 Aufgaben, mittel, gemma-4-E4B) in ~1 min mit Lösungen, Seitenangaben und DOCX |
 | S3 Antwortzeit | erledigt, eine Ausnahme | „Schnell antworten“ (ohne Gedankengang), `cache_prompt`, gemessene Geschwindigkeit, Hinweis bei deutlich langsamerer Antwort. **Nicht umgesetzt:** kleinere Kontextgröße auf iGPUs – bringt wenig Tempo, würde aber lange Thesis-Abschnitte kappen | test_agent_chat |
 | S4 Dokumente/Unterhaltungen | erledigt | „Meine Dokumente einbeziehen“ (Suche vor dem ersten Modellaufruf, Passagen eingezäunt), Umbenennen/Löschen | live: Antwort mit „[1, S. 3]“; Umbenennen/Löschen |
 | S5 Umlaute | erledigt | ae/oe/ue/ss, alter Thesis-Schlüssel als Fallback | test_academic_misc |
@@ -38,7 +38,25 @@ Live-Prüfung mit der Testinstallation (gemma-4-E2B für Funktionstests, gemma-4
 | L6 Verlauf | erledigt | Schritte und Quellen werden mit der Antwort gespeichert und beim Öffnen gezeigt | test_webserver_api |
 
 Zusätzlich behoben: KI-Nutzungserklärung der Thesis nannte ein fest eingetragenes Modell (08e3352);
-Umlaute in den Modellbeschreibungen des Assistenten; DOCX-Formeln (fc41d84).
+Umlaute in den Modellbeschreibungen des Assistenten; DOCX-Formeln (fc41d84); beim Modellwechsel stand
+„bereit“ in der Kopfzeile (6458752); nach „Beenden“ liefen Abfragen weiter (dcf7fb4); der Hinweis
+„Neue Unterhaltung — leg los.“ blieb über der ersten Frage stehen (ec56b50); ein wieder geöffneter
+Recherche-Lauf zeigte die Abschlussmeldung doppelt (f12079c).
+
+Screenshots in `docs/img` sind echte Aufnahmen dieses Stands (gemma-4-E4B, Intel-Onboard-Grafik,
+1440 × 900 @2x, hell; Chat zusätzlich dunkel).
+
+**Bekannte Einschränkungen nach 1.4**
+- Skills laden unter Windows erst, wenn `skills/_keys/release.pub` und `skills/registry.release.sig`
+  mit dem Release-Schlüssel erzeugt und eingecheckt sind (siehe INSTALL.md, Abschnitt für Maintainer).
+- Selbstverbesserung, Coding und Autopilot brauchen die Firecracker-Sandbox (Linux oder WSL2-Modus) und
+  haben keine Oberfläche (`MIMIR_LABS=1`).
+- Kleine Modelle wählen bei der Literatursuche nicht immer die passendsten Treffer; die Quellenliste
+  zeigt deshalb immer, was wirklich gefunden wurde.
+- Das Wissens-Wiki ordnet neue Quellen per Stichwortsuche bestehenden Seiten zu und aktualisiert dabei
+  gelegentlich thematisch entfernte Seiten (gesehen bei einer CRM-Recherche, die Seiten zur
+  Digitalisierung im Mittelstand mit aktualisierte) – Kandidat für 1.5.
+- Installer und `.exe` sind nicht code-signiert (SmartScreen-Warnung).
 
 ## Grundlage
 
