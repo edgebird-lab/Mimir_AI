@@ -230,7 +230,7 @@ body.side-collapsed .sidebar{display:none}
 .msg.assistant .bubble{flex:1;padding-top:3px}
 .msg.user .bubble{max-width:85%;background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 4px 16px;padding:10px 16px;box-shadow:var(--shadow-sm)}
 .answer{white-space:pre-wrap;font-size:15px;line-height:1.65}
-#chat:has(.msg)>.empty-state{display:none}
+#chat:has(.msg)>.empty-state,#chat:has(.msg)>.hint{display:none}   /* "Neue Unterhaltung — leg los." once the first message is there */
 .empty-state{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;margin-top:8vh!important;padding:0 16px}
 .empty-state .es-ico{width:52px;height:52px;border-radius:15px;background:var(--accent-tint);color:var(--accent-strong);display:grid;place-items:center;margin-bottom:12px}
 .empty-state .es-ico .ico{width:28px;height:28px}
