@@ -14,10 +14,14 @@ Daten irgendwohin gesendet werden. Jede Sicherheitsgarantie wird durch **Topolog
 Die Weboberfläche ist auf Deutsch (das Produkt richtet sich an deutsche Nutzer); Codebase und
 Dokumentation sind auf Englisch.
 
-![Mimir Chat-Oberfläche](docs/img/01-chat.png)
-*Chat mit einem lokalen Modell — Antworten mit Formeln und Quellen, die Arbeitsschritte (z. B. die
-Suche in der Fachliteratur) stehen verständlich über der Antwort. Die Oberfläche gibt es hell und
-dunkel.*
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/01-chat-dark.png">
+  <img alt="Mimir Chat-Oberfläche" src="docs/img/01-chat.png">
+</picture>
+
+*Chat mit einem lokalen Modell: Mimir sucht in der Fachliteratur (OpenAlex), antwortet mit
+Zitat-Markern und zeigt darunter die gefundenen Quellen – aus den Suchdaten, nicht vom Modell
+geschrieben. Die Oberfläche gibt es hell und dunkel.*
 
 ---
 
@@ -131,11 +135,16 @@ stammenden Literaturverzeichnis, nicht vom Modell erfunden.*
 hochladen; pro Dokument gibt es Zusammenfassung und Probeklausur auf Knopfdruck.*
 
 ![Läufe](docs/img/06-runs.png)
-*Läufe — alle Aufträge mit Status und Startzeit; ein Klick öffnet den Live-Verlauf.*
+*Läufe — Aufträge mit Status und Startzeit; ein Klick öffnet den Live-Verlauf. Eine gestoppte Thesis
+lässt sich dort fortsetzen, alte Läufe lassen sich aufräumen.*
 
 ![Einstellungen](docs/img/02-settings.png)
-*Einstellungen — Darstellung wählen, Systemspezifikationen einsehen, Modelle wechseln und neue
-passend zu deinem Grafikspeicher herunterladen.*
+*Einstellungen — Darstellung wählen, Hardware einsehen (hier Onboard-Grafik mit geteiltem Speicher und
+gemessener Geschwindigkeit), sehen, welche Funktionen diese Installation hat, Modelle wechseln und neue
+passend zum Grafikspeicher herunterladen.*
+
+![Chat im dunklen Design](docs/img/01-chat-dark.png)
+*Der Chat im dunklen Design.*
 
 ---
 
