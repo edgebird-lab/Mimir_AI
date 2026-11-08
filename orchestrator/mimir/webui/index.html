@@ -1266,9 +1266,9 @@ function attachRunStream(runId,tabId){
     else if(ev==='approval_resolved')markResolved(ui,d);
     else if(ev==='document'){flushAnswer(ui);ui.hadDoc=true;documentCard(log,d);}
     else if(ev==='final'){const t=finalDe(d.text||'');flushAnswer(ui);
-      if(!t.trim()){}
+      if(!t.trim()||(ui.hadDoc&&/^Fertige (Recherche|Zusammenfassung|Probeklausur):/.test(t))){}   // the document card says it already
       else if(!ui.raw.trim()){place();toAnswer(ui,t);flushAnswer(ui);}            // no streamed text (replay, short result)
-      else if(t.trim()!==ui.raw.trim()&&!(ui.hadDoc&&/^Fertige (Recherche|Zusammenfassung|Probeklausur):/.test(t)))
+      else if(t.trim()!==ui.raw.trim())
         opEv(log,'check',esc(t),'');}                                                // a summary line, e.g. thesis statistics
     else if(ev==='ws_diff'){if((d.files||[]).length)opEv(log,'file',fmtEv(ev,d),'cp');}
     else if(ev==='decision'){opEv(log,'split',fmtEv('decision',d),'nh');refreshApprovals();}
